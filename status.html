@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>注文状況確認｜Miyajima Fan Studio</title>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      background: linear-gradient(135deg, #f0f7ff, #eaf6ff);
+      margin: 0;
+      padding: 16px;
+      color: #333;
+    }
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      font-size: 24px;
+      color: #1565c0;
+      margin: 16px 0 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 22px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #1565c0;
+    }
+    input, button {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 14px;
+      font-size: 18px;
+      padding: 14px;
+      margin: 10px 0;
+    }
+    input {
+      border: 1px solid #bbb;
+      text-align: center;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: #fff;
+    }
+    button {
+      border: none;
+      background: #2196f3;
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.18);
+    }
+    button:disabled {
+      background: #9e9e9e;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .hint {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.6;
+    }
+    #resultCard {
+      display: none;
+      text-align: center;
+    }
+    .number {
+      font-size: 34px;
+      font-weight: 800;
+      color: #1565c0;
+      margin: 8px 0 14px;
+      letter-spacing: 0.06em;
+    }
+    .statusBox {
+      border-radius: 20px;
+      padding: 22px 14px;
+      margin: 14px 0;
+      font-weight: 800;
+    }
+    .statusLabel {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    .statusMessage {
+      font-size: 17px;
+      line-height: 1.7;
+    }
+    .WAIT {
+      background: #fff8e1;
+      color: #8a5a00;
+      border: 2px solid #ffcc80;
+    }
+    .PRINTING {
+      background: #e3f2fd;
+      color: #0d47a1;
+      border: 2px solid #90caf9;
+    }
+    .READY {
+      background: #e8f5e9;
+      color: #1b5e20;
+      border: 2px solid #81c784;
+    }
+    .PICKED_UP {
+      background: #eeeeee;
+      color: #424242;
+      border: 2px solid #bdbdbd;
+    }
+    .CLOSED, .UNKNOWN {
+      background: #ffebee;
+      color: #b71c1c;
+      border: 2px solid #ef9a9a;
+    }
+    .meta {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.7;
+      margin-top: 12px;
+    }
+    .thumb {
+      width: 100%;
+      max-width: 360px;
+      border-radius: 14px;
+      border: 1px solid #ddd;
+      margin-top: 12px;
+      background: #f9f9f9;
+    }
+    #message {
+      display: none;
+      padding: 14px;
+      border-radius: 14px;
+      background: #fff3cd;
+      color: #6d4c00;
+      font-weight: 700;
+      line-height: 1.6;
+      margin-top: 12px;
+    }
+    .smallBtn {
+      background: #607d8b;
+      font-size: 15px;
+      padding: 11px;
+      margin-top: 12px;
+    }
+    footer {
+      text-align: center;
+      font-size: 11px;
+      color: #777;
+      margin: 20px 0 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>注文状況確認</h1>
+
+    <div class="card">
+      <label for="orderInput">受付番号を数字で入力してください</label>
+      <input id="orderInput" type="text" inputmode="latin" placeholder="例：3" autocomplete="off" />
+      <button id="searchBtn">状況を確認する</button>
+      <p class="hint">
+        注文完了時に表示された受付番号を数字で入力してください。<br>
+        例：3 / 12<br>
+        数字だけで確認できます。この画面は自動で最新状況を確認します。
+      </p>
+      <div id="message"></div>
+    </div>
+
+    <div id="resultCard" class="card">
+      <div>受付番号</div>
+      <div id="shortId" class="number">0</div>
+
+      <div id="statusBox" class="statusBox UNKNOWN">
+        <div id="statusLabel" class="statusLabel">確認中</div>
+        <div id="statusMessage" class="statusMessage">状況を確認しています。</div>
+      </div>
+
+      <div id="meta" class="meta"></div>
+      <img id="thumb" class="thumb" alt="注文画像" style="display:none;" />
+
+      <button id="refreshBtn" class="smallBtn">再読み込み</button>
+    </div>
+
+    <footer>
+      © 2026 Hitomi Sasaki<br>
+      Miyajima Fan Studio
+    </footer>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs, onSnapshot, limit } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBKSYZgaSVTu-HO_lS1Tp2eFjSjMuOONNI",
+      authDomain: "my-uchiwa-queue.firebaseapp.com",
+      projectId: "my-uchiwa-queue",
+      storageBucket: "my-uchiwa-queue.firebasestorage.app",
+      messagingSenderId: "245883628081",
+      appId: "1:245883628081:web:ab7f00f01ba256ebca8310",
+      measurementId: "G-W4S3EKL9TY"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const orderInput = document.getElementById('orderInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const message = document.getElementById('message');
+    const resultCard = document.getElementById('resultCard');
+    const shortIdEl = document.getElementById('shortId');
+    const statusBox = document.getElementById('statusBox');
+    const statusLabel = document.getElementById('statusLabel');
+    const statusMessage = document.getElementById('statusMessage');
+    const meta = document.getElementById('meta');
+    const thumb = document.getElementById('thumb');
+
+    let unsubscribe = null;
+    let currentShortId = '';
+    let currentDisplayNo = '';
+
+    const statusTexts = {
+      WAIT: {
+        label: '⏳ 受付済み',
+        message: 'ご注文は届いています。作成開始までしばらくお待ちください。'
+      },
+      PRINTING: {
+        label: '🖨 作成中',
+        message: 'ただいま作成しています。完成までもう少しお待ちください。'
+      },
+      READY: {
+        label: '✅ 受け取り可能',
+        message: 'うちわが完成しました。受付番号をスタッフにお伝えください。'
+      },
+      PICKED_UP: {
+        label: '📦 受け渡し済み',
+        message: 'このご注文は受け渡し済みです。'
+      },
+      CLOSED: {
+        label: '⚠️ 受付終了',
+        message: 'このご注文は受付終了になっています。スタッフにご確認ください。'
+      },
+      UNKNOWN: {
+        label: '確認中',
+        message: '状況を確認しています。'
+      }
+    };
+
+    function normalizeInput(value) {
+      const raw = String(value || '')
+        .trim()
+        .toUpperCase()
+        .replace(/[Ａ-Ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+        .replace(/[^A-Z0-9]/g, '');
+
+      const digits = raw.replace(/^A+/, '').replace(/\D/g, '');
+      if (!digits) return null;
+
+      const displayNo = String(Number(digits));
+      const shortId = `A${String(Number(digits)).padStart(3, '0')}`;
+      return { displayNo, shortId };
+    }
+
+    function showMessage(text) {
+      message.textContent = text;
+      message.style.display = 'block';
+    }
+
+    function clearMessage() {
+      message.textContent = '';
+      message.style.display = 'none';
+    }
+
+    function renderOrder(data) {
+      const status = data.status || 'UNKNOWN';
+      const text = statusTexts[status] || statusTexts.UNKNOWN;
+
+      resultCard.style.display = 'block';
+      shortIdEl.textContent = data.displayNo || currentDisplayNo || String(Number((data.shortId || currentShortId).replace(/^A/, '')));
+      statusBox.className = `statusBox ${status}`;
+      statusLabel.textContent = text.label;
+      statusMessage.textContent = text.message;
+
+      const copies = data.copies ? `${data.copies}本` : '未登録';
+      const template = data.template || '未登録';
+      meta.innerHTML = `注文本数：${copies}<br>デザイン：${template}`;
+
+      if (data.imageUrl) {
+        thumb.src = data.imageUrl;
+        thumb.style.display = 'inline-block';
+      } else {
+        thumb.removeAttribute('src');
+        thumb.style.display = 'none';
+      }
+    }
+
+    async function findOrderByShortId(shortId) {
+      const q = query(
+        collection(db, 'orders'),
+        where('shortId', '==', shortId),
+        limit(1)
+      );
+      const snap = await getDocs(q);
+      if (snap.empty) return null;
+      return snap.docs[0].ref;
+    }
+
+    async function startStatusWatch(shortId) {
+      clearMessage();
+      resultCard.style.display = 'none';
+      searchBtn.disabled = true;
+      searchBtn.textContent = '確認中です…';
+
+      if (unsubscribe) {
+        unsubscribe();
+        unsubscribe = null;
+      }
+
+      try {
+        const ref = await findOrderByShortId(shortId);
+        if (!ref) {
+          showMessage('この受付番号の注文が見つかりませんでした。数字をご確認ください。');
+          return;
+        }
+
+        unsubscribe = onSnapshot(ref, (docSnap) => {
+          if (!docSnap.exists()) {
+            showMessage('注文情報が見つかりませんでした。スタッフにご確認ください。');
+            return;
+          }
+          renderOrder(docSnap.data());
+        }, (err) => {
+          console.error(err);
+          showMessage('状況の取得に失敗しました。通信状態を確認して、もう一度お試しください。');
+        });
+      } catch (err) {
+        console.error(err);
+        showMessage('状況の取得に失敗しました。通信状態を確認して、もう一度お試しください。');
+      } finally {
+        searchBtn.disabled = false;
+        searchBtn.textContent = '状況を確認する';
+      }
+    }
+
+    function searchCurrentInput() {
+      const normalized = normalizeInput(orderInput.value);
+      if (!normalized) {
+        showMessage('受付番号を数字で入力してください。例：3');
+        return;
+      }
+      currentShortId = normalized.shortId;
+      currentDisplayNo = normalized.displayNo;
+      orderInput.value = normalized.displayNo;
+      const url = new URL(window.location.href);
+      url.searchParams.set('id', normalized.displayNo);
+      window.history.replaceState({}, '', url.toString());
+      startStatusWatch(normalized.shortId);
+    }
+
+    searchBtn.addEventListener('click', searchCurrentInput);
+    refreshBtn.addEventListener('click', () => {
+      if (currentShortId) startStatusWatch(currentShortId);
+    });
+    orderInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') searchCurrentInput();
+    });
+
+    window.addEventListener('load', () => {
+      const params = new URLSearchParams(window.location.search);
+      const normalized = normalizeInput(params.get('id'));
+      if (normalized) {
+        orderInput.value = normalized.displayNo;
+        currentShortId = normalized.shortId;
+        currentDisplayNo = normalized.displayNo;
+        startStatusWatch(normalized.shortId);
+      }
+    });
+  </script>
+</body>
+</html>
