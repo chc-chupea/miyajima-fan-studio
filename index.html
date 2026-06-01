@@ -812,6 +812,61 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const copies = Number(document.getElementById('copiesSelect').value || 1);
       const template = templateSelector.value;
 
+      const templateName =
+        document.querySelector('#templateSelector option:checked').textContent;
+
+      const confirmText = {
+        ja:
+      `ご注文内容をご確認ください
+
+      デザイン：${templateName}
+      注文数：${copies}本
+
+      送信後は変更できません。
+
+      注文しますか？`,
+        en:
+      `Please confirm your order
+
+      Design: ${templateName}
+      Quantity: ${copies}
+
+      This cannot be changed after submission.
+
+      Submit order?`,
+        zh:
+      `请确认订单内容
+
+      设计：${templateName}
+      数量：${copies}
+
+      发送后无法修改。
+
+      是否提交？`,
+        ko:
+      `주문 내용을 확인해 주세요
+
+      디자인：${templateName}
+      수량：${copies}
+
+      전송 후에는 변경할 수 없습니다.
+
+      주문하시겠습니까？`,
+        vi:
+      `Vui lòng xác nhận đơn hàng
+
+      Mẫu: ${templateName}
+      Số lượng: ${copies}
+
+      Sau khi gửi sẽ không thể thay đổi.
+
+      Gửi đơn hàng?`
+      };
+
+      if (!confirm(confirmText[currentLang] || confirmText.ja)) {
+        return;
+      }
+
       const submittingTexts = {
         ja: '送信中です。画面を閉じずにお待ちください。',
         en: 'Submitting. Please do not close this page.',
@@ -835,6 +890,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       };
 
       try {
+        document.getElementById('sendingOverlay').style.display = 'block';
         orderBtn.disabled = true;
         orderBtn.textContent = submittingTexts[currentLang] || submittingTexts.ja;
         noticeEl.textContent = '';
@@ -865,13 +921,15 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           updatedAt: serverTimestamp(),
           source: 'miyajima-fan-studio'
         });
-
+        
+        document.getElementById('sendingOverlay').style.display = 'none';
         completeEl.innerHTML = (completeTexts[currentLang] || completeTexts.ja)(issued.shortId);
         completeEl.style.display = 'block';
         document.getElementById('orderArea').style.display = 'none';
         completeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } catch (err) {
         console.error(err);
+        document.getElementById('sendingOverlay').style.display = 'none';
         noticeEl.textContent = errorTexts[currentLang] || errorTexts.ja;
         noticeEl.style.color = 'red';
         noticeEl.style.display = 'block';
@@ -932,6 +990,24 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
 </script>
 
-</body>
+<div id="sendingOverlay"
+     style="
+       display:none;
+       position:fixed;
+       top:0;
+       left:0;
+       width:100%;
+       height:100%;
+       background:rgba(255,255,255,0.95);
+       z-index:99999;
+       text-align:center;
+       padding-top:40vh;
+       font-size:22px;
+       font-weight:bold;
+       color:#1565c0;">
+  送信中です…<br>
+  画面を閉じないでください
+</div>
 
+</body>
 </html>
