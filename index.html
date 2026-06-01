@@ -305,34 +305,41 @@
   <div id="previewNotice" style="font-size:14px; color:black; margin-top:10px;"></div>
 
 
-  <!-- 注文フォームへ進むボタン（最初は非表示） -->
-  <br>
-  <button id="go-to-form"
-    data-ja="📝 注文フォームへ進む"
-    data-en="📝 Go to Order Form"
-    data-zh="📝 前往订单表单"
-    data-ko="📝 주문 양식으로 이동"
-    data-vi="📝 Đi tới Form đặt hàng">
-    📝 注文フォームへ進む
-  </button>
+  <!-- 宮島版：Firebase注文エリア -->
+  <div id="orderArea" style="display:none; margin-top:16px; text-align:left;">
+    <label for="copiesSelect"
+      data-ja="注文本数を選んでください"
+      data-en="Choose number of fans"
+      data-zh="请选择订购数量"
+      data-ko="주문 수량을 선택하세요"
+      data-vi="Chọn số lượng quạt">
+      注文本数を選んでください
+    </label>
 
-  <!-- 手動リンク（失敗時の表示用、最初は非表示） -->
-  <div id="manual-link" style="display: none; margin-top: 10px;"
-    data-ja='フォームに進めない場合は <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">こちら</a> をクリックしてください。'
-    data-en='If you cannot access the form, please click <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">here</a>.'
-    data-zh='如果无法进入表单，请点击 <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">这里</a>。'
-    data-ko='폼에 접속할 수 없는 경우 <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">여기</a>를 클릭하세요.'
-    data-vi='Nếu không mở được form, vui lòng nhấn <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">tại đây</a>.'>
-   フォームに進めない場合は <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform" target="_blank">こちら</a> をクリックしてください。
+    <select id="copiesSelect">
+      <option value="1">1本</option>
+      <option value="2">2本</option>
+      <option value="3">3本</option>
+      <option value="4">4本</option>
+      <option value="5">5本</option>
+      <option value="6">6本</option>
+      <option value="7">7本</option>
+      <option value="8">8本</option>
+      <option value="9">9本</option>
+      <option value="10">10本</option>
+    </select>
+
+    <button id="orderBtn"
+      data-ja="注文する"
+      data-en="Place Order"
+      data-zh="提交订单"
+      data-ko="주문하기"
+      data-vi="Đặt hàng">
+      注文する
+    </button>
   </div>
 
-  <!-- LINEシェアボタン -->
-  <div class="line-it-button"
-       data-lang="ja"
-       data-type="share-a"
-       data-url="https://chc-chupea.github.io/my-uchiwa-studio/"
-       style="display: inline-block; margin-top: 20px;">
-  </div>
+  <div id="orderComplete" style="display:none; margin-top:16px; padding:16px; border-radius:16px; background:#e8f5e9; color:#1b5e20; text-align:center; font-size:18px; font-weight:700;"></div>
 
 
   <footer id="footer-text" style="font-size: 6px; color: #888; margin-top: 20px;"
@@ -356,7 +363,25 @@ Miyajima Fan Studio<br><br>
 
 </footer>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+    import { getFirestore, doc, runTransaction, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+    import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBKSYZgaSVTu-HO_lS1Tp2eFjSjMuOONNI",
+      authDomain: "my-uchiwa-queue.firebaseapp.com",
+      projectId: "my-uchiwa-queue",
+      storageBucket: "my-uchiwa-queue.firebasestorage.app",
+      messagingSenderId: "245883628081",
+      appId: "1:245883628081:web:ab7f00f01ba256ebca8310",
+      measurementId: "G-W4S3EKL9TY"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
     const saveWarningTexts = {
       ja: '⚠️ まだファイルが選ばれていません。うちわに使う画像を選んでください。',
       en: '⚠️ No file selected yet. Please upload an image.',
@@ -598,24 +623,16 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     const previewNotice = document.getElementById('previewNotice');
     const previewNoticeTexts = {
-      ja: `iPhone：画像を👆長押しして「“写真”に追加」を選んで保存してください。<br><br>
-           Android：画像を👆長押しして「画像を保存」を選択してください。<br><br>
-           保存できたら下の「注文フォームへ進む」ボタンから申込へお進みください。`,
-      en: `iPhone: Press and hold 👆 the image, then select "Add to Photos" to save.<br><br>
-           Android: Press and hold 👆 the image, then select "Save Image".<br><br>
-           After saving, proceed to the order form below.`,
-      zh: `iPhone：长按👆图片，然后选择“添加到照片”进行保存。<br><br>
-           Android：长按👆图片，然后选择“保存图片”。<br><br>
-           保存后，请点击下面的“前往订单表单”。`,
-      ko: `iPhone: 이미지를 👆 길게 눌러 "사진에 추가"를 선택하세요.<br><br>
-           Android: 이미지를 👆 길게 눌러 "이미지 저장"을 선택하세요.<br><br>
-           저장 후 아래의 "주문 양식으로 이동" 버튼을 눌러 진행하세요.`,
-      vi: `iPhone: Nhấn và giữ 👆 hình, chọn "Thêm vào Ảnh" để lưu.<br><br>
-           Android: Nhấn và giữ 👆 hình, chọn "Lưu hình ảnh".<br><br>
-           Sau khi lưu, hãy bấm nút "Đi tới Form đặt hàng" bên dưới.`
+      ja: `完成イメージを確認してください。よろしければ本数を選んで「注文する」を押してください。`,
+      en: `Please check the final image. If it looks good, choose the number of fans and press "Place Order".`,
+      zh: `请确认完成图像。确认无误后，请选择数量并点击“提交订单”。`,
+      ko: `완성 이미지를 확인하세요. 괜찮으면 수량을 선택하고 “주문하기”를 누르세요.`,
+      vi: `Vui lòng kiểm tra hình hoàn chỉnh. Nếu đồng ý, hãy chọn số lượng và nhấn “Đặt hàng”.`
     };
 
     previewNotice.innerHTML = previewNoticeTexts[currentLang] || previewNoticeTexts['ja'];
+    document.getElementById('orderArea').style.display = 'block';
+    document.getElementById('orderComplete').style.display = 'none';
 
     // スクロールして目立たせる
     previewWrapper.scrollIntoView({ behavior: 'smooth' });
@@ -748,6 +765,123 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
 
 
+
+    function getTodayKey() {
+      const now = new Date();
+      const yy = String(now.getFullYear()).slice(-2);
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      return `${yy}${mm}${dd}`;
+    }
+
+    async function issueQueueId() {
+      const dayKey = getTodayKey();
+      const counterRef = doc(db, 'counters', dayKey);
+
+      const nextNumber = await runTransaction(db, async (transaction) => {
+        const counterSnap = await transaction.get(counterRef);
+        const current = counterSnap.exists() ? (counterSnap.data().lastNumber || 0) : 0;
+        const next = current + 1;
+        transaction.set(counterRef, {
+          lastNumber: next,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        return next;
+      });
+
+      const shortId = `A${String(nextNumber).padStart(3, '0')}`;
+      return {
+        dayKey,
+        shortId,
+        queueId: `${dayKey}-${shortId}`
+      };
+    }
+
+    async function submitOrder() {
+      const orderBtn = document.getElementById('orderBtn');
+      const noticeEl = document.getElementById('notice');
+      const completeEl = document.getElementById('orderComplete');
+
+      if (!uploadedImg) {
+        noticeEl.textContent = saveWarningTexts[currentLang] || saveWarningTexts['ja'];
+        noticeEl.style.color = 'red';
+        noticeEl.style.display = 'block';
+        return;
+      }
+
+      const copies = Number(document.getElementById('copiesSelect').value || 1);
+      const template = templateSelector.value;
+
+      const submittingTexts = {
+        ja: '送信中です。画面を閉じずにお待ちください。',
+        en: 'Submitting. Please do not close this page.',
+        zh: '正在提交，请不要关闭页面。',
+        ko: '전송 중입니다. 페이지를 닫지 마세요.',
+        vi: 'Đang gửi. Vui lòng không đóng trang.'
+      };
+      const errorTexts = {
+        ja: '注文の送信に失敗しました。通信状態を確認して、もう一度お試しください。',
+        en: 'Failed to submit your order. Please check your connection and try again.',
+        zh: '订单提交失败。请检查网络后重试。',
+        ko: '주문 전송에 실패했습니다. 통신 상태를 확인하고 다시 시도해 주세요.',
+        vi: 'Không gửi được đơn hàng. Vui lòng kiểm tra kết nối và thử lại.'
+      };
+      const completeTexts = {
+        ja: (id) => `ご注文を受け付けました。<br><br>受付番号：${id}<br><br>完成までしばらくお待ちください。`,
+        en: (id) => `Your order has been received.<br><br>Order No.: ${id}<br><br>Please wait while we prepare your fan.`,
+        zh: (id) => `您的订单已受理。<br><br>受理编号：${id}<br><br>请稍候，我们正在制作。`,
+        ko: (id) => `주문이 접수되었습니다.<br><br>접수번호：${id}<br><br>완성될 때까지 잠시 기다려 주세요.`,
+        vi: (id) => `Đơn hàng đã được tiếp nhận.<br><br>Mã số: ${id}<br><br>Vui lòng chờ trong giây lát.`
+      };
+
+      try {
+        orderBtn.disabled = true;
+        orderBtn.textContent = submittingTexts[currentLang] || submittingTexts.ja;
+        noticeEl.textContent = '';
+        completeEl.style.display = 'none';
+
+        draw();
+        const issued = await issueQueueId();
+        const pngDataUrl = canvas.toDataURL('image/png');
+        const storagePath = `orders/${issued.dayKey}/${issued.shortId}.png`;
+        const storageRef = ref(storage, storagePath);
+
+        await uploadString(storageRef, pngDataUrl, 'data_url', {
+          contentType: 'image/png'
+        });
+        const imageUrl = await getDownloadURL(storageRef);
+
+        const orderRef = doc(db, 'orders', issued.queueId);
+        await setDoc(orderRef, {
+          queueId: issued.queueId,
+          shortId: issued.shortId,
+          dayKey: issued.dayKey,
+          copies,
+          template,
+          imageUrl,
+          storagePath,
+          status: 'WAIT',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          source: 'miyajima-fan-studio'
+        });
+
+        completeEl.innerHTML = (completeTexts[currentLang] || completeTexts.ja)(issued.shortId);
+        completeEl.style.display = 'block';
+        document.getElementById('orderArea').style.display = 'none';
+        completeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch (err) {
+        console.error(err);
+        noticeEl.textContent = errorTexts[currentLang] || errorTexts.ja;
+        noticeEl.style.color = 'red';
+        noticeEl.style.display = 'block';
+        orderBtn.disabled = false;
+        orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || '注文する';
+      }
+    }
+
+    document.getElementById('orderBtn').addEventListener('click', submitOrder);
+
     function setLanguage(lang) {
       currentLang = lang;
 
@@ -780,16 +914,6 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       return `uchiwa_${y}${m}${d}_${h}${slotStr}.png`;
     }
 
-    // 📌 フォームへ進むボタンクリック時の処理
-    document.getElementById('go-to-form').addEventListener('click', function () {
-        window.location.href = "https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform";
-
-        // 念のため5秒後に手動リンクを表示
-        setTimeout(() => {
-            document.getElementById('manual-link').style.display = 'block';
-        }, 5000);
-    });
-    
     window.addEventListener('load', () => {
       const userLang = navigator.language || navigator.userLanguage;
       if (userLang.startsWith('en')) setLanguage('en');
@@ -799,6 +923,8 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       else setLanguage('ja');
     });
 
+    window.setLanguage = setLanguage;
+
     // 「使い方」ボタンを押したらモーダルを表示
     document.getElementById('howToBtn').addEventListener('click', () => {
       document.getElementById('howToModal').style.display = 'flex';
@@ -806,7 +932,6 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
 </script>
 
-<script src="https://www.line-website.com/social-plugins/js/thirdparty/loader.min.js"></script>
 </body>
 
 </html>
