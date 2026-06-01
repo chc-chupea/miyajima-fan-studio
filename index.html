@@ -401,7 +401,7 @@ Miyajima Fan Studio<br><br>
           <li><b>うちわに合わせる：</b> 指で移動・拡大縮小・回転できます。</li>
           <li><b>本数を選ぶ：</b> 1つの画像で最大10本まで作れます。</li>
           <li><b>SEND：</b> 送信後は変更できません。番号が出るまで閉じないでください。</li>
-          <li><b>待つ：</b> A042のような番号と待ち時間が表示されます。</li>
+          <li><b>待つ：</b> "3"のような受付番号が表示されます。</li>
           <li><b>受け取る：</b> READYになったら、番号を見せて受取・お支払いください。</li>
         </ol>
       `,
@@ -411,7 +411,7 @@ Miyajima Fan Studio<br><br>
           <li><b>Adjust:</b> Move, zoom, and rotate with your fingers.</li>
           <li><b>Choose copies:</b> Up to 10 fans from one image.</li>
           <li><b>SEND:</b> You cannot change it after sending. Do not close the page until your number appears.</li>
-          <li><b>Wait:</b> Your number, such as A042, and wait time will appear.</li>
+          <li><b>Wait:</b> Your number, such as "3", and wait time will appear.</li>
           <li><b>Pick up:</b> When READY appears, show your number, pay, and receive your fan.</li>
         </ol>
       `,
@@ -421,7 +421,7 @@ Miyajima Fan Studio<br><br>
           <li><b>调整位置：</b> 可用手指移动、放大缩小、旋转。</li>
           <li><b>选择数量：</b> 同一张图片最多可制作10把团扇。</li>
           <li><b>SEND：</b> 发送后不能更改。请在号码出现前不要关闭页面。</li>
-          <li><b>等待：</b> 会显示A042等号码和等待时间。</li>
+          <li><b>等待：</b> 会显示"3"等号码和等待时间。</li>
           <li><b>领取：</b> 显示READY后，请出示号码，付款并领取。</li>
         </ol>
       `,
@@ -431,7 +431,7 @@ Miyajima Fan Studio<br><br>
           <li><b>조정:</b> 손가락으로 이동, 확대/축소, 회전할 수 있습니다.</li>
           <li><b>수량 선택:</b> 한 이미지로 최대 10개까지 만들 수 있습니다.</li>
           <li><b>SEND:</b> 전송 후에는 변경할 수 없습니다. 번호가 나올 때까지 페이지를 닫지 마세요.</li>
-          <li><b>대기:</b> A042 같은 번호와 대기 시간이 표시됩니다.</li>
+          <li><b>대기:</b> "3" 같은 번호와 대기 시간이 표시됩니다.</li>
           <li><b>수령:</b> READY가 표시되면 번호를 보여주고 결제 후 받아가세요.</li>
         </ol>
       `,
@@ -441,7 +441,7 @@ Miyajima Fan Studio<br><br>
           <li><b>Chỉnh ảnh:</b> Dùng ngón tay để di chuyển, phóng to/thu nhỏ và xoay.</li>
           <li><b>Chọn số lượng:</b> Tối đa 10 quạt cho một ảnh.</li>
           <li><b>SEND:</b> Sau khi gửi sẽ không thể chỉnh sửa. Đừng đóng trang cho đến khi số của bạn hiện ra.</li>
-          <li><b>Chờ:</b> Số như A042 và thời gian chờ sẽ được hiển thị.</li>
+          <li><b>Chờ:</b> Số như "3" và thời gian chờ sẽ được hiển thị.</li>
           <li><b>Nhận quạt:</b> Khi hiện READY, hãy đưa số, thanh toán và nhận quạt.</li>
         </ol>
       `
@@ -903,11 +903,11 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       }
 
       const submittingTexts = {
-        ja: '送信中です。画面を閉じずにお待ちください。',
-        en: 'Submitting. Please do not close this page.',
-        zh: '正在提交，请不要关闭页面。',
-        ko: '전송 중입니다. 페이지를 닫지 마세요.',
-        vi: 'Đang gửi. Vui lòng không đóng trang.'
+        ja: '送信中です…<br>画面を閉じないでください',
+        en: 'Submitting…<br>Please do not close this page',
+        zh: '正在提交…<br>请不要关闭页面',
+        ko: '전송 중입니다…<br>페이지를 닫지 마세요',
+        vi: 'Đang gửi…<br>Vui lòng không đóng trang'
       };
       const errorTexts = {
         ja: '注文の送信に失敗しました。通信状態を確認して、もう一度お試しください。',
@@ -917,15 +917,47 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         vi: 'Không gửi được đơn hàng. Vui lòng kiểm tra kết nối và thử lại.'
       };
       const completeTexts = {
-        ja: (id) => `ご注文を受け付けました。<br><br>受付番号：${id}<br><br>完成までしばらくお待ちください。`,
-        en: (id) => `Your order has been received.<br><br>Order No.: ${id}<br><br>Please wait while we prepare your fan.`,
-        zh: (id) => `您的订单已受理。<br><br>受理编号：${id}<br><br>请稍候，我们正在制作。`,
-        ko: (id) => `주문이 접수되었습니다.<br><br>접수번호：${id}<br><br>완성될 때까지 잠시 기다려 주세요.`,
-        vi: (id) => `Đơn hàng đã được tiếp nhận.<br><br>Mã số: ${id}<br><br>Vui lòng chờ trong giây lát.`
+        ja: (id) => `ご注文を受け付けました。<br><br>
+      受付番号：${id}<br><br>
+      完成までしばらくお待ちください。<br>
+      この番号をスクリーンショットで保存してください。`,
+
+        en: (id) => `Your order has been received.<br><br>
+      Order No.: ${id}<br><br>
+      Please wait while we prepare your fan.<br>
+      Please save this number by taking a screenshot.`,
+
+        zh: (id) => `您的订单已受理。<br><br>
+      受理编号：${id}<br><br>
+      请稍候，我们正在制作。<br>
+      请截图保存此编号。`,
+
+        ko: (id) => `주문이 접수되었습니다.<br><br>
+      접수번호：${id}<br><br>
+      완성될 때까지 잠시 기다려 주세요.<br>
+      이 번호를 스크린샷으로 저장해 주세요.`,
+
+        vi: (id) => `Đơn hàng đã được tiếp nhận.<br><br>
+      Mã số: ${id}<br><br>
+      Vui lòng chờ trong giây lát.<br>
+      Hãy chụp màn hình và lưu lại mã số này.`
+      };
+
+      const statusButtonTexts = {
+        ja: "状況を確認する",
+        en: "Check Status",
+        zh: "查看状态",
+        ko: "상태 확인",
+        vi: "Kiểm tra trạng thái"
       };
 
       try {
+
+        document.getElementById('sendingOverlay').innerHTML =
+          (submittingTexts[currentLang] || submittingTexts.ja);
+
         document.getElementById('sendingOverlay').style.display = 'block';
+
         orderBtn.disabled = true;
         orderBtn.textContent = submittingTexts[currentLang] || submittingTexts.ja;
         noticeEl.textContent = '';
@@ -933,6 +965,9 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
         draw();
         const issued = await issueQueueId();
+        const displayNo = Number(
+          issued.shortId.replace('A', '')
+        );
         const pngDataUrl = canvas.toDataURL('image/png');
         const storagePath = `orders/${issued.dayKey}/${issued.shortId}.png`;
         const storageRef = ref(storage, storagePath);
@@ -946,6 +981,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         await setDoc(orderRef, {
           queueId: issued.queueId,
           shortId: issued.shortId,
+          displayNo,
           dayKey: issued.dayKey,
           copies,
           template,
@@ -958,7 +994,21 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         });
         
         document.getElementById('sendingOverlay').style.display = 'none';
-        completeEl.innerHTML = (completeTexts[currentLang] || completeTexts.ja)(issued.shortId);
+        completeEl.innerHTML = (completeTexts[currentLang] || completeTexts.ja)(displayNo);
+        completeEl.innerHTML += `
+        <br><br>
+        <a href="status.html?id=${displayNo}"
+           style="
+             display:inline-block;
+             padding:10px 20px;
+             background:#2196f3;
+             color:white;
+             text-decoration:none;
+             border-radius:20px;
+             margin-top:10px;">
+          ${statusButtonTexts[currentLang] || statusButtonTexts.ja}
+        </a>`;
+
         completeEl.style.display = 'block';
         document.getElementById('orderArea').style.display = 'none';
         completeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
