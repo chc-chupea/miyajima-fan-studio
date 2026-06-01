@@ -623,11 +623,46 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     const previewNotice = document.getElementById('previewNotice');
     const previewNoticeTexts = {
-      ja: `完成イメージを確認してください。よろしければ本数を選んで「注文する」を押してください。`,
-      en: `Please check the final image. If it looks good, choose the number of fans and press "Place Order".`,
-      zh: `请确认完成图像。确认无误后，请选择数量并点击“提交订单”。`,
-      ko: `완성 이미지를 확인하세요. 괜찮으면 수량을 선택하고 “주문하기”를 누르세요.`,
-      vi: `Vui lòng kiểm tra hình hoàn chỉnh. Nếu đồng ý, hãy chọn số lượng và nhấn “Đặt hàng”.`
+      ja: `完成イメージを確認してください。
+
+    修正したい場合は、
+    上の編集スペースに戻って編集してください。
+
+    問題なければ本数を選んで
+    「注文する」を押してください。`,
+
+      en: `Please check the final image.
+
+    If you would like to make changes,
+    return to the editing area above.
+
+    If everything looks good,
+    choose the number of fans and press "Place Order".`,
+
+      zh: `请确认完成图像。
+
+    如需修改，
+    请返回上方的编辑区域进行编辑。
+
+    确认无误后，
+    请选择数量并点击“提交订单”。`,
+
+      ko: `완성 이미지를 확인하세요.
+
+    수정하고 싶다면
+    위의 편집 공간으로 돌아가 편집해 주세요.
+
+    문제가 없다면
+    수량을 선택한 후
+    "주문하기"를 눌러 주세요.`,
+
+      vi: `Vui lòng kiểm tra hình hoàn chỉnh.
+
+    Nếu muốn chỉnh sửa,
+    hãy quay lại khu vực chỉnh sửa phía trên.
+
+    Nếu mọi thứ đều ổn,
+    hãy chọn số lượng và nhấn "Đặt hàng".`
     };
 
     previewNotice.innerHTML = previewNoticeTexts[currentLang] || previewNoticeTexts['ja'];
