@@ -839,7 +839,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         return next;
       });
 
-      const shortId = `A${String(nextNumber).padStart(3, '0')}`;
+      const shortId = String(nextNumber).padStart(4,'0');
       return {
         dayKey,
         shortId,
@@ -1015,9 +1015,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
         draw();
         const issued = await issueQueueId();
-        const displayNo = Number(
-          issued.shortId.replace('A', '')
-        );
+        const displayNo = Number(issued.shortId);
         const printLabel = createPrintLabel(issued, displayNo);
 
         // 印刷・受け渡し確認用の番号を、アップロードするPNGだけに焼き込み
