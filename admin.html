@@ -86,7 +86,6 @@
     collection,
     query,
     where,
-    orderBy,
     onSnapshot,
     doc,
     updateDoc,
@@ -276,8 +275,7 @@
 
     const q = query(
       collection(db, "orders"),
-      where("dayKey", "==", dayKey),
-      orderBy("createdAt", "desc")
+      where("dayKey", "==", dayKey)
     );
 
     onSnapshot(q, snapshot => {
@@ -285,6 +283,12 @@
         id: docSnap.id,
         data: docSnap.data()
       }));
+
+      orders.sort((a, b) => {
+        const aTime = a.data.createdAt?.toMillis ? a.data.createdAt.toMillis() : 0;
+        const bTime = b.data.createdAt?.toMillis ? b.data.createdAt.toMillis() : 0;
+        return bTime - aTime;
+      });
 
       renderOrders();
     }, error => {
