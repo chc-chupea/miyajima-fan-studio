@@ -287,12 +287,12 @@
   </button>
 
   <button id="saveBtn"
-    data-ja="決定 → プレビュー"
-    data-en="Confirm → Preview"
-    data-zh="确认 → 预览"
-    data-ko="확인 → 미리보기"
-    data-vi="Xác nhận → Xem trước">
-    決定 → プレビュー
+    data-ja="完成イメージを確認する"
+    data-en="Check Final Image"
+    data-zh="确认完成图像"
+    data-ko="완성 이미지 확인"
+    data-vi="Kiểm tra hình hoàn chỉnh">
+    完成イメージを確認する
   </button>
   <p id="notice" style="font-size:14px; color:red;"></p>
 
@@ -325,6 +325,13 @@
       data-vi="Chọn số lượng quạt">
       注文本数を選んでください
     </label>
+
+    <p id="copiesHint"
+       style="
+         font-size:13px;
+         color:#666;
+         margin:4px 0 10px;">
+    </p>
 
     <select id="copiesSelect">
       <option value="1">1本</option>
@@ -400,6 +407,14 @@ Miyajima Fan Studio<br><br>
       vi: '⚠️ Chưa chọn tệp. Vui lòng tải ảnh lên.',
     };
     
+
+    const copiesHintTexts = {
+      ja: "旅の思い出に、ご家族・ご友人の分もまとめて注文できます。",
+      en: "You can order fans for your family and friends together.",
+      zh: "也可以为家人和朋友一起订购。",
+      ko: "가족·친구의 부채도 함께 주문할 수 있습니다.",
+      vi: "Bạn có thể đặt thêm cho gia đình và bạn bè."
+    };
 
 
     // 使い方モーダル本文：HTMLに長文を書かず、ここで管理する
@@ -640,11 +655,13 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     const previewNoticeTexts = {
       ja: `完成イメージを確認してください。
 
-    修正したい場合は、
-    上の編集スペースに戻って編集してください。
+    写真を変更したい場合は、
+    上の「②デザイン編集スペース」に戻ってください。
 
     問題なければ本数を選んで
-    「注文する」を押してください。`,
+    「注文する」を押してください。
+
+    ※注文後は内容を変更できません。`,
 
       en: `Please check the final image.
 
@@ -1079,6 +1096,29 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         vi: "Tạo lại với thiết kế mới"
       };
 
+      const completeGuideTexts = {
+        ja: {
+          status: "受け取りまでの状況はこちら",
+          extra: "追加で作る場合はこちら"
+        },
+        en: {
+          status: "Check your pickup status here",
+          extra: "Create another fan"
+        },
+        zh: {
+          status: "请在这里确认领取状态",
+          extra: "如需追加制作，请选择"
+        },
+        ko: {
+          status: "수령 상태는 여기에서 확인하세요",
+          extra: "추가로 만들 경우 선택해 주세요"
+        },
+        vi: {
+          status: "Kiểm tra trạng thái nhận quạt tại đây",
+          extra: "Nếu muốn làm thêm, hãy chọn bên dưới"
+        }
+      };
+
       try {
 
         document.getElementById('sendingOverlay').innerHTML =
@@ -1131,8 +1171,20 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         
         document.getElementById('sendingOverlay').style.display = 'none';
         completeEl.innerHTML = (completeTexts[currentLang] || completeTexts.ja)(displayNo);
+        const guideTexts =
+          completeGuideTexts[currentLang] || completeGuideTexts.ja;
+
         completeEl.innerHTML += `
         <br><br>
+
+        <div style="
+          font-size:14px;
+          color:#333;
+          font-weight:700;
+          margin-bottom:6px;">
+          ${guideTexts.status}
+        </div>
+
         <a href="status.html?id=${displayNo}"
            style="
              display:inline-block;
@@ -1143,13 +1195,22 @@ document.getElementById('saveBtn').addEventListener('click', () => {
              color:white;
              text-decoration:none;
              border-radius:20px;
-             margin-top:10px;">
+             margin-top:4px;">
           ${statusButtonTexts[currentLang] || statusButtonTexts.ja}
         </a>
 
+        <div style="
+          font-size:14px;
+          color:#333;
+          font-weight:700;
+          margin-top:18px;
+          margin-bottom:6px;">
+          ${guideTexts.extra}
+        </div>
+
         <button id="sameDesignBtn"
           style="
-            margin-top:12px;
+            margin-top:4px;
             background:#4caf50;
             color:white;">
           ${sameDesignTexts[currentLang] || sameDesignTexts.ja}
@@ -1203,6 +1264,12 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const howToBody = document.getElementById('howToBody');
       if (howToBody && howToTexts[lang]) {
         howToBody.innerHTML = howToTexts[lang];
+      }
+
+      const copiesHint = document.getElementById('copiesHint');
+      if (copiesHint) {
+        copiesHint.textContent =
+          copiesHintTexts[lang] || copiesHintTexts.ja;
       }
     }
     
