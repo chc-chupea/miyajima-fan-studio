@@ -172,28 +172,37 @@
     const totalCount = list.length;
     let totalSales = 0;
     let generalCount = 0;
+    let generalCopies = 0;
     let generalSales = 0;
     let studentCount = 0;
+    let studentCopies = 0;
     let studentSales = 0;
 
     list.forEach(item => {
       const data = item.data;
       const total = getTotalPrice(data);
       totalSales += total;
+      
+      const copies = Number(data.copies || 1);
 
       if (data.priceType === "student") {
         studentCount += 1;
+        studentCopies += copies;
         studentSales += total;
       } else {
         generalCount += 1;
+        generalCopies += copies;
         generalSales += total;
       }
     });
 
     document.getElementById("summaryCount").textContent = `本日受付：${totalCount}件`;
     document.getElementById("summarySales").textContent = `売上合計：${yen(totalSales)}`;
-    document.getElementById("summaryGeneral").textContent = `一般：${generalCount}件 / ${yen(generalSales)}`;
-    document.getElementById("summaryStudent").textContent = `学割：${studentCount}件 / ${yen(studentSales)}`;
+    document.getElementById("summaryGeneral").textContent =
+      `一般：${generalCount}件 / ${generalCopies}本 / ${yen(generalSales)}`;
+
+    document.getElementById("summaryStudent").textContent =
+      `学割：${studentCount}件 / ${studentCopies}本 / ${yen(studentSales)}`;
   }
 
   function renderOrders() {
