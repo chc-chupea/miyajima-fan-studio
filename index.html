@@ -317,7 +317,33 @@
 
   <!-- 宮島版：Firebase注文エリア -->
   <div id="orderArea" style="display:none; margin-top:16px; text-align:left;">
-    <label for="copiesSelect"
+    
+  <div id="priceTypeArea" style="margin:12px 0;">
+    <label style="font-weight:bold;"
+      data-ja="料金区分を選んでください"
+      data-en="Choose price type"
+      data-zh="请选择价格类型"
+      data-ko="요금 구분을 선택하세요"
+      data-vi="Chọn loại giá">
+      料金区分を選んでください
+    </label>
+
+    <label style="display:block;">
+      <input type="radio" name="priceType" value="normal" checked>
+      一般 800円／本
+    </label>
+
+    <label style="display:block;">
+      <input type="radio" name="priceType" value="student">
+      学割 500円／本
+    </label>
+
+    <p style="font-size:12px;color:#666;margin-top:4px;">
+      ※学割は学生証の提示、または制服着用で対象です。
+    </p>
+  </div>
+
+  <label for="copiesSelect"
       data-ja="注文本数を選んでください"
       data-en="Choose number of fans"
       data-zh="请选择订购数量"
