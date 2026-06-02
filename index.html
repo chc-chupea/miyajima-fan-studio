@@ -276,6 +276,16 @@
      data-vi="※ Dùng một ngón tay để di chuyển ảnh. Chụm để phóng to/thu nhỏ, hai ngón tay để xoay."
      style="font-size: 12px; color: #666; margin-bottom: 10px;"></p>
    
+  <button id="reselectPhotoBtn"
+    data-ja="写真を選び直す"
+    data-en="Choose Another Photo"
+    data-zh="重新选择照片"
+    data-ko="사진 다시 선택"
+    data-vi="Chọn lại ảnh"
+    style="background:#90caf9; color:#0d47a1; box-shadow:none;">
+    写真を選び直す
+  </button>
+
   <button id="saveBtn"
     data-ja="決定 → プレビュー"
     data-en="Confirm → Preview"
@@ -506,6 +516,11 @@ Miyajima Fan Studio<br><br>
         uploadedImg.src = event.target.result;
       };
       reader.readAsDataURL(e.target.files[0]);
+    });
+
+
+    document.getElementById('reselectPhotoBtn').addEventListener('click', () => {
+      document.getElementById('imageLoader').click();
     });
 
 
