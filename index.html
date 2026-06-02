@@ -1054,52 +1054,83 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const templateName =
         document.querySelector('#templateSelector option:checked').textContent;
 
+      const priceType =
+        document.querySelector('input[name="priceType"]:checked')?.value || 'general';
+
+      const unitPrice = priceType === 'student' ? 500 : 800;
+      const totalPrice = unitPrice * copies;
+
+      const priceTypeLabelTexts = {
+        ja: priceType === 'student' ? '学割' : '一般',
+        en: priceType === 'student' ? 'Student' : 'General',
+        zh: priceType === 'student' ? '学生优惠' : '普通价格',
+        ko: priceType === 'student' ? '학생 할인' : '일반',
+        vi: priceType === 'student' ? 'Ưu đãi học sinh' : 'Thông thường'
+      };
+
+      const priceTypeLabel =
+        priceTypeLabelTexts[currentLang] || priceTypeLabelTexts.ja;
+
       const confirmText = {
         ja:
-      `ご注文内容をご確認ください
+        `ご注文内容をご確認ください
 
-      デザイン：${templateName}
-      注文数：${copies}本
+        デザイン：${templateName}
+        料金区分：${priceTypeLabel}
+        注文数：${copies}本
+        合計金額：${totalPrice.toLocaleString()}円
 
-      送信後は変更できません。
+        送信後は変更できません。
 
-      注文しますか？`,
+        注文しますか？`,
+
         en:
-      `Please confirm your order
+        `Please confirm your order
 
-      Design: ${templateName}
-      Quantity: ${copies}
+        Design: ${templateName}
+        Price type: ${priceTypeLabel}
+        Quantity: ${copies}
+        Total: ¥${totalPrice.toLocaleString()}
 
-      This cannot be changed after submission.
+        This cannot be changed after submission.
 
-      Submit order?`,
+        Submit order?`,
+
         zh:
-      `请确认订单内容
+        `请确认订单内容
 
-      设计：${templateName}
-      数量：${copies}
+        设计：${templateName}
+        价格类型：${priceTypeLabel}
+        数量：${copies}
+        总计：${totalPrice.toLocaleString()}日元
 
-      发送后无法修改。
+        发送后无法修改。
 
-      是否提交？`,
+        是否提交？`,
+
         ko:
-      `주문 내용을 확인해 주세요
+        `주문 내용을 확인해 주세요
 
-      디자인：${templateName}
-      수량：${copies}
+        디자인：${templateName}
+        요금 구분：${priceTypeLabel}
+        수량：${copies}
+        합계：${totalPrice.toLocaleString()}엔
 
-      전송 후에는 변경할 수 없습니다.
+        전송 후에는 변경할 수 없습니다.
 
-      주문하시겠습니까？`,
+        주문하시겠습니까？`,
+
         vi:
-      `Vui lòng xác nhận đơn hàng
+        `Vui lòng xác nhận đơn hàng
 
-      Mẫu: ${templateName}
-      Số lượng: ${copies}
+        Mẫu: ${templateName}
+        Loại giá: ${priceTypeLabel}
+        Số lượng: ${copies}
+        Tổng cộng: ${totalPrice.toLocaleString()} yên
 
-      Sau khi gửi sẽ không thể thay đổi.
+        Sau khi gửi sẽ không thể thay đổi.
 
-      Gửi đơn hàng?`
+        Gửi đơn hàng?`
       };
 
       if (!confirm(confirmText[currentLang] || confirmText.ja)) {
