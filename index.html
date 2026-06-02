@@ -863,10 +863,14 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const paddingX = 9;
       const paddingY = 5;
 
-      // うちわ用紙の「内側・左端・下端」に寄せる
-      // ※テンプレの仕上がり線に合わせて微調整する場合は、この2つを調整
-      const marginLeft = 118;
-      const marginBottom = 150;
+      // A4横サイズ基準：
+      // 左下端から 横7.0cm・高さ2.5cm の位置に配置
+      // canvas: 3508px × 2480px = A4横 29.7cm × 21.0cm
+      const pxPerCmX = canvas.width / 29.7;
+      const pxPerCmY = canvas.height / 21.0;
+
+      const labelLeftCm = 7.0;
+      const labelBottomCm = 2.5;
 
       ctx.font = `700 ${fontSize}px Arial, sans-serif`;
       ctx.textBaseline = 'middle';
@@ -875,8 +879,8 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const boxWidth = textWidth + paddingX * 2;
       const boxHeight = fontSize + paddingY * 2;
 
-      const x = marginLeft;
-      const y = canvas.height - boxHeight - marginBottom;
+      const x = labelLeftCm * pxPerCmX;
+      const y = canvas.height - (labelBottomCm * pxPerCmY) - boxHeight;
 
       // 背景に左右されず読めるように白い小ラベル
       ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
