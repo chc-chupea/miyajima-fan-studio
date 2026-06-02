@@ -532,6 +532,8 @@ Miyajima Fan Studio<br><br>
     };
 
     let currentLang = 'ja'; // デフォルトは日本語
+    let lastCompleteDisplayNo = null;
+
     
     const canvas = document.getElementById('mainCanvas');
     const ctx = canvas.getContext('2d');
@@ -1006,6 +1008,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       document.getElementById('orderComplete').style.display = 'none';
       document.getElementById('orderArea').style.display = 'none';
       document.getElementById('copiesSelect').value = '1';
+      lastCompleteDisplayNo = null;
       document.getElementById('notice').textContent = '';
       document.getElementById('notice').style.display = 'none';
 
@@ -1042,6 +1045,126 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       document.getElementById('totalPriceBox').textContent =
         totalPriceTexts[currentLang] || totalPriceTexts.ja;
+    }
+
+    function renderCompleteMessage(displayNo) {
+      const completeEl = document.getElementById('orderComplete');
+
+      const completeTexts = {
+        ja: (id) => `ご注文を受け付けました。<br><br>受付番号：${id}<br><br>完成までしばらくお待ちください。<br>この番号をスクリーンショットで保存してください。`,
+        en: (id) => `Your order has been received.<br><br>Order No.: ${id}<br><br>Please wait while we prepare your fan.<br>Please save this number by taking a screenshot.`,
+        zh: (id) => `您的订单已受理。<br><br>受理编号：${id}<br><br>请稍候，我们正在制作。<br>请截图保存此编号。`,
+        ko: (id) => `주문이 접수되었습니다.<br><br>접수번호：${id}<br><br>완성될 때까지 잠시 기다려 주세요.<br>이 번호를 스크린샷으로 저장해 주세요.`,
+        vi: (id) => `Đơn hàng đã được tiếp nhận.<br><br>Mã số: ${id}<br><br>Vui lòng chờ trong giây lát.<br>Hãy chụp màn hình và lưu lại mã số này.`
+      };
+
+      const statusButtonTexts = {
+        ja: "状況を確認する",
+        en: "Check Status",
+        zh: "查看状态",
+        ko: "상태 확인",
+        vi: "Kiểm tra trạng thái"
+      };
+
+      const sameDesignTexts = {
+        ja: "同じデザインで追加注文",
+        en: "Order More of This Design",
+        zh: "追加订购相同设计",
+        ko: "같은 디자인 추가 주문",
+        vi: "Đặt thêm cùng thiết kế"
+      };
+
+      const anotherOrderTexts = {
+        ja: "新しいデザインでもう1度作る",
+        en: "Create a New Design",
+        zh: "重新制作新设计",
+        ko: "새로운 디자인으로 다시 만들기",
+        vi: "Tạo lại với thiết kế mới"
+      };
+
+      const completeGuideTexts = {
+        ja: {
+          status: "受け取りまでの状況はこちら",
+          extra: "追加で作る場合はこちら"
+        },
+        en: {
+          status: "Check your pickup status here",
+          extra: "Create another fan"
+        },
+        zh: {
+          status: "请在这里确认领取状态",
+          extra: "如需追加制作，请选择"
+        },
+        ko: {
+          status: "수령 상태는 여기에서 확인하세요",
+          extra: "추가로 만들 경우 선택해 주세요"
+        },
+        vi: {
+          status: "Kiểm tra trạng thái nhận quạt tại đây",
+          extra: "Nếu muốn làm thêm, hãy chọn bên dưới"
+        }
+      };
+
+      const guideTexts =
+        completeGuideTexts[currentLang] || completeGuideTexts.ja;
+
+      completeEl.innerHTML = `
+        ${(completeTexts[currentLang] || completeTexts.ja)(displayNo)}
+
+        <br><br>
+
+        <div style="
+          font-size:14px;
+          color:#333;
+          font-weight:700;
+          margin-bottom:6px;">
+          ${guideTexts.status}
+        </div>
+
+        <a href="status.html?id=${displayNo}"
+           style="
+             display:inline-block;
+             width:100%;
+             box-sizing:border-box;
+             padding:10px 20px;
+             background:#2196f3;
+             color:white;
+             text-decoration:none;
+             border-radius:20px;
+             margin-top:4px;">
+          ${statusButtonTexts[currentLang] || statusButtonTexts.ja}
+        </a>
+
+        <div style="
+          font-size:14px;
+          color:#333;
+          font-weight:700;
+          margin-top:18px;
+          margin-bottom:6px;">
+          ${guideTexts.extra}
+        </div>
+
+        <button id="sameDesignBtn"
+          style="
+            margin-top:4px;
+            background:#4caf50;
+            color:white;">
+          ${sameDesignTexts[currentLang] || sameDesignTexts.ja}
+        </button>
+
+        <button id="anotherOrderBtn"
+          style="
+            margin-top:8px;
+            background:#ff9800;
+            color:white;">
+          ${anotherOrderTexts[currentLang] || anotherOrderTexts.ja}
+        </button>`;
+
+      document.getElementById('sameDesignBtn')
+        ?.addEventListener('click', resetForSameDesignOrder);
+
+      document.getElementById('anotherOrderBtn')
+        ?.addEventListener('click', resetForNewDesignOrder);
     }
 
     async function submitOrder() {
@@ -1162,79 +1285,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         ko: '주문 전송에 실패했습니다. 통신 상태를 확인하고 다시 시도해 주세요.',
         vi: 'Không gửi được đơn hàng. Vui lòng kiểm tra kết nối và thử lại.'
       };
-      const completeTexts = {
-        ja: (id) => `ご注文を受け付けました。<br><br>
-      受付番号：${id}<br><br>
-      完成までしばらくお待ちください。<br>
-      この番号をスクリーンショットで保存してください。`,
 
-        en: (id) => `Your order has been received.<br><br>
-      Order No.: ${id}<br><br>
-      Please wait while we prepare your fan.<br>
-      Please save this number by taking a screenshot.`,
-
-        zh: (id) => `您的订单已受理。<br><br>
-      受理编号：${id}<br><br>
-      请稍候，我们正在制作。<br>
-      请截图保存此编号。`,
-
-        ko: (id) => `주문이 접수되었습니다.<br><br>
-      접수번호：${id}<br><br>
-      완성될 때까지 잠시 기다려 주세요.<br>
-      이 번호를 스크린샷으로 저장해 주세요.`,
-
-        vi: (id) => `Đơn hàng đã được tiếp nhận.<br><br>
-      Mã số: ${id}<br><br>
-      Vui lòng chờ trong giây lát.<br>
-      Hãy chụp màn hình và lưu lại mã số này.`
-      };
-
-      const statusButtonTexts = {
-        ja: "状況を確認する",
-        en: "Check Status",
-        zh: "查看状态",
-        ko: "상태 확인",
-        vi: "Kiểm tra trạng thái"
-      };
-
-      const sameDesignTexts = {
-        ja: "同じデザインで追加注文",
-        en: "Order More of This Design",
-        zh: "追加订购相同设计",
-        ko: "같은 디자인 추가 주문",
-        vi: "Đặt thêm cùng thiết kế"
-      };
-
-      const anotherOrderTexts = {
-        ja: "新しいデザインでもう1度作る",
-        en: "Create a New Design",
-        zh: "重新制作新设计",
-        ko: "새로운 디자인으로 다시 만들기",
-        vi: "Tạo lại với thiết kế mới"
-      };
-
-      const completeGuideTexts = {
-        ja: {
-          status: "受け取りまでの状況はこちら",
-          extra: "追加で作る場合はこちら"
-        },
-        en: {
-          status: "Check your pickup status here",
-          extra: "Create another fan"
-        },
-        zh: {
-          status: "请在这里确认领取状态",
-          extra: "如需追加制作，请选择"
-        },
-        ko: {
-          status: "수령 상태는 여기에서 확인하세요",
-          extra: "추가로 만들 경우 선택해 주세요"
-        },
-        vi: {
-          status: "Kiểm tra trạng thái nhận quạt tại đây",
-          extra: "Nếu muốn làm thêm, hãy chọn bên dưới"
-        }
-      };
 
       try {
 
@@ -1292,65 +1343,10 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         });
         
         document.getElementById('sendingOverlay').style.display = 'none';
-        completeEl.innerHTML = (completeTexts[currentLang] || completeTexts.ja)(displayNo);
-        const guideTexts =
-          completeGuideTexts[currentLang] || completeGuideTexts.ja;
+        lastCompleteDisplayNo = displayNo;
+        renderCompleteMessage(displayNo);
 
-        completeEl.innerHTML += `
-        <br><br>
 
-        <div style="
-          font-size:14px;
-          color:#333;
-          font-weight:700;
-          margin-bottom:6px;">
-          ${guideTexts.status}
-        </div>
-
-        <a href="status.html?id=${displayNo}"
-           style="
-             display:inline-block;
-             width:100%;
-             box-sizing:border-box;
-             padding:10px 20px;
-             background:#2196f3;
-             color:white;
-             text-decoration:none;
-             border-radius:20px;
-             margin-top:4px;">
-          ${statusButtonTexts[currentLang] || statusButtonTexts.ja}
-        </a>
-
-        <div style="
-          font-size:14px;
-          color:#333;
-          font-weight:700;
-          margin-top:18px;
-          margin-bottom:6px;">
-          ${guideTexts.extra}
-        </div>
-
-        <button id="sameDesignBtn"
-          style="
-            margin-top:4px;
-            background:#4caf50;
-            color:white;">
-          ${sameDesignTexts[currentLang] || sameDesignTexts.ja}
-        </button>
-
-        <button id="anotherOrderBtn"
-          style="
-            margin-top:8px;
-            background:#ff9800;
-            color:white;">
-          ${anotherOrderTexts[currentLang] || anotherOrderTexts.ja}
-        </button>`;
-
-        document.getElementById('sameDesignBtn')
-          ?.addEventListener('click', resetForSameDesignOrder);
-
-        document.getElementById('anotherOrderBtn')
-          ?.addEventListener('click', resetForNewDesignOrder);
 
         completeEl.style.display = 'block';
         document.getElementById('orderArea').style.display = 'none';
@@ -1396,9 +1392,15 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       if (typeof updateTotalPrice === 'function') {
         updateTotalPrice();
+      }
 
-    }
-    
+      if (lastCompleteDisplayNo !== null) {
+        const completeEl = document.getElementById('orderComplete');
+
+        if (completeEl && completeEl.style.display !== 'none') {
+          renderCompleteMessage(lastCompleteDisplayNo);
+        }
+      }
     } // ← setLanguage終了
 
     function getTimestampBasedFileName() {
