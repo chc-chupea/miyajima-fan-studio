@@ -215,19 +215,20 @@
   }
 
   function getPriceTypeText(priceType) {
+
     if (priceType === "student") {
-      if (currentLang === "en") return "Student";
-      if (currentLang === "zh") return "学生优惠";
-      if (currentLang === "ko") return "학생 할인";
-      if (currentLang === "vi") return "Ưu đãi học sinh";
-      return "学割";
+      if (currentLang === "en") return "Student (¥500/fan)";
+      if (currentLang === "zh") return "学生优惠（500日元/把）";
+      if (currentLang === "ko") return "학생 할인 (500엔/개)";
+      if (currentLang === "vi") return "Ưu đãi học sinh (500 yên/chiếc)";
+      return "学割（500円／本）";
     }
 
-    if (currentLang === "en") return "General";
-    if (currentLang === "zh") return "普通价格";
-    if (currentLang === "ko") return "일반";
-    if (currentLang === "vi") return "Thông thường";
-    return "一般";
+    if (currentLang === "en") return "General (¥800/fan)";
+    if (currentLang === "zh") return "普通价格（800日元/把）";
+    if (currentLang === "ko") return "일반 (800엔/개)";
+    if (currentLang === "vi") return "Thông thường (800 yên/chiếc)";
+    return "一般（800円／本）";
   }
 
   function showStatus(data) {
