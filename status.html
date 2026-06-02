@@ -24,6 +24,23 @@
     .wait { background:#fffde7; color:#5d4a00; border-radius:18px; padding:16px; }
     .printing { background:#e3f2fd; color:#0d47a1; border-radius:18px; padding:16px; }
     .picked { background:#f3e5f5; color:#4a148c; border-radius:18px; padding:16px; }
+    .order-image-wrap { margin:15px 0; }
+    .order-image {
+      max-width:100%;
+      border-radius:12px;
+      border:1px solid #ccc;
+      box-shadow:0 2px 8px rgba(0,0,0,.15);
+      background:#fff;
+    }
+    .copies-box {
+      display:inline-block;
+      margin:10px 0 14px;
+      padding:8px 16px;
+      border-radius:14px;
+      background:rgba(255,255,255,.75);
+      font-weight:700;
+      font-size:18px;
+    }
     footer { text-align:center; font-size:11px; color:#888; margin-top:24px; }
   </style>
 </head>
@@ -87,7 +104,8 @@
       statusPrintingTitle: "🖨 作成中", statusPrintingBody: "ただいまうちわを作成しています。<br>宮島観光をお楽しみください。",
       statusReadyTitle: "✅ 受け取り可能", statusReadyBody: "うちわの準備ができました。<br>店舗へお越しください。",
       statusPickedTitle: "🎉 受け渡し済み", statusPickedBody: "ご利用ありがとうございました。",
-      statusClosedTitle: "受付終了", statusClosedBody: "この注文は受付終了になっています。", unknown: "現在の状況を確認できません。"
+      statusClosedTitle: "受付終了", statusClosedBody: "この注文は受付終了になっています。", unknown: "現在の状況を確認できません。",
+      copiesLabel: "注文本数"
     },
     en: {
       title: "Check Order Status", label: "Enter your reception number", button: "Check Status",
@@ -99,7 +117,8 @@
       statusPrintingTitle: "🖨 In Production", statusPrintingBody: "We are making your fan now.<br>Please enjoy sightseeing in Miyajima.",
       statusReadyTitle: "✅ Ready for Pickup", statusReadyBody: "Your fan is ready.<br>Please come to the shop.",
       statusPickedTitle: "🎉 Picked Up", statusPickedBody: "Thank you for your order.",
-      statusClosedTitle: "Closed", statusClosedBody: "This order has been closed.", unknown: "Unable to check the current status."
+      statusClosedTitle: "Closed", statusClosedBody: "This order has been closed.", unknown: "Unable to check the current status.",
+      copiesLabel: "Quantity"
     },
     zh: {
       title: "订单状态确认", label: "请输入受理编号", button: "查看状态",
@@ -111,7 +130,8 @@
       statusPrintingTitle: "🖨 制作中", statusPrintingBody: "我们正在制作您的团扇。<br>请尽情享受宫岛观光。",
       statusReadyTitle: "✅ 可以领取", statusReadyBody: "您的团扇已经准备好了。<br>请前往店铺领取。",
       statusPickedTitle: "🎉 已领取", statusPickedBody: "感谢您的使用。",
-      statusClosedTitle: "已结束", statusClosedBody: "此订单已结束。", unknown: "无法确认当前状态。"
+      statusClosedTitle: "已结束", statusClosedBody: "此订单已结束。", unknown: "无法确认当前状态。",
+      copiesLabel: "订购数量"
     },
     ko: {
       title: "주문 상태 확인", label: "접수번호를 입력해 주세요", button: "상태 확인",
@@ -123,7 +143,8 @@
       statusPrintingTitle: "🖨 제작 중", statusPrintingBody: "현재 부채를 제작하고 있습니다.<br>미야지마 관광을 즐겨 주세요.",
       statusReadyTitle: "✅ 수령 가능", statusReadyBody: "부채가 준비되었습니다.<br>매장으로 와 주세요.",
       statusPickedTitle: "🎉 수령 완료", statusPickedBody: "이용해 주셔서 감사합니다.",
-      statusClosedTitle: "접수 종료", statusClosedBody: "이 주문은 종료되었습니다.", unknown: "현재 상태를 확인할 수 없습니다."
+      statusClosedTitle: "접수 종료", statusClosedBody: "이 주문은 종료되었습니다.", unknown: "현재 상태를 확인할 수 없습니다.",
+      copiesLabel: "주문 수량"
     },
     vi: {
       title: "Kiểm tra trạng thái đơn hàng", label: "Nhập mã số tiếp nhận", button: "Kiểm tra trạng thái",
@@ -135,7 +156,8 @@
       statusPrintingTitle: "🖨 Đang làm", statusPrintingBody: "Chúng tôi đang làm quạt của bạn.<br>Hãy tận hưởng chuyến tham quan Miyajima.",
       statusReadyTitle: "✅ Có thể nhận", statusReadyBody: "Quạt của bạn đã sẵn sàng.<br>Vui lòng đến cửa hàng.",
       statusPickedTitle: "🎉 Đã nhận", statusPickedBody: "Cảm ơn bạn đã sử dụng dịch vụ.",
-      statusClosedTitle: "Đã kết thúc", statusClosedBody: "Đơn hàng này đã kết thúc.", unknown: "Không thể kiểm tra trạng thái hiện tại."
+      statusClosedTitle: "Đã kết thúc", statusClosedBody: "Đơn hàng này đã kết thúc.", unknown: "Không thể kiểm tra trạng thái hiện tại.",
+      copiesLabel: "Số lượng"
     }
   };
 
@@ -173,9 +195,35 @@
     document.getElementById("statusBox").innerHTML = `<div class="error">${t("notFound")}</div><div class="number">${displayNo || ""}</div>`;
   }
 
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   function showStatus(data) {
     const displayNo = data.displayNo || normalizeNumber(data.shortId) || currentDisplayNo || "";
     const status = String(data.status || "WAIT").toUpperCase();
+    const imageUrl = data.imageUrl || "";
+    const copies = data.copies || 1;
+
+    const imageHtml = imageUrl
+      ? `
+        <div class="order-image-wrap">
+          <img class="order-image" src="${escapeHtml(imageUrl)}" alt="注文画像">
+        </div>
+      `
+      : "";
+
+    const copiesHtml = `
+      <div class="copies-box">
+        ${t("copiesLabel")}：${escapeHtml(copies)}
+      </div>
+    `;
+
     let title = "", body = "", cls = "";
     if (status === "WAIT") { title = t("statusWaitTitle"); body = t("statusWaitBody"); cls = "wait"; }
     else if (status === "PRINTING") { title = t("statusPrintingTitle"); body = t("statusPrintingBody"); cls = "printing"; }
@@ -183,11 +231,17 @@
     else if (status === "PICKED_UP") { title = t("statusPickedTitle"); body = t("statusPickedBody"); cls = "picked"; }
     else if (status === "CLOSED") { title = t("statusClosedTitle"); body = t("statusClosedBody"); cls = "picked"; }
     else { title = status; body = t("unknown"); cls = ""; }
+
     document.getElementById("statusBox").innerHTML = `
       <div class="${cls}">
         <div class="status-title">${title}</div>
         <div>${t("receptionNo")}</div>
-        <div class="number">${displayNo}</div>
+        <div class="number">${escapeHtml(displayNo)}</div>
+
+        ${imageHtml}
+
+        ${copiesHtml}
+
         <div>${body}</div>
       </div>`;
   }
