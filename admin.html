@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>管理画面 - Miyajima Fan Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family:'M PLUS Rounded 1c',sans-serif; background:#f3f7fb; margin:0; padding:14px; color:#333; }
+    .wrap { max-width:960px; margin:0 auto; }
+    h1 { text-align:center; color:#1565c0; font-size:22px; margin:12px 0 18px; }
+    .top-card, .order-card, .empty { background:#fff; border-radius:18px; padding:14px; margin-bottom:14px; box-shadow:0 3px 10px rgba(0,0,0,.08); }
+    .summary { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; font-size:15px; font-weight:700; }
+    .summary div { background:#e3f2fd; color:#0d47a1; border-radius:12px; padding:10px; text-align:center; }
+    .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    button { border:none; border-radius:20px; padding:10px 14px; font-weight:700; cursor:pointer; background:#2196f3; color:#fff; }
+    .filter-btn { background:#fff; color:#1565c0; border:1px solid #90caf9; }
+    .filter-btn.active { background:#1565c0; color:#fff; }
+    #orders { display:grid; grid-template-columns:1fr; gap:12px; }
+    .order-card { border-left:8px solid #ccc; }
+    .order-card.WAIT { border-left-color:#fbc02d; }
+    .order-card.PRINTING { border-left-color:#2196f3; }
+    .order-card.READY { border-left-color:#4caf50; }
+    .order-card.PICKED_UP { border-left-color:#9c27b0; }
+    .order-card.CLOSED { border-left-color:#777; }
+    .order-main { display:grid; grid-template-columns:130px 1fr; gap:12px; align-items:start; }
+    .thumb { width:130px; max-height:100px; object-fit:contain; border-radius:10px; border:1px solid #ddd; background:#fff; }
+    .no-image { width:130px; height:90px; display:flex; align-items:center; justify-content:center; background:#eee; color:#777; border-radius:10px; font-size:12px; }
+    .order-number { font-size:28px; font-weight:700; color:#1565c0; margin-bottom:4px; }
+    .status-badge { display:inline-block; padding:4px 10px; border-radius:999px; font-weight:700; font-size:13px; margin-bottom:8px; }
+    .badge-WAIT { background:#fff9c4; color:#5d4a00; }
+    .badge-PRINTING { background:#e3f2fd; color:#0d47a1; }
+    .badge-READY { background:#e8f5e9; color:#1b5e20; }
+    .badge-PICKED_UP { background:#f3e5f5; color:#4a148c; }
+    .badge-CLOSED { background:#eee; color:#555; }
+    .info { font-size:15px; line-height:1.7; }
+    .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    .btn-printing { background:#2196f3; }
+    .btn-ready { background:#4caf50; }
+    .btn-picked { background:#9c27b0; }
+    .btn-wait { background:#f9a825; color:#333; }
+    .btn-close { background:#777; }
+    .empty { text-align:center; color:#777; padding:30px; }
+    .small { font-size:12px; color:#777; margin-top:4px; }
+    @media (max-width:640px) {
+      .order-main { grid-template-columns:1fr; }
+      .thumb, .no-image { width:100%; max-height:180px; }
+      .summary { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>店員用 管理画面</h1>
+
+    <div class="top-card">
+      <div class="summary">
+        <div id="summaryCount">本日受付：0件</div>
+        <div id="summarySales">売上合計：0円</div>
+        <div id="summaryGeneral">一般：0件 / 0円</div>
+        <div id="summaryStudent">学割：0件 / 0円</div>
+      </div>
+
+      <div class="toolbar">
+        <button class="filter-btn active" data-filter="ALL">すべて</button>
+        <button class="filter-btn" data-filter="WAIT">受付済み</button>
+        <button class="filter-btn" data-filter="PRINTING">作成中</button>
+        <button class="filter-btn" data-filter="READY">完成</button>
+        <button class="filter-btn" data-filter="PICKED_UP">受渡済</button>
+      </div>
+
+      <div class="small">
+        ※Firestoreとリアルタイム連動します。ボタンを押すとお客さまのstatus.htmlにも反映されます。
+      </div>
+    </div>
+
+    <div id="orders">
+      <div class="empty">読み込み中です…</div>
+    </div>
+  </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+  import {
+    getFirestore,
+    collection,
+    query,
+    where,
+    orderBy,
+    onSnapshot,
+    doc,
+    updateDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBKSYZgaSVTu-HO_lS1Tp2eFjSjMuOONNI",
+    authDomain: "my-uchiwa-queue.firebaseapp.com",
+    projectId: "my-uchiwa-queue",
+    storageBucket: "my-uchiwa-queue.firebasestorage.app",
+    messagingSenderId: "245883628081",
+    appId: "1:245883628081:web:ab7f00f01ba256ebca8310",
+    measurementId: "G-W4S3EKL9TY"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  let orders = [];
+  let currentFilter = "ALL";
+
+  function getTodayKey() {
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    return `${yy}${mm}${dd}`;
+  }
+
+  function yen(value) {
+    return `${Number(value || 0).toLocaleString()}円`;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function statusText(status) {
+    const s = String(status || "WAIT").toUpperCase();
+    if (s === "WAIT") return "受付済み";
+    if (s === "PRINTING") return "作成中";
+    if (s === "READY") return "完成";
+    if (s === "PICKED_UP") return "受渡済";
+    if (s === "CLOSED") return "終了";
+    return s;
+  }
+
+  function priceTypeText(priceType) {
+    return priceType === "student" ? "学割" : "一般";
+  }
+
+  function getUnitPrice(data) {
+    if (data.unitPrice) return Number(data.unitPrice);
+    return data.priceType === "student" ? 500 : 800;
+  }
+
+  function getTotalPrice(data) {
+    if (data.totalPrice) return Number(data.totalPrice);
+    return getUnitPrice(data) * Number(data.copies || 1);
+  }
+
+  async function updateStatus(queueId, status) {
+    if (!queueId) return;
+
+    try {
+      const orderRef = doc(db, "orders", queueId);
+      await updateDoc(orderRef, {
+        status,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error(error);
+      alert("ステータス更新に失敗しました。通信状態を確認してください。");
+    }
+  }
+
+  function renderSummary(list) {
+    const totalCount = list.length;
+    let totalSales = 0;
+    let generalCount = 0;
+    let generalSales = 0;
+    let studentCount = 0;
+    let studentSales = 0;
+
+    list.forEach(item => {
+      const data = item.data;
+      const total = getTotalPrice(data);
+      totalSales += total;
+
+      if (data.priceType === "student") {
+        studentCount += 1;
+        studentSales += total;
+      } else {
+        generalCount += 1;
+        generalSales += total;
+      }
+    });
+
+    document.getElementById("summaryCount").textContent = `本日受付：${totalCount}件`;
+    document.getElementById("summarySales").textContent = `売上合計：${yen(totalSales)}`;
+    document.getElementById("summaryGeneral").textContent = `一般：${generalCount}件 / ${yen(generalSales)}`;
+    document.getElementById("summaryStudent").textContent = `学割：${studentCount}件 / ${yen(studentSales)}`;
+  }
+
+  function renderOrders() {
+    renderSummary(orders);
+
+    const box = document.getElementById("orders");
+
+    const visibleOrders =
+      currentFilter === "ALL"
+        ? orders
+        : orders.filter(item => String(item.data.status || "WAIT").toUpperCase() === currentFilter);
+
+    if (visibleOrders.length === 0) {
+      box.innerHTML = `<div class="empty">該当する注文はありません。</div>`;
+      return;
+    }
+
+    box.innerHTML = visibleOrders.map(item => {
+      const data = item.data;
+      const status = String(data.status || "WAIT").toUpperCase();
+      const displayNo = data.displayNo || Number(data.shortId || 0) || "";
+      const imageUrl = data.imageUrl || "";
+      const copies = Number(data.copies || 1);
+      const unitPrice = getUnitPrice(data);
+      const totalPrice = getTotalPrice(data);
+      const queueId = data.queueId || item.id || "";
+      const printLabel = data.printLabel || "";
+      const createdAt = data.createdAt?.toDate
+        ? data.createdAt.toDate().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })
+        : "";
+
+      const imageHtml = imageUrl
+        ? `<a href="${escapeHtml(imageUrl)}" target="_blank" rel="noopener">
+             <img class="thumb" src="${escapeHtml(imageUrl)}" alt="注文画像">
+           </a>`
+        : `<div class="no-image">画像なし</div>`;
+
+      return `
+        <div class="order-card ${status}">
+          <div class="order-main">
+            <div>${imageHtml}</div>
+
+            <div>
+              <div class="order-number">受付番号：${escapeHtml(displayNo)}</div>
+              <div class="status-badge badge-${status}">${statusText(status)}</div>
+
+              <div class="info">
+                <div><strong>料金区分：</strong>${priceTypeText(data.priceType)}</div>
+                <div><strong>単価：</strong>${yen(unitPrice)}</div>
+                <div><strong>注文本数：</strong>${escapeHtml(copies)}本</div>
+                <div><strong>合計金額：</strong>${yen(totalPrice)}</div>
+                <div><strong>印刷ラベル：</strong>${escapeHtml(printLabel)}</div>
+                <div><strong>注文ID：</strong>${escapeHtml(queueId)}</div>
+                <div><strong>受付時刻：</strong>${escapeHtml(createdAt)}</div>
+              </div>
+
+              <div class="actions">
+                <button class="btn-wait" data-id="${escapeHtml(queueId)}" data-status="WAIT">受付済みに戻す</button>
+                <button class="btn-printing" data-id="${escapeHtml(queueId)}" data-status="PRINTING">印刷中</button>
+                <button class="btn-ready" data-id="${escapeHtml(queueId)}" data-status="READY">完成</button>
+                <button class="btn-picked" data-id="${escapeHtml(queueId)}" data-status="PICKED_UP">受渡済</button>
+                <button class="btn-close" data-id="${escapeHtml(queueId)}" data-status="CLOSED">終了</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    document.querySelectorAll(".actions button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        updateStatus(btn.dataset.id, btn.dataset.status);
+      });
+    });
+  }
+
+  function startWatch() {
+    const dayKey = getTodayKey();
+
+    const q = query(
+      collection(db, "orders"),
+      where("dayKey", "==", dayKey),
+      orderBy("createdAt", "desc")
+    );
+
+    onSnapshot(q, snapshot => {
+      orders = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        data: docSnap.data()
+      }));
+
+      renderOrders();
+    }, error => {
+      console.error(error);
+      document.getElementById("orders").innerHTML =
+        `<div class="empty">注文一覧の読み込みに失敗しました。</div>`;
+    });
+  }
+
+  document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentFilter = btn.dataset.filter;
+      renderOrders();
+    });
+  });
+
+  startWatch();
+</script>
+</body>
+</html>
