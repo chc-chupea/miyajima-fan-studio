@@ -1071,12 +1071,6 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const templateName =
         document.querySelector('#templateSelector option:checked').textContent;
 
-      const priceType =
-        document.querySelector('input[name="priceType"]:checked')?.value || 'general';
-
-      const unitPrice = priceType === 'student' ? 500 : 800;
-      const totalPrice = unitPrice * copies;
-
       const priceTypeLabelTexts = {
         ja: priceType === 'student' ? '学割' : '一般',
         en: priceType === 'student' ? 'Student' : 'General',
