@@ -898,6 +898,52 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       ctx.restore();
     }
 
+    function resetForSameDesignOrder() {
+      document.getElementById('orderComplete').style.display = 'none';
+      document.getElementById('orderArea').style.display = 'block';
+      document.getElementById('copiesSelect').value = '1';
+
+      const orderBtn = document.getElementById('orderBtn');
+      orderBtn.disabled = false;
+      orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || '注文する';
+
+      document.getElementById('area-result').scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+
+    function resetForNewDesignOrder() {
+      uploadedImg = null;
+
+      imgX = canvas.width / 2;
+      imgY = canvas.height / 2;
+      scale = 1;
+      rotation = 0;
+
+      draw();
+
+      document.getElementById('imageLoader').value = '';
+      document.getElementById('previewWrapper').style.display = 'none';
+      document.getElementById('previewImage').src = '';
+      document.getElementById('previewNotice').innerHTML = '';
+      document.getElementById('orderComplete').style.display = 'none';
+      document.getElementById('orderArea').style.display = 'none';
+      document.getElementById('copiesSelect').value = '1';
+      document.getElementById('notice').textContent = '';
+      document.getElementById('notice').style.display = 'none';
+
+      const orderBtn = document.getElementById('orderBtn');
+      orderBtn.disabled = false;
+      orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || '注文する';
+
+      document.getElementById('area-select').scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+
+
     async function submitOrder() {
       const orderBtn = document.getElementById('orderBtn');
       const noticeEl = document.getElementById('notice');
@@ -1017,6 +1063,22 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         vi: "Kiểm tra trạng thái"
       };
 
+      const sameDesignTexts = {
+        ja: "同じデザインで追加注文",
+        en: "Order More of This Design",
+        zh: "追加订购相同设计",
+        ko: "같은 디자인 추가 주문",
+        vi: "Đặt thêm cùng thiết kế"
+      };
+
+      const anotherOrderTexts = {
+        ja: "新しいデザインでもう1度作る",
+        en: "Create a New Design",
+        zh: "重新制作新设计",
+        ko: "새로운 디자인으로 다시 만들기",
+        vi: "Tạo lại với thiết kế mới"
+      };
+
       try {
 
         document.getElementById('sendingOverlay').innerHTML =
@@ -1074,6 +1136,8 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         <a href="status.html?id=${displayNo}"
            style="
              display:inline-block;
+             width:100%;
+             box-sizing:border-box;
              padding:10px 20px;
              background:#2196f3;
              color:white;
@@ -1081,7 +1145,29 @@ document.getElementById('saveBtn').addEventListener('click', () => {
              border-radius:20px;
              margin-top:10px;">
           ${statusButtonTexts[currentLang] || statusButtonTexts.ja}
-        </a>`;
+        </a>
+
+        <button id="sameDesignBtn"
+          style="
+            margin-top:12px;
+            background:#4caf50;
+            color:white;">
+          ${sameDesignTexts[currentLang] || sameDesignTexts.ja}
+        </button>
+
+        <button id="anotherOrderBtn"
+          style="
+            margin-top:8px;
+            background:#ff9800;
+            color:white;">
+          ${anotherOrderTexts[currentLang] || anotherOrderTexts.ja}
+        </button>`;
+
+        document.getElementById('sameDesignBtn')
+          ?.addEventListener('click', resetForSameDesignOrder);
+
+        document.getElementById('anotherOrderBtn')
+          ?.addEventListener('click', resetForNewDesignOrder);
 
         completeEl.style.display = 'block';
         document.getElementById('orderArea').style.display = 'none';
