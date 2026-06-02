@@ -1059,6 +1059,15 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const copies = Number(document.getElementById('copiesSelect').value || 1);
       const template = templateSelector.value;
 
+      const priceType =
+        document.querySelector('input[name="priceType"]:checked')?.value || 'general';
+
+      const unitPrice =
+        priceType === 'student' ? 500 : 800;
+
+      const totalPrice =
+        unitPrice * copies;
+
       const templateName =
         document.querySelector('#templateSelector option:checked').textContent;
 
@@ -1273,6 +1282,11 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           displayNo,
           printLabel,
           dayKey: issued.dayKey,
+
+          priceType,
+          unitPrice,
+          totalPrice,
+
           copies,
           template,
           imageUrl,
