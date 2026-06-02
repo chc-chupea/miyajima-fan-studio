@@ -393,6 +393,18 @@
       <option value="10">10本</option>
     </select>
 
+    <div id="totalPriceBox"
+         style="
+           margin-top:12px;
+           padding:12px;
+           background:#fff8e1;
+           border-radius:12px;
+           font-size:18px;
+           font-weight:bold;
+           color:#e65100;">
+      合計：800円
+    </div>
+
     <button id="orderBtn"
       data-ja="注文する"
       data-en="Place Order"
@@ -1007,6 +1019,22 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       });
     }
 
+    function updateTotalPrice() {
+
+      const priceType =
+        document.querySelector('input[name="priceType"]:checked')?.value;
+
+      const copies =
+        Number(document.getElementById('copiesSelect').value || 1);
+
+      const unitPrice =
+        priceType === 'student' ? 500 : 800;
+
+      const totalPrice = unitPrice * copies;
+
+      document.getElementById('totalPriceBox').textContent =
+        `合計：${totalPrice.toLocaleString()}円`;
+    }
 
     async function submitOrder() {
       const orderBtn = document.getElementById('orderBtn');
@@ -1318,8 +1346,14 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         copiesHint.textContent =
           copiesHintTexts[lang] || copiesHintTexts.ja;
       }
+
+      if (typeof updateTotalPrice === 'function') {
+        updateTotalPrice();
+
     }
     
+    } // ← setLanguage終了
+
     function getTimestampBasedFileName() {
       const now = new Date();
       const y = now.getFullYear();
@@ -1332,13 +1366,26 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       return `uchiwa_${y}${m}${d}_${h}${slotStr}.png`;
     }
 
+    document
+      .querySelectorAll('input[name="priceType"]')
+      .forEach(el => {
+        el.addEventListener('change', updateTotalPrice);
+      });
+
+    document
+      .getElementById('copiesSelect')
+      .addEventListener('change', updateTotalPrice);
+
     window.addEventListener('load', () => {
       const userLang = navigator.language || navigator.userLanguage;
+
       if (userLang.startsWith('en')) setLanguage('en');
       else if (userLang.startsWith('zh')) setLanguage('zh');
       else if (userLang.startsWith('ko')) setLanguage('ko');
       else if (userLang.startsWith('vi')) setLanguage('vi');
       else setLanguage('ja');
+
+      updateTotalPrice();
     });
 
     window.setLanguage = setLanguage;
