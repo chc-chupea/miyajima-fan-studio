@@ -1032,8 +1032,16 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       const totalPrice = unitPrice * copies;
 
+      const totalPriceTexts = {
+        ja: `合計：${totalPrice.toLocaleString()}円`,
+        en: `Total: ¥${totalPrice.toLocaleString()}`,
+        zh: `总计：${totalPrice.toLocaleString()}日元`,
+        ko: `합계：${totalPrice.toLocaleString()}엔`,
+        vi: `Tổng cộng: ${totalPrice.toLocaleString()} yên`
+      };
+
       document.getElementById('totalPriceBox').textContent =
-        `合計：${totalPrice.toLocaleString()}円`;
+        totalPriceTexts[currentLang] || totalPriceTexts.ja;
     }
 
     async function submitOrder() {
