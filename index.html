@@ -329,16 +329,37 @@
     </label>
 
     <label style="display:block;">
-      <input type="radio" name="priceType" value="normal" checked>
-      一般 800円／本
+      <input type="radio" name="priceType" value="general" checked>
+      <span id="generalPriceText"
+        data-ja="一般 800円／本"
+        data-en="General ¥800 / fan"
+        data-zh="普通价格 800日元/把"
+        data-ko="일반 800엔 / 개"
+        data-vi="Thông thường 800 yên / chiếc">
+        一般 800円／本
+      </span>
     </label>
 
     <label style="display:block;">
       <input type="radio" name="priceType" value="student">
-      学割 500円／本
+      <span id="studentPriceText"
+        data-ja="学割 500円／本"
+        data-en="Student ¥500 / fan"
+        data-zh="学生优惠 500日元/把"
+        data-ko="학생 할인 500엔 / 개"
+        data-vi="Ưu đãi học sinh 500 yên / chiếc">
+        学割 500円／本
+      </span>
     </label>
 
-    <p style="font-size:12px;color:#666;margin-top:4px;">
+    <p
+      style="font-size:12px;color:#666;margin-top:4px;"
+      data-ja="※学割は学生証の提示、または制服着用で対象です。"
+      data-en="* Student discount is available with a student ID or school uniform."
+      data-zh="* 学生优惠适用于出示学生证或穿着校服的顾客。"
+      data-ko="* 학생 할인은 학생증 제시 또는 교복 착용 시 적용됩니다."
+      data-vi="* Ưu đãi học sinh áp dụng khi xuất trình thẻ học sinh hoặc mặc đồng phục."
+    >
       ※学割は学生証の提示、または制服着用で対象です。
     </p>
   </div>
