@@ -105,7 +105,8 @@
       statusReadyTitle: "✅ 受け取り可能", statusReadyBody: "うちわの準備ができました。<br>店舗へお越しください。",
       statusPickedTitle: "🎉 受け渡し済み", statusPickedBody: "ご利用ありがとうございました。",
       statusClosedTitle: "受付終了", statusClosedBody: "この注文は受付終了になっています。", unknown: "現在の状況を確認できません。",
-      copiesLabel: "注文本数"
+      copiesLabel: "注文本数",
+      totalLabel: "合計金額"
     },
     en: {
       title: "Check Order Status", label: "Enter your reception number", button: "Check Status",
@@ -118,7 +119,8 @@
       statusReadyTitle: "✅ Ready for Pickup", statusReadyBody: "Your fan is ready.<br>Please come to the shop.",
       statusPickedTitle: "🎉 Picked Up", statusPickedBody: "Thank you for your order.",
       statusClosedTitle: "Closed", statusClosedBody: "This order has been closed.", unknown: "Unable to check the current status.",
-      copiesLabel: "Quantity"
+      copiesLabel: "Quantity",
+      totalLabel: "Total"
     },
     zh: {
       title: "订单状态确认", label: "请输入受理编号", button: "查看状态",
@@ -131,7 +133,8 @@
       statusReadyTitle: "✅ 可以领取", statusReadyBody: "您的团扇已经准备好了。<br>请前往店铺领取。",
       statusPickedTitle: "🎉 已领取", statusPickedBody: "感谢您的使用。",
       statusClosedTitle: "已结束", statusClosedBody: "此订单已结束。", unknown: "无法确认当前状态。",
-      copiesLabel: "订购数量"
+      copiesLabel: "订购数量",
+      totalLabel: "总计"
     },
     ko: {
       title: "주문 상태 확인", label: "접수번호를 입력해 주세요", button: "상태 확인",
@@ -144,7 +147,8 @@
       statusReadyTitle: "✅ 수령 가능", statusReadyBody: "부채가 준비되었습니다.<br>매장으로 와 주세요.",
       statusPickedTitle: "🎉 수령 완료", statusPickedBody: "이용해 주셔서 감사합니다.",
       statusClosedTitle: "접수 종료", statusClosedBody: "이 주문은 종료되었습니다.", unknown: "현재 상태를 확인할 수 없습니다.",
-      copiesLabel: "주문 수량"
+      copiesLabel: "주문 수량",
+      totalLabel: "합계"
     },
     vi: {
       title: "Kiểm tra trạng thái đơn hàng", label: "Nhập mã số tiếp nhận", button: "Kiểm tra trạng thái",
@@ -157,7 +161,8 @@
       statusReadyTitle: "✅ Có thể nhận", statusReadyBody: "Quạt của bạn đã sẵn sàng.<br>Vui lòng đến cửa hàng.",
       statusPickedTitle: "🎉 Đã nhận", statusPickedBody: "Cảm ơn bạn đã sử dụng dịch vụ.",
       statusClosedTitle: "Đã kết thúc", statusClosedBody: "Đơn hàng này đã kết thúc.", unknown: "Không thể kiểm tra trạng thái hiện tại.",
-      copiesLabel: "Số lượng"
+      copiesLabel: "Số lượng",
+      totalLabel: "Tổng cộng"
     }
   };
 
@@ -209,6 +214,7 @@
     const status = String(data.status || "WAIT").toUpperCase();
     const imageUrl = data.imageUrl || "";
     const copies = data.copies || 1;
+    const totalPrice = data.totalPrice || 0;
 
     const imageHtml = imageUrl
       ? `
@@ -223,6 +229,14 @@
         ${t("copiesLabel")}：${escapeHtml(copies)}
       </div>
     `;
+
+    const totalPriceHtml = totalPrice
+      ? `
+        <div class="copies-box">
+          ${t("totalLabel")}：${totalPrice.toLocaleString()}円
+        </div>
+      `
+      : "";
 
     let title = "", body = "", cls = "";
     if (status === "WAIT") { title = t("statusWaitTitle"); body = t("statusWaitBody"); cls = "wait"; }
@@ -241,6 +255,8 @@
         ${imageHtml}
 
         ${copiesHtml}
+
+        ${totalPriceHtml}
 
         <div>${body}</div>
       </div>`;
