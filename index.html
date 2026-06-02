@@ -848,20 +848,25 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     }
 
 
-    function createPrintLabel(issued, displayNo) {
+    function createPrintLabel(issued, displayNo, copies) {
       const fullDate = `20${issued.dayKey}`;
       const serial = String(displayNo).padStart(4, '0');
-      return `${fullDate}-${serial}`;
+      const copiesText = String(copies).padStart(2, '0');
+      return `${fullDate}-${serial}-${copiesText}`;
     }
 
     function drawPrintLabel(labelText) {
       ctx.save();
 
-      const fontSize = 38;
-      const paddingX = 18;
-      const paddingY = 10;
-      const marginRight = 110;
-      const marginBottom = 96;
+      // A4 300dpi相当のキャンバスでは、6pt ≒ 25px
+      const fontSize = 25;
+      const paddingX = 9;
+      const paddingY = 5;
+
+      // うちわ用紙の「内側・左端・下端」に寄せる
+      // ※テンプレの仕上がり線に合わせて微調整する場合は、この2つを調整
+      const marginLeft = 118;
+      const marginBottom = 150;
 
       ctx.font = `700 ${fontSize}px Arial, sans-serif`;
       ctx.textBaseline = 'middle';
@@ -870,13 +875,20 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const boxWidth = textWidth + paddingX * 2;
       const boxHeight = fontSize + paddingY * 2;
 
-      const x = canvas.width - boxWidth - marginRight;
+      const x = marginLeft;
       const y = canvas.height - boxHeight - marginBottom;
 
-      ctx.fillStyle = '#000';
+      // 背景に左右されず読めるように白い小ラベル
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
       ctx.fillRect(x, y, boxWidth, boxHeight);
 
-      ctx.fillStyle = '#fff';
+      // ごく薄い枠で、白背景でもラベル位置が分かるようにする
+      ctx.strokeStyle = 'rgba(21, 101, 192, 0.35)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, boxWidth, boxHeight);
+
+      // 青文字
+      ctx.fillStyle = '#1565c0';
       ctx.fillText(labelText, x + paddingX, y + boxHeight / 2);
 
       ctx.restore();
@@ -1016,12 +1028,16 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         draw();
         const issued = await issueQueueId();
         const displayNo = Number(issued.shortId);
-        const printLabel = createPrintLabel(issued, displayNo);
+        const printLabel = createPrintLabel(issued, displayNo, copies);
 
         // 印刷・受け渡し確認用の番号を、アップロードするPNGだけに焼き込み
         drawPrintLabel(printLabel);
 
         const pngDataUrl = canvas.toDataURL('image/png');
+
+        // 画面上の編集キャンバスには番号ラベルを残さない
+        draw();
+
         const storagePath = `orders/${issued.dayKey}/${issued.shortId}.png`;
         const storageRef = ref(storage, storagePath);
 
