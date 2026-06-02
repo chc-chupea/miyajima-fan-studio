@@ -214,22 +214,42 @@
       .replace(/'/g, "&#039;");
   }
 
+   function formatPrice(price) {
+   if (currentLang === "en") {
+     return `¥${price.toLocaleString()}`;
+   }
+
+   if (currentLang === "zh") {
+     return `${price.toLocaleString()}日元`;
+   }
+
+   if (currentLang === "ko") {
+     return `${price.toLocaleString()}엔`;
+   }
+
+   if (currentLang === "vi") {
+     return `${price.toLocaleString()} yên`;
+   }
+
+   return `${price.toLocaleString()}円`;
+ }
+
   function getPriceTypeText(priceType) {
 
-    if (priceType === "student") {
-      if (currentLang === "en") return "Student (¥500/fan)";
-      if (currentLang === "zh") return "学生优惠（500日元/把）";
-      if (currentLang === "ko") return "학생 할인 (500엔/개)";
-      if (currentLang === "vi") return "Ưu đãi học sinh (500 yên/chiếc)";
-      return "学割（500円／本）";
-    }
+   if (priceType === "student") {
+     if (currentLang === "en") return "Student (¥500/fan)";
+     if (currentLang === "zh") return "学生优惠（500日元/把）";
+     if (currentLang === "ko") return "학생 할인 (500엔/개)";
+     if (currentLang === "vi") return "Ưu đãi học sinh (500 yên/chiếc)";
+     return "学割（500円／本）";
+   }
 
-    if (currentLang === "en") return "General (¥800/fan)";
-    if (currentLang === "zh") return "普通价格（800日元/把）";
-    if (currentLang === "ko") return "일반 (800엔/개)";
-    if (currentLang === "vi") return "Thông thường (800 yên/chiếc)";
-    return "一般（800円／本）";
-  }
+   if (currentLang === "en") return "General (¥800/fan)";
+   if (currentLang === "zh") return "普通价格（800日元/把）";
+   if (currentLang === "ko") return "일반 (800엔/개)";
+   if (currentLang === "vi") return "Thông thường (800 yên/chiếc)";
+   return "一般（800円／本）";
+ }
 
   function showStatus(data) {
     const displayNo = data.displayNo || normalizeNumber(data.shortId) || currentDisplayNo || "";
@@ -256,7 +276,7 @@
     const totalPriceHtml = totalPrice
       ? `
         <div class="copies-box">
-          ${t("totalLabel")}：${totalPrice.toLocaleString()}円
+          ${t("totalLabel")}：${formatPrice(totalPrice)}
         </div>
       `
       : "";
