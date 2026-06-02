@@ -847,6 +847,41 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       };
     }
 
+
+    function createPrintLabel(issued, displayNo) {
+      const fullDate = `20${issued.dayKey}`;
+      const serial = String(displayNo).padStart(4, '0');
+      return `${fullDate}-${serial}`;
+    }
+
+    function drawPrintLabel(labelText) {
+      ctx.save();
+
+      const fontSize = 38;
+      const paddingX = 18;
+      const paddingY = 10;
+      const marginRight = 110;
+      const marginBottom = 96;
+
+      ctx.font = `700 ${fontSize}px Arial, sans-serif`;
+      ctx.textBaseline = 'middle';
+
+      const textWidth = ctx.measureText(labelText).width;
+      const boxWidth = textWidth + paddingX * 2;
+      const boxHeight = fontSize + paddingY * 2;
+
+      const x = canvas.width - boxWidth - marginRight;
+      const y = canvas.height - boxHeight - marginBottom;
+
+      ctx.fillStyle = '#000';
+      ctx.fillRect(x, y, boxWidth, boxHeight);
+
+      ctx.fillStyle = '#fff';
+      ctx.fillText(labelText, x + paddingX, y + boxHeight / 2);
+
+      ctx.restore();
+    }
+
     async function submitOrder() {
       const orderBtn = document.getElementById('orderBtn');
       const noticeEl = document.getElementById('notice');
@@ -983,6 +1018,11 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         const displayNo = Number(
           issued.shortId.replace('A', '')
         );
+        const printLabel = createPrintLabel(issued, displayNo);
+
+        // 印刷・受け渡し確認用の番号を、アップロードするPNGだけに焼き込み
+        drawPrintLabel(printLabel);
+
         const pngDataUrl = canvas.toDataURL('image/png');
         const storagePath = `orders/${issued.dayKey}/${issued.shortId}.png`;
         const storageRef = ref(storage, storagePath);
@@ -997,6 +1037,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           queueId: issued.queueId,
           shortId: issued.shortId,
           displayNo,
+          printLabel,
           dayKey: issued.dayKey,
           copies,
           template,
@@ -1030,6 +1071,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       } catch (err) {
         console.error(err);
         document.getElementById('sendingOverlay').style.display = 'none';
+        if (uploadedImg) draw();
         noticeEl.textContent = errorTexts[currentLang] || errorTexts.ja;
         noticeEl.style.color = 'red';
         noticeEl.style.display = 'block';
