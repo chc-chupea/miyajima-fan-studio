@@ -2000,9 +2000,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     let sx, sy, sw, sh;
 
-    // 重要：
-    // source crop の比率を必ず targetRatio と一致させる。
-    // ここがズレると、インカメ画像が横扁平・縦扁平になる。
+    // まずは比率を崩さない基本トリミング
     if (videoRatio > targetRatio) {
       sh = videoH;
       sw = videoH * targetRatio;
@@ -2033,17 +2031,33 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     const tempCtx = tempCanvas.getContext('2d');
 
     if (currentFacingMode === 'user') {
-      // インカメラは画面表示をミラーにしているため、保存画像も見た目と同じ向きにする
+      // インカメラ専用：
+      // 頭が切れにくいように、A4横全面に無理やり引き伸ばさず、
+      // 少し縦長寄りの映像を「比率を保ったまま」中央配置する。
       tempCtx.save();
       tempCtx.translate(targetW, 0);
       tempCtx.scale(-1, 1);
+
+      const frontScale = 0.84; // 小さいほど上下に余裕。0.80〜0.90で調整可
+      const drawW = targetW * frontScale;
+      const drawH = targetH * frontScale;
+      const dx = (targetW - drawW) / 2;
+      const dy = (targetH - drawH) / 2 + targetH * 0.03; // 少し下げて頭上に余裕
+
+      // 背景を白で埋める。透明や黒になるのを防ぐ
+      tempCtx.fillStyle = '#ffffff';
+      tempCtx.fillRect(0, 0, targetW, targetH);
+
       tempCtx.drawImage(
         video,
         sx, sy, sw, sh,
-        0, 0, targetW, targetH
+        dx, dy, drawW, drawH
       );
+
       tempCtx.restore();
+
     } else {
+      // アウトカメラは従来どおり全面に切り出す
       tempCtx.drawImage(
         video,
         sx, sy, sw, sh,
@@ -2061,9 +2075,8 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       imgX = canvas.width / 2;
       imgY = canvas.height / 2;
 
-      // インカメラは少しだけ引いた状態で編集開始。
-      // 画像そのものは歪ませず、編集スペースで拡大・移動して整えられるようにする。
-      scale = currentFacingMode === 'user' ? 0.92 : 1;
+      // インカメラはすでに少し引きで保存しているので、編集開始は等倍
+      scale = 1;
       rotation = 0;
 
       clearFinalPreviewState();
