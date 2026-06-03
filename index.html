@@ -220,6 +220,20 @@
   transform-origin:center center;
 }
 
+#switchCameraBtn {
+  position:absolute;
+  top:16px;
+  right:16px;
+  width:auto;
+  z-index:6;
+  padding:8px 14px;
+  border-radius:18px;
+  background:rgba(33,150,243,.92);
+  color:white;
+  font-size:14px;
+  box-shadow:0 3px 8px rgba(0,0,0,.25);
+}
+
   </style>
 </head>
 <body>
@@ -676,6 +690,7 @@ Miyajima Fan Studio<br><br>
     let uploadedImg = null;
     let cameraStream = null;
     let cameraZoom = 1;
+    let currentFacingMode = 'environment';
     let imgX = 100, imgY = 100, scale = 1, rotation = 0;
     let isDragging = false, lastX, lastY;
 
@@ -1701,6 +1716,41 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     return 'うちわの中に顔や体を入れてね';
   }
 
+
+  function updateSwitchCameraButton() {
+    const btn = document.getElementById('switchCameraBtn');
+    if (!btn) return;
+
+    const texts = {
+      ja: currentFacingMode === 'environment' ? '🤳 インカメラ' : '📷 アウトカメラ',
+      en: currentFacingMode === 'environment' ? '🤳 Front' : '📷 Rear',
+      zh: currentFacingMode === 'environment' ? '🤳 前置摄像头' : '📷 后置摄像头',
+      ko: currentFacingMode === 'environment' ? '🤳 전면 카메라' : '📷 후면 카메라',
+      vi: currentFacingMode === 'environment' ? '🤳 Camera trước' : '📷 Camera sau'
+    };
+
+    btn.textContent = texts[currentLang] || texts.ja;
+  }
+
+  function updateCameraMirror() {
+    const video = document.getElementById('cameraVideo');
+    if (!video) return;
+
+    const mirror = currentFacingMode === 'user';
+    const scaleX = mirror ? -1 : 1;
+    const zoom = Math.max(1, Number(cameraZoom || 1));
+
+    video.style.transform = `scaleX(${scaleX}) scale(${zoom})`;
+  }
+
+  async function switchCamera() {
+    currentFacingMode =
+      currentFacingMode === 'environment' ? 'user' : 'environment';
+
+    closeGuidedCamera();
+    await openGuidedCamera();
+  }
+
   async function openGuidedCamera() {
     const modal = document.getElementById('cameraModal');
     const video = document.getElementById('cameraVideo');
@@ -1716,7 +1766,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     try {
       cameraStream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: { ideal: 'environment' },
+          facingMode: { ideal: currentFacingMode },
           width: { ideal: 1920 },
           height: { ideal: 1080 },
           focusMode: 'continuous'
@@ -1731,10 +1781,12 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         zoomSlider.value = '1';
         zoomSlider.oninput = () => {
           cameraZoom = Number(zoomSlider.value || 1);
-          video.style.transform = `scale(${cameraZoom})`;
+          updateCameraMirror();
         };
       }
-      video.style.transform = 'scale(1)';
+
+      updateCameraMirror();
+      updateSwitchCameraButton();
 
       modal.style.display = 'block';
 
@@ -1754,7 +1806,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
   }
 
     video.srcObject = null;
-    video.style.transform = 'scale(1)';
+    video.style.transform = 'scaleX(1) scale(1)';
     cameraZoom = 1;
     modal.style.display = 'none';
   }
@@ -1808,11 +1860,24 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     const tempCtx = tempCanvas.getContext('2d');
 
-    tempCtx.drawImage(
-      video,
-      sx, sy, sw, sh,
-      0, 0, targetW, targetH
-    );
+    if (currentFacingMode === 'user') {
+      // インカメラは画面表示をミラーにしているため、保存画像も見た目と同じ向きにする
+      tempCtx.save();
+      tempCtx.translate(targetW, 0);
+      tempCtx.scale(-1, 1);
+      tempCtx.drawImage(
+        video,
+        sx, sy, sw, sh,
+        0, 0, targetW, targetH
+      );
+      tempCtx.restore();
+    } else {
+      tempCtx.drawImage(
+        video,
+        sx, sy, sw, sh,
+        0, 0, targetW, targetH
+      );
+    }
 
     const dataUrl = tempCanvas.toDataURL('image/png');
 
@@ -1873,6 +1938,10 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         if (completeEl && completeEl.style.display !== 'none') {
           renderCompleteMessage(lastCompleteDisplayNo);
         }
+      }
+
+      if (typeof updateSwitchCameraButton === 'function') {
+        updateSwitchCameraButton();
       }
     } // ← setLanguage終了
 
@@ -1974,6 +2043,15 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       height:100%;
       object-fit:cover;">
   </video>
+
+  <button id="switchCameraBtn"
+    data-ja="カメラ切替"
+    data-en="Switch Camera"
+    data-zh="切换摄像头"
+    data-ko="카메라 전환"
+    data-vi="Đổi camera">
+    カメラ切替
+  </button>
 
   <div id="cameraGuide" style="
     position:absolute;
