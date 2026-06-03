@@ -314,6 +314,17 @@
   <!-- ここが新しい案内文表示領域 -->
   <div id="previewNotice" style="font-size:14px; color:black; margin-top:10px;"></div>
 
+  <div id="reuseNotice"
+       style="
+         display:none;
+         margin-top:12px;
+         padding:12px;
+         border-radius:12px;
+         background:#e8f5e9;
+         color:#1b5e20;
+         font-weight:700;
+         text-align:center;">
+  </div>
 
   <!-- 宮島版：Firebase注文エリア -->
   <div id="orderArea" style="display:none; margin-top:16px; text-align:left;">
@@ -453,7 +464,18 @@ Miyajima Fan Studio<br><br>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-    import { getFirestore, doc, runTransaction, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+    import {
+      getFirestore,
+      doc,
+      runTransaction,
+      setDoc,
+      serverTimestamp,
+      collection,
+      query,
+      where,
+      getDocs,
+      limit
+    } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
     import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
 
     const firebaseConfig = {
@@ -485,6 +507,14 @@ Miyajima Fan Studio<br><br>
       zh: "也可以为家人和朋友一起订购。",
       ko: "가족·친구의 부채도 함께 주문할 수 있습니다.",
       vi: "Bạn có thể đặt thêm cho gia đình và bạn bè."
+    };
+
+    const reuseNoticeTexts = {
+      ja: "前回の完成画像を使って追加注文します。写真や位置の編集はできません。本数を選んで注文してください。",
+      en: "You are ordering again with the finished image from your previous order. The photo and position cannot be edited. Please choose the number of fans.",
+      zh: "将使用上次完成的图像追加订购。无法编辑照片或位置。请选择数量后下单。",
+      ko: "이전 주문의 완성 이미지를 사용해 추가 주문합니다. 사진이나 위치는 수정할 수 없습니다. 수량을 선택해 주문해 주세요.",
+      vi: "Bạn sẽ đặt thêm bằng hình đã hoàn thành từ đơn trước. Không thể chỉnh sửa ảnh hoặc vị trí. Vui lòng chọn số lượng quạt."
     };
 
 
@@ -545,6 +575,9 @@ Miyajima Fan Studio<br><br>
 
     let currentLang = 'ja'; // デフォルトは日本語
     let lastCompleteDisplayNo = null;
+    let reuseDisplayNo = null;
+    let isReuseMode = false;
+    let reuseSourceOrder = null;
 
     
     const canvas = document.getElementById('mainCanvas');
@@ -681,16 +714,11 @@ Miyajima Fan Studio<br><br>
 document.getElementById('saveBtn').addEventListener('click', () => {
   const noticeEl = document.getElementById('notice');
 
-  if (!uploadedImg) {
+  if (!uploadedImg && !isReuseMode) {
     noticeEl.textContent = saveWarningTexts[currentLang] || saveWarningTexts['ja'];
     noticeEl.style.color = 'red';
-    noticeEl.style.display = 'block';  // 👈 表示させる
-
-    setTimeout(() => {
-      noticeEl.textContent = '';
-      noticeEl.style.display = 'none'; // 👈 3秒後に隠す
-    }, 3000);
-    return; // 👈 ここで処理終了（下の toBlob に進まない）
+    noticeEl.style.display = 'block';
+    return;
   }
 
   // canvas を Blob にしてプレビュー表示（長押しで保存する方式）
@@ -897,12 +925,93 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     }, { passive: false });
     // ★ スマホ（タッチ）用：一体化＆座標補正（ここまで）
 
+    function checkReuseParam() {
+      const params = new URLSearchParams(window.location.search);
+      const reuse = params.get('reuse');
+
+      if (!reuse) return;
+
+      const normalized = String(reuse).replace(/[^\d]/g, '');
+
+      if (!normalized) return;
+
+      reuseDisplayNo = Number(normalized);
+      isReuseMode = true;
+
+      console.log('再注文モード:', reuseDisplayNo);
+    }
+
+    async function loadReuseOrder() {
+      if (!isReuseMode || !reuseDisplayNo) return;
+
+      const dayKey = getTodayKey();
+
+      const q = query(
+        collection(db, 'orders'),
+        where('dayKey', '==', dayKey),
+        where('displayNo', '==', reuseDisplayNo),
+        limit(1)
+      );
+
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        alert('元の注文が見つかりませんでした。受付番号をご確認ください。');
+        return;
+      }
+
+      function applyReuseModeToScreen() {
+        if (!isReuseMode || !reuseSourceOrder) return;
+
+        const reuseNotice = document.getElementById('reuseNotice');
+        reuseNotice.textContent =
+          reuseNoticeTexts[currentLang] || reuseNoticeTexts.ja;
+        reuseNotice.style.display = 'block';
+
+        const previewWrapper = document.getElementById('previewWrapper');
+        const previewImg = document.getElementById('previewImage');
+
+        previewImg.src = reuseSourceOrder.imageUrl;
+        previewWrapper.style.display = 'block';
+
+        document.getElementById('previewNotice').innerHTML =
+          reuseNoticeTexts[currentLang] || reuseNoticeTexts.ja;
+
+        document.getElementById('orderArea').style.display = 'block';
+        document.getElementById('orderComplete').style.display = 'none';
+
+        document.getElementById('area-canvas').style.display = 'none';
+        document.getElementById('area-select').style.display = 'none';
+      
+        if (reuseSourceOrder.priceType) {
+          const priceRadio = document.querySelector(
+            `input[name="priceType"][value="${reuseSourceOrder.priceType}"]`
+          );
+
+          if (priceRadio) {
+            priceRadio.checked = true;
+          }
+        }
+
+        document.getElementById('copiesSelect').value = '1';
+
+        updateTotalPrice();
+
+        document.getElementById('area-result').scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
 
 
 
+      reuseSourceOrder = {
+        id: snap.docs[0].id,
+        ...snap.docs[0].data()
+      };
 
-
-
+      console.log('再注文元データ:', reuseSourceOrder);
+    }
 
 
 
@@ -1354,26 +1463,36 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         noticeEl.textContent = '';
         completeEl.style.display = 'none';
 
-        draw();
         const issued = await issueQueueId();
         const displayNo = Number(issued.shortId);
         const printLabel = createPrintLabel(issued, displayNo, copies);
 
-        // 印刷・受け渡し確認用の番号を、アップロードするPNGだけに焼き込み
-        drawPrintLabel(printLabel);
+        let imageUrl = "";
+        let storagePath = "";
 
-        const pngDataUrl = canvas.toDataURL('image/png');
+        if (isReuseMode && reuseSourceOrder) {
+          imageUrl = reuseSourceOrder.imageUrl || "";
+          storagePath = reuseSourceOrder.storagePath || "";
+        } else {
+          draw();
 
-        // 画面上の編集キャンバスには番号ラベルを残さない
-        draw();
+          // 印刷・受け渡し確認用の番号を、アップロードするPNGだけに焼き込み
+          drawPrintLabel(printLabel);
 
-        const storagePath = `orders/${issued.dayKey}/${issued.shortId}.png`;
-        const storageRef = ref(storage, storagePath);
+          const pngDataUrl = canvas.toDataURL('image/png');
 
-        await uploadString(storageRef, pngDataUrl, 'data_url', {
-          contentType: 'image/png'
-        });
-        const imageUrl = await getDownloadURL(storageRef);
+          // 画面上の編集キャンバスには番号ラベルを残さない
+          draw();
+
+          storagePath = `orders/${issued.dayKey}/${issued.shortId}.png`;
+          const storageRef = ref(storage, storagePath);
+
+          await uploadString(storageRef, pngDataUrl, 'data_url', {
+            contentType: 'image/png'
+          });
+
+          imageUrl = await getDownloadURL(storageRef);
+        }
 
         const orderRef = doc(db, 'orders', issued.queueId);
         await setDoc(orderRef, {
@@ -1391,6 +1510,12 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           template,
           imageUrl,
           storagePath,
+
+          isReorder: isReuseMode,
+          reuseFromDisplayNo: isReuseMode ? reuseDisplayNo : null,
+          reuseFromQueueId: isReuseMode && reuseSourceOrder ? reuseSourceOrder.queueId : null,
+          reuseImageUrl: isReuseMode && reuseSourceOrder ? reuseSourceOrder.imageUrl : null,
+
           status: 'WAIT',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -1485,7 +1610,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       .getElementById('copiesSelect')
       .addEventListener('change', updateTotalPrice);
 
-    window.addEventListener('load', () => {
+    window.addEventListener('load', async () => {
       const userLang = navigator.language || navigator.userLanguage;
 
       if (userLang.startsWith('en')) setLanguage('en');
@@ -1494,8 +1619,15 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       else if (userLang.startsWith('vi')) setLanguage('vi');
       else setLanguage('ja');
 
+      checkReuseParam();
+      await loadReuseOrder();
+
+      if (isReuseMode) {
+        applyReuseModeToScreen();
+      }
+
       updateTotalPrice();
-    });
+      });
 
     window.setLanguage = setLanguage;
 
