@@ -1059,11 +1059,26 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       };
 
       const statusButtonTexts = {
-        ja: "状況を確認する",
-        en: "Check Status",
-        zh: "查看状态",
-        ko: "상태 확인",
-        vi: "Kiểm tra trạng thái"
+        ja: {
+          title: "この注文の状況を確認する",
+          note: "※別画面で開きます。注文画面はこのまま残ります。"
+        },
+        en: {
+          title: "Check the status of this order",
+          note: "* Opens in a separate screen. This order page will remain open."
+        },
+        zh: {
+          title: "查看此订单状态",
+          note: "※将在新页面打开，当前订单页面会保留。"
+        },
+        ko: {
+          title: "이 주문의 상태 확인",
+          note: "※새 화면으로 열립니다. 주문 화면은 그대로 유지됩니다."
+        },
+        vi: {
+          title: "Kiểm tra trạng thái đơn hàng này",
+          note: "* Mở ở màn hình riêng. Trang đặt hàng hiện tại vẫn được giữ nguyên."
+        }
       };
 
       const sameDesignTexts = {
@@ -1108,6 +1123,8 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const guideTexts =
         completeGuideTexts[currentLang] || completeGuideTexts.ja;
 
+      const statusGuide = statusGuideTexts[currentLang] || statusGuideTexts.ja;
+
       completeEl.innerHTML = `
         ${(completeTexts[currentLang] || completeTexts.ja)(displayNo)}
 
@@ -1118,10 +1135,17 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           color:#333;
           font-weight:700;
           margin-bottom:6px;">
-          ${guideTexts.status}
+          ${statusGuide.title}
         </div>
 
-        <a href="status.html?id=${displayNo}"
+        <div style="
+          font-size:12px;
+          color:#666;
+          margin-bottom:8px;">
+          ${statusGuide.note}
+        </div>
+
+        <a href="status.html?id=${displayNo}" target="_blank" rel="noopener">
            style="
              display:inline-block;
              width:100%;
