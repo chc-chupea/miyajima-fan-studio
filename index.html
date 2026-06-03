@@ -1965,7 +1965,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
 
-    // 黄みを避けるため、コントラストは上げず、明るさだけ少し補正
+    // 黄みを避けるため、明るさだけ少し補正
     const brightness = 1.06;
     const contrast = 1.00;
 
@@ -1998,74 +1998,100 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     const videoH = video.videoHeight;
     const videoRatio = videoW / videoH;
 
-    let sx, sy, sw, sh;
-
-    // まずは比率を崩さない基本トリミング
-    if (videoRatio > targetRatio) {
-      sh = videoH;
-      sw = videoH * targetRatio;
-      sx = (videoW - sw) / 2;
-      sy = 0;
-    } else {
-      sw = videoW;
-      sh = videoW / targetRatio;
-      sx = 0;
-      sy = (videoH - sh) / 2;
-    }
-
-    // 画面上のズームと保存画像のズームを一致させる
-    const z = Math.max(1, Number(cameraZoom || 1));
-    if (z > 1) {
-      const centerX = sx + sw / 2;
-      const centerY = sy + sh / 2;
-      sw = sw / z;
-      sh = sh / z;
-      sx = centerX - sw / 2;
-      sy = centerY - sh / 2;
-    }
-
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = targetW;
-    tempCanvas.height = targetH;
-
-    const tempCtx = tempCanvas.getContext('2d');
+    let tempCanvas;
+    let tempCtx;
 
     if (currentFacingMode === 'user') {
       // インカメラ専用：
-      // 頭が切れにくいように、A4横全面に無理やり引き伸ばさず、
-      // 少し縦長寄りの映像を「比率を保ったまま」中央配置する。
+      // スマホ縦写真として保存し、編集スペースで自由に拡大縮小してうちわ内に収める。
+      // A4横へ無理に引き伸ばさないので、横扁平にならない。
+      const portraitW = 1800;
+      const portraitH = 2400;
+      const portraitRatio = portraitW / portraitH;
+
+      let sx, sy, sw, sh;
+
+      // スマホ画面で見えている縦長に近い比率で切り出す
+      if (videoRatio > portraitRatio) {
+        sh = videoH;
+        sw = videoH * portraitRatio;
+        sx = (videoW - sw) / 2;
+        sy = 0;
+      } else {
+        sw = videoW;
+        sh = videoW / portraitRatio;
+        sx = 0;
+        sy = (videoH - sh) / 2;
+      }
+
+      // 画面上のズームと保存画像のズームを一致させる
+      const z = Math.max(1, Number(cameraZoom || 1));
+      if (z > 1) {
+        const centerX = sx + sw / 2;
+        const centerY = sy + sh / 2;
+        sw = sw / z;
+        sh = sh / z;
+        sx = centerX - sw / 2;
+        sy = centerY - sh / 2;
+      }
+
+      tempCanvas = document.createElement('canvas');
+      tempCanvas.width = portraitW;
+      tempCanvas.height = portraitH;
+      tempCtx = tempCanvas.getContext('2d');
+
+      // インカメラは画面表示がミラーなので、保存画像も見た目と同じ向きにする
       tempCtx.save();
-      tempCtx.translate(targetW, 0);
+      tempCtx.translate(portraitW, 0);
       tempCtx.scale(-1, 1);
-
-      const frontScale = 0.84; // 小さいほど上下に余裕。0.80〜0.90で調整可
-      const drawW = targetW * frontScale;
-      const drawH = targetH * frontScale;
-      const dx = (targetW - drawW) / 2;
-      const dy = (targetH - drawH) / 2 + targetH * 0.03; // 少し下げて頭上に余裕
-
-      // 背景を白で埋める。透明や黒になるのを防ぐ
-      tempCtx.fillStyle = '#ffffff';
-      tempCtx.fillRect(0, 0, targetW, targetH);
-
       tempCtx.drawImage(
         video,
         sx, sy, sw, sh,
-        dx, dy, drawW, drawH
+        0, 0, portraitW, portraitH
       );
-
       tempCtx.restore();
 
+      applySavedPhotoBrightness(tempCtx, portraitW, portraitH);
+
     } else {
-      // アウトカメラは従来どおり全面に切り出す
+      // アウトカメラは従来どおり、A4横比率で全面に切り出す
+      let sx, sy, sw, sh;
+
+      if (videoRatio > targetRatio) {
+        sh = videoH;
+        sw = videoH * targetRatio;
+        sx = (videoW - sw) / 2;
+        sy = 0;
+      } else {
+        sw = videoW;
+        sh = videoW / targetRatio;
+        sx = 0;
+        sy = (videoH - sh) / 2;
+      }
+
+      const z = Math.max(1, Number(cameraZoom || 1));
+      if (z > 1) {
+        const centerX = sx + sw / 2;
+        const centerY = sy + sh / 2;
+        sw = sw / z;
+        sh = sh / z;
+        sx = centerX - sw / 2;
+        sy = centerY - sh / 2;
+      }
+
+      tempCanvas = document.createElement('canvas');
+      tempCanvas.width = targetW;
+      tempCanvas.height = targetH;
+      tempCtx = tempCanvas.getContext('2d');
+
       tempCtx.drawImage(
         video,
         sx, sy, sw, sh,
         0, 0, targetW, targetH
       );
-    }
 
-    applySavedPhotoBrightness(tempCtx, targetW, targetH);
+      applySavedPhotoBrightness(tempCtx, targetW, targetH);
+    }
 
     const dataUrl = tempCanvas.toDataURL('image/png');
 
@@ -2074,10 +2100,16 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     uploadedImg.onload = () => {
       imgX = canvas.width / 2;
       imgY = canvas.height / 2;
-
-      // インカメラはすでに少し引きで保存しているので、編集開始は等倍
-      scale = 1;
       rotation = 0;
+
+      if (currentFacingMode === 'user') {
+        // 縦長写真をうちわ内に収めやすい初期サイズにする。
+        // 顔が大きすぎる場合は 0.78 → 0.72 へ下げる。
+        scale = (canvas.height * 0.86) / uploadedImg.height;
+      } else {
+        // アウトカメラはA4横画像なので等倍
+        scale = 1;
+      }
 
       clearFinalPreviewState();
       draw();
