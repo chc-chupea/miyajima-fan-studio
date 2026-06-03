@@ -1058,7 +1058,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         vi: (id) => `Đơn hàng đã được tiếp nhận.<br><br>Mã số: ${id}<br><br>Vui lòng chờ trong giây lát.<br>Hãy chụp màn hình và lưu lại mã số này.`
       };
 
-      const statusButtonTexts = {
+      const statusGuideTexts = {
         ja: {
           title: "この注文の状況を確認する",
           note: "※別画面で開きます。注文画面はこのまま残ります。"
@@ -1079,6 +1079,14 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           title: "Kiểm tra trạng thái đơn hàng này",
           note: "* Mở ở màn hình riêng. Trang đặt hàng hiện tại vẫn được giữ nguyên."
         }
+      };
+
+      const statusButtonTexts = {
+        ja: "この注文の状況を確認する",
+        en: "Check This Order",
+        zh: "查看此订单状态",
+        ko: "이 주문 상태 확인",
+        vi: "Kiểm tra đơn hàng này"
       };
 
       const sameDesignTexts = {
@@ -1145,7 +1153,9 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           ${statusGuide.note}
         </div>
 
-        <a href="status.html?id=${displayNo}" target="_blank" rel="noopener">
+        <a href="status.html?id=${displayNo}"
+           target="_blank"
+           rel="noopener"
            style="
              display:inline-block;
              width:100%;
