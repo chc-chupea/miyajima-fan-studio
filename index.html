@@ -1096,6 +1096,19 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       ctx.restore();
     }
 
+    function loadImageFromUrl(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+
+        img.src = url;
+      });
+    }
+
+
     function resetForSameDesignOrder() {
       document.getElementById('orderComplete').style.display = 'none';
       document.getElementById('orderArea').style.display = 'block';
@@ -1474,17 +1487,30 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         let storagePath = "";
 
         if (isReuseMode && reuseSourceOrder) {
-          imageUrl = reuseSourceOrder.imageUrl || "";
-          storagePath = reuseSourceOrder.storagePath || "";
-        } else {
-          draw();
+          const reusedImg = await loadImageFromUrl(reuseSourceOrder.imageUrl);
 
-          // 印刷・受け渡し確認用の番号を、アップロードするPNGだけに焼き込み
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(reusedImg, 0, 0, canvas.width, canvas.height);
+
           drawPrintLabel(printLabel);
 
           const pngDataUrl = canvas.toDataURL('image/png');
 
-          // 画面上の編集キャンバスには番号ラベルを残さない
+          storagePath = `orders/${issued.dayKey}/${issued.shortId}.png`;
+          const storageRef = ref(storage, storagePath);
+
+          await uploadString(storageRef, pngDataUrl, 'data_url', {
+            contentType: 'image/png'
+          });
+
+          imageUrl = await getDownloadURL(storageRef);
+        } else {
+          draw();
+
+          drawPrintLabel(printLabel);
+
+          const pngDataUrl = canvas.toDataURL('image/png');
+
           draw();
 
           storagePath = `orders/${issued.dayKey}/${issued.shortId}.png`;
