@@ -957,53 +957,9 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       if (snap.empty) {
         alert('元の注文が見つかりませんでした。受付番号をご確認ください。');
+        isReuseMode = false;
         return;
       }
-
-      function applyReuseModeToScreen() {
-        if (!isReuseMode || !reuseSourceOrder) return;
-
-        const reuseNotice = document.getElementById('reuseNotice');
-        reuseNotice.textContent =
-          reuseNoticeTexts[currentLang] || reuseNoticeTexts.ja;
-        reuseNotice.style.display = 'block';
-
-        const previewWrapper = document.getElementById('previewWrapper');
-        const previewImg = document.getElementById('previewImage');
-
-        previewImg.src = reuseSourceOrder.imageUrl;
-        previewWrapper.style.display = 'block';
-
-        document.getElementById('previewNotice').innerHTML =
-          reuseNoticeTexts[currentLang] || reuseNoticeTexts.ja;
-
-        document.getElementById('orderArea').style.display = 'block';
-        document.getElementById('orderComplete').style.display = 'none';
-
-        document.getElementById('area-canvas').style.display = 'none';
-        document.getElementById('area-select').style.display = 'none';
-      
-        if (reuseSourceOrder.priceType) {
-          const priceRadio = document.querySelector(
-            `input[name="priceType"][value="${reuseSourceOrder.priceType}"]`
-          );
-
-          if (priceRadio) {
-            priceRadio.checked = true;
-          }
-        }
-
-        document.getElementById('copiesSelect').value = '1';
-
-        updateTotalPrice();
-
-        document.getElementById('area-result').scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
-      }
-
-
 
       reuseSourceOrder = {
         id: snap.docs[0].id,
@@ -1011,6 +967,49 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       };
 
       console.log('再注文元データ:', reuseSourceOrder);
+    }
+
+    function applyReuseModeToScreen() {
+      if (!isReuseMode || !reuseSourceOrder) return;
+
+      const reuseNotice = document.getElementById('reuseNotice');
+      reuseNotice.textContent =
+        reuseNoticeTexts[currentLang] || reuseNoticeTexts.ja;
+      reuseNotice.style.display = 'block';
+
+      const previewWrapper = document.getElementById('previewWrapper');
+      const previewImg = document.getElementById('previewImage');
+
+      previewImg.src = reuseSourceOrder.imageUrl;
+      previewWrapper.style.display = 'block';
+
+      document.getElementById('previewNotice').innerHTML =
+        reuseNoticeTexts[currentLang] || reuseNoticeTexts.ja;
+
+      document.getElementById('orderArea').style.display = 'block';
+      document.getElementById('orderComplete').style.display = 'none';
+
+      document.getElementById('area-canvas').style.display = 'none';
+      document.getElementById('area-select').style.display = 'none';
+
+      if (reuseSourceOrder.priceType) {
+        const priceRadio = document.querySelector(
+          `input[name="priceType"][value="${reuseSourceOrder.priceType}"]`
+        );
+
+        if (priceRadio) {
+          priceRadio.checked = true;
+        }
+      }
+
+      document.getElementById('copiesSelect').value = '1';
+
+      updateTotalPrice();
+
+      document.getElementById('area-result').scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
     }
 
 
@@ -1330,8 +1329,12 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const orderBtn = document.getElementById('orderBtn');
       const noticeEl = document.getElementById('notice');
       const completeEl = document.getElementById('orderComplete');
+      const orderErrorEl = document.getElementById('orderError');
 
-      if (!uploadedImg) {
+      orderErrorEl.style.display = 'none';
+      orderErrorEl.textContent = '';
+
+      if (!uploadedImg && !isReuseMode) {
         noticeEl.textContent = saveWarningTexts[currentLang] || saveWarningTexts['ja'];
         noticeEl.style.color = 'red';
         noticeEl.style.display = 'block';
@@ -1339,7 +1342,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       }
 
       const copies = Number(document.getElementById('copiesSelect').value || 1);
-      const template = templateSelector.value;
+      const template = isReuseMode && reuseSourceOrder ? (reuseSourceOrder.template || templateSelector.value) : templateSelector.value;
 
       const priceType =
         document.querySelector('input[name="priceType"]:checked')?.value || 'general';
@@ -1534,7 +1537,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       } catch (err) {
         console.error(err);
         document.getElementById('sendingOverlay').style.display = 'none';
-        if (uploadedImg) draw();
+        if (uploadedImg && !isReuseMode) draw();
         orderErrorEl.textContent = errorTexts[currentLang] || errorTexts.ja;
         orderErrorEl.style.display = 'block';
 
