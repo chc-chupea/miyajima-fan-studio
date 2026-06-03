@@ -138,57 +138,34 @@
         break-inside: avoid;
         -webkit-region-break-inside: avoid;
       }
+    }
 
-.guide-fan1,
-.guide-fan2,
-.guide-fan3 {
+
+#cameraGuide {
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:2;
+}
+
+.template-guide-img {
   position:absolute;
   left:50%;
-  top:48%;
+  top:50%;
   transform:translate(-50%, -50%);
-  width:82vw;
-  max-width:420px;
-  height:58vw;
-  max-height:300px;
-  border:4px solid rgba(255,255,255,.95);
-  box-shadow:0 0 0 9999px rgba(0,0,0,.35);
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  opacity:0.45;
+  filter:drop-shadow(0 0 4px rgba(255,255,255,.9));
+  pointer-events:none;
 }
 
-.guide-fan1 {
-  border-radius:46% 46% 42% 42%;
-}
-
-.guide-fan2 {
-  width:78vw;
-  max-width:400px;
-  height:70vw;
-  max-height:360px;
-  clip-path:path("M 200 70 C 160 10 70 20 60 100 C 45 210 200 330 200 330 C 200 330 355 210 340 100 C 330 20 240 10 200 70 Z");
-  background:rgba(255,255,255,.12);
-  border:none;
-  outline:4px solid rgba(255,120,180,.95);
-}
-
-.guide-fan3 {
-  width:80vw;
-  max-width:400px;
-  height:80vw;
-  max-height:400px;
-  clip-path:polygon(
-    50% 4%,
-    61% 36%,
-    96% 36%,
-    68% 56%,
-    79% 92%,
-    50% 70%,
-    21% 92%,
-    32% 56%,
-    4% 36%,
-    39% 36%
-  );
-  background:rgba(255,255,255,.12);
-  border:none;
-  outline:4px solid rgba(255,200,0,.95);
+.camera-dim {
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.20);
+  pointer-events:none;
 }
 
 .guide-message {
@@ -198,16 +175,15 @@
   transform:translateX(-50%);
   width:80%;
   max-width:360px;
-  background:rgba(255,255,255,.9);
+  background:rgba(255,255,255,.92);
   color:#1565c0;
   padding:10px;
   border-radius:14px;
   text-align:center;
   font-weight:bold;
+  z-index:3;
 }
 
-
-    }
   </style>
 </head>
 <body>
@@ -677,6 +653,20 @@ Miyajima Fan Studio<br><br>
 
     templateImg.onload = () => draw();
 
+    function fitImageToCanvas(img) {
+      imgX = canvas.width / 2;
+      imgY = canvas.height / 2;
+
+      scale =
+        Math.max(
+          canvas.width / img.width,
+          canvas.height / img.height
+        ) * 0.65;
+
+      rotation = 0;
+    }
+
+
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -700,10 +690,8 @@ Miyajima Fan Studio<br><br>
       reader.onload = function(event) {
         uploadedImg = new Image();
         uploadedImg.onload = () => {
-          imgX = canvas.width / 2;
-          imgY = canvas.height / 2;
-          scale = 1;
-          rotation = 0;
+          fitImageToCanvas(uploadedImg);
+
           draw();
 
           // 画像が読み込まれたら「デザイン編集スペース」へ自動スクロール
@@ -1682,7 +1670,8 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     const guide = document.getElementById('cameraGuide');
 
     guide.innerHTML = `
-      <div class="${getCurrentGuideClass()}"></div>
+      <div class="camera-dim"></div>
+      <img class="template-guide-img" src="${templateSelector.value}" alt="うちわガイド">
       <div class="guide-message">${getGuideMessage()}</div>
     `;
 
@@ -1730,10 +1719,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     uploadedImg = new Image();
     uploadedImg.onload = () => {
-      imgX = canvas.width / 2;
-      imgY = canvas.height / 2;
-      scale = 1;
-      rotation = 0;
+      fitImageToCanvas(uploadedImg);
 
       draw();
       closeGuidedCamera();
@@ -1889,6 +1875,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     position:absolute;
     inset:0;
     pointer-events:none;
+    z-index:2;
   "></div>
 
   <div style="
@@ -1898,7 +1885,8 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     right:0;
     display:flex;
     gap:10px;
-    padding:0 16px;">
+    padding:0 16px;
+    z-index:4;">
 
     <button id="closeCameraBtn">
       キャンセル
