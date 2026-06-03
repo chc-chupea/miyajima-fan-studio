@@ -163,6 +163,14 @@
   pointer-events:none;
 }
 
+.template-guide-img.front-camera-guide {
+  width:112vw;
+  max-width:640px;
+  max-height:82vh;
+  top:48%;
+  opacity:0.45;
+}
+
 .camera-dim {
   position:absolute;
   inset:0;
@@ -1765,7 +1773,10 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     guide.innerHTML = `
       <div class="camera-dim"></div>
-      <img class="template-guide-img" src="${templateSelector.value}" alt="うちわガイド">
+      <img
+        class="template-guide-img ${currentFacingMode === 'user' ? 'front-camera-guide' : ''}"
+        src="${templateSelector.value}"
+        alt="うちわガイド">
       <div class="guide-message">${getGuideMessage()}</div>
     `;
 
