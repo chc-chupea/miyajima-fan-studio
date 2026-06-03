@@ -1965,7 +1965,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
 
-    // 黄みを避けるため、明るさだけ少し補正
+    // 黄みを避けるため、コントラストは上げず、明るさだけ少し補正
     const brightness = 1.06;
     const contrast = 1.00;
 
@@ -2003,15 +2003,16 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     if (currentFacingMode === 'user') {
       // インカメラ専用：
-      // スマホ縦写真として保存し、編集スペースで自由に拡大縮小してうちわ内に収める。
-      // A4横へ無理に引き伸ばさないので、横扁平にならない。
+      // スマホ縦写真として保存する。
+      // ただし編集画面でガイド時の見え方と大きくズレないよう、
+      // 初期配置は少し大きめにする。
       const portraitW = 1800;
       const portraitH = 2400;
       const portraitRatio = portraitW / portraitH;
 
       let sx, sy, sw, sh;
 
-      // スマホ画面で見えている縦長に近い比率で切り出す
+      // 縦長比率で切り出す。横扁平にしない。
       if (videoRatio > portraitRatio) {
         sh = videoH;
         sw = videoH * portraitRatio;
@@ -2098,17 +2099,25 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     uploadedImg = new Image();
 
     uploadedImg.onload = () => {
-      imgX = canvas.width / 2;
-      imgY = canvas.height / 2;
       rotation = 0;
 
       if (currentFacingMode === 'user') {
-        // 縦長写真をうちわ内に収めやすい初期サイズにする。
-        // 顔が大きすぎる場合は 0.78 → 0.72 へ下げる。
-        scale = (canvas.height * 0.86) / uploadedImg.height;
+        // インカメ縦写真の初期配置。
+        // ガイド撮影時の見え方に近づけるため、横幅をキャンバスの約68%にする。
+        // 以前より大きめなので、撮影後の見た目との差が小さい。
+        scale = (canvas.width * 0.68) / uploadedImg.width;
+
+        imgX = canvas.width / 2;
+
+        // 顔が中央〜やや上に来やすいよう、少し下げて配置。
+        // 頭が切れる場合は 0.03、顔が下がりすぎる場合は 0.00 に調整。
+        imgY = canvas.height / 2 + canvas.height * 0.02;
+
       } else {
         // アウトカメラはA4横画像なので等倍
         scale = 1;
+        imgX = canvas.width / 2;
+        imgY = canvas.height / 2;
       }
 
       clearFinalPreviewState();
