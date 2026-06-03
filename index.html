@@ -225,7 +225,8 @@
   top:16px;
   right:16px;
   width:auto;
-  z-index:6;
+  margin:0;
+  z-index:10;
   padding:8px 14px;
   border-radius:18px;
   background:rgba(33,150,243,.92);
@@ -1744,11 +1745,16 @@ document.getElementById('saveBtn').addEventListener('click', () => {
   }
 
   async function switchCamera() {
+    const btn = document.getElementById('switchCameraBtn');
+    if (btn) btn.disabled = true;
+
     currentFacingMode =
       currentFacingMode === 'environment' ? 'user' : 'environment';
 
     closeGuidedCamera();
     await openGuidedCamera();
+
+    if (btn) btn.disabled = false;
   }
 
   async function openGuidedCamera() {
@@ -2002,6 +2008,9 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     document.getElementById('captureGuideBtn')
       .addEventListener('click', captureGuidedPhoto);
+
+    document.getElementById('switchCameraBtn')
+      .addEventListener('click', switchCamera);
 
 
 
