@@ -243,6 +243,80 @@
   box-shadow:0 3px 8px rgba(0,0,0,.25);
 }
 
+#imageLoader {
+  display:none !important;
+}
+
+
+#customFileLabel {
+  background:#90caf9 !important;
+  color:#0d47a1 !important;
+  box-shadow:none !important;
+  border:none;
+  text-align:center;
+  cursor:pointer;
+}
+#customFileLabel:hover {
+  background:#64b5f6 !important;
+  transform:none !important;
+}
+
+
+#guidedCameraBtn {
+  background:#4caf50 !important;
+  color:white !important;
+}
+#guidedCameraBtn:hover {
+  background:#43a047 !important;
+}
+
+
+#guidedCameraBtn.cameraSelectBtn,
+#guidedCameraBtn {
+  display:block !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+  margin:10px 0 !important;
+  padding:12px 24px !important;
+  border-radius:30px !important;
+  border:none !important;
+  background:#4caf50 !important;
+  color:white !important;
+  font-size:16px !important;
+  text-align:center !important;
+  box-shadow:0 4px 8px rgba(0,0,0,0.2) !important;
+}
+
+#guidedCameraBtn.cameraSelectBtn:hover,
+#guidedCameraBtn:hover {
+  background:#43a047 !important;
+}
+
+#photoSelectBtn {
+  display:block !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+  margin:10px 0 !important;
+  padding:12px 24px !important;
+  border-radius:30px !important;
+  border:none !important;
+  background:#90caf9 !important;
+  color:#0d47a1 !important;
+  font-size:16px !important;
+  text-align:center !important;
+  box-shadow:none !important;
+  cursor:pointer !important;
+}
+
+#photoSelectBtn:hover {
+  background:#64b5f6 !important;
+  transform:none !important;
+}
+
+#imageLoader {
+  display:none !important;
+}
+
   </style>
 </head>
 <body>
@@ -337,11 +411,24 @@
   <br />
   <!-- 変更前 -->
   <!-- <input type="file" id="imageLoader" accept="image/*" /> -->
+  <button id="guidedCameraBtn"
+    data-ja="📷 カメラで撮影する"
+    data-en="📷 Take Photo"
+    data-zh="📷 拍照"
+    data-ko="📷 사진 촬영"
+    data-vi="📷 Chụp ảnh"
+    class="cameraSelectBtn">
+    📷 カメラで撮影する
+  </button>
 
   <label for="imageLoader"
-    data-ja="写真を選んでください"
-    data-en="Choose a photo">
-    写真を選んでください
+    id="photoSelectBtn"
+    data-ja="🖼 写真を選ぶ"
+    data-en="🖼 Choose Photo"
+    data-zh="🖼 选择照片"
+    data-ko="🖼 사진 선택"
+    data-vi="🖼 Chọn ảnh">
+    🖼 写真を選ぶ
   </label>
 
   <input
@@ -349,14 +436,6 @@
     id="imageLoader"
     accept="image/*">
 
-  <button id="guidedCameraBtn"
-    data-ja="ガイド付きカメラで撮る"
-    data-en="Take with Guide Camera"
-    data-zh="使用引导相机拍摄"
-    data-ko="가이드 카메라로 촬영"
-    data-vi="Chụp bằng camera có hướng dẫn">
-    ガイド付きカメラで撮る
-  </button>
 
   <br />
   <p id="reuploadNotice"
