@@ -138,6 +138,75 @@
         break-inside: avoid;
         -webkit-region-break-inside: avoid;
       }
+
+.guide-fan1,
+.guide-fan2,
+.guide-fan3 {
+  position:absolute;
+  left:50%;
+  top:48%;
+  transform:translate(-50%, -50%);
+  width:82vw;
+  max-width:420px;
+  height:58vw;
+  max-height:300px;
+  border:4px solid rgba(255,255,255,.95);
+  box-shadow:0 0 0 9999px rgba(0,0,0,.35);
+}
+
+.guide-fan1 {
+  border-radius:46% 46% 42% 42%;
+}
+
+.guide-fan2 {
+  width:78vw;
+  max-width:400px;
+  height:70vw;
+  max-height:360px;
+  clip-path:path("M 200 70 C 160 10 70 20 60 100 C 45 210 200 330 200 330 C 200 330 355 210 340 100 C 330 20 240 10 200 70 Z");
+  background:rgba(255,255,255,.12);
+  border:none;
+  outline:4px solid rgba(255,120,180,.95);
+}
+
+.guide-fan3 {
+  width:80vw;
+  max-width:400px;
+  height:80vw;
+  max-height:400px;
+  clip-path:polygon(
+    50% 4%,
+    61% 36%,
+    96% 36%,
+    68% 56%,
+    79% 92%,
+    50% 70%,
+    21% 92%,
+    32% 56%,
+    4% 36%,
+    39% 36%
+  );
+  background:rgba(255,255,255,.12);
+  border:none;
+  outline:4px solid rgba(255,200,0,.95);
+}
+
+.guide-message {
+  position:absolute;
+  top:70px;
+  left:50%;
+  transform:translateX(-50%);
+  width:80%;
+  max-width:360px;
+  background:rgba(255,255,255,.9);
+  color:#1565c0;
+  padding:10px;
+  border-radius:14px;
+  text-align:center;
+  font-weight:bold;
+}
+
+
     }
   </style>
 </head>
@@ -234,16 +303,26 @@
   <!-- 変更前 -->
   <!-- <input type="file" id="imageLoader" accept="image/*" /> -->
 
-  <label for="imageLoader" id="customFileLabel"
-    data-ja="写真を撮る／ライブラリから選ぶ"
-    data-en="Take Photo / Choose from Library"
-    data-zh="拍照 / 从图库选择"
-    data-ko="사진 찍기 / 라이브러리에서 선택"
-    data-vi="Chụp ảnh / Chọn từ thư viện">
-    写真を撮る／ライブラリから選ぶ
+  <label for="imageLoader"
+    data-ja="写真を選んでください"
+    data-en="Choose a photo">
+    写真を選んでください
   </label>
 
-  <input type="file" id="imageLoader" accept="image/*" style="display:none;" />
+  <input
+    type="file"
+    id="imageLoader"
+    accept="image/*">
+
+  <button id="guidedCameraBtn"
+    data-ja="ガイド付きカメラで撮る"
+    data-en="Take with Guide Camera"
+    data-zh="使用引导相机拍摄"
+    data-ko="가이드 카메라로 촬영"
+    data-vi="Chụp bằng camera có hướng dẫn">
+    ガイド付きカメラで撮る
+  </button>
+
   <br />
   <p id="reuploadNotice"
      data-ja="※ 画像は何度でも選び直せます。"
@@ -583,6 +662,7 @@ Miyajima Fan Studio<br><br>
     const canvas = document.getElementById('mainCanvas');
     const ctx = canvas.getContext('2d');
     let uploadedImg = null;
+    let cameraStream = null;
     let imgX = 100, imgY = 100, scale = 1, rotation = 0;
     let isDragging = false, lastX, lastY;
 
@@ -1574,6 +1654,100 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     document.getElementById('orderBtn').addEventListener('click', submitOrder);
 
+    function getCurrentGuideClass() {
+      const template = templateSelector.value;
+
+      if (template.includes('fan2')) return 'guide-fan2';
+      if (template.includes('fan3')) return 'guide-fan3';
+      return 'guide-fan1';
+    }
+
+    function getGuideMessage() {
+      const template = templateSelector.value;
+
+      if (template.includes('fan2')) {
+    return 'うちわの中に顔や体を入れてね';
+      }
+
+      if (template.includes('fan3')) {
+    return 'うちわの中に顔や体を入れてね';
+  }
+
+    return 'うちわの中に顔や体を入れてね';
+  }
+
+  async function openGuidedCamera() {
+    const modal = document.getElementById('cameraModal');
+    const video = document.getElementById('cameraVideo');
+    const guide = document.getElementById('cameraGuide');
+
+    guide.innerHTML = `
+      <div class="${getCurrentGuideClass()}"></div>
+      <div class="guide-message">${getGuideMessage()}</div>
+    `;
+
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment'
+        },
+        audio: false
+      });
+
+      video.srcObject = cameraStream;
+      modal.style.display = 'block';
+
+    } catch (err) {
+      alert('カメラを起動できませんでした。カメラの許可を確認してください。');
+      console.error(err);
+    }
+  }
+
+  function closeGuidedCamera() {
+  const modal = document.getElementById('cameraModal');
+  const video = document.getElementById('cameraVideo');
+
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+
+    video.srcObject = null;
+    modal.style.display = 'none';
+  }
+
+  function captureGuidedPhoto() {
+    const video = document.getElementById('cameraVideo');
+
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = video.videoWidth;
+    tempCanvas.height = video.videoHeight;
+
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+
+    const dataUrl = tempCanvas.toDataURL('image/png');
+
+    uploadedImg = new Image();
+    uploadedImg.onload = () => {
+      imgX = canvas.width / 2;
+      imgY = canvas.height / 2;
+      scale = 1;
+      rotation = 0;
+
+      draw();
+      closeGuidedCamera();
+
+      document.getElementById('area-canvas').scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    };
+
+    uploadedImg.src = dataUrl;
+  }
+
+
     function setLanguage(lang) {
       currentLang = lang;
 
@@ -1660,6 +1834,18 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       document.getElementById('howToModal').style.display = 'flex';
     });
 
+
+    document.getElementById('guidedCameraBtn')
+      .addEventListener('click', openGuidedCamera);
+
+    document.getElementById('closeCameraBtn')
+      .addEventListener('click', closeGuidedCamera);
+
+    document.getElementById('captureGuideBtn')
+      .addEventListener('click', captureGuidedPhoto);
+
+
+
 </script>
 
 <div id="sendingOverlay"
@@ -1680,6 +1866,52 @@ document.getElementById('saveBtn').addEventListener('click', () => {
   送信中です…<br>
   画面を閉じないでください
 </div>
+
+<div id="cameraModal" style="
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#000;
+  z-index:99999;
+  color:white;
+">
+
+  <video id="cameraVideo"
+    autoplay
+    playsinline
+    style="
+      width:100%;
+      height:100%;
+      object-fit:cover;">
+  </video>
+
+  <div id="cameraGuide" style="
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+  "></div>
+
+  <div style="
+    position:absolute;
+    bottom:20px;
+    left:0;
+    right:0;
+    display:flex;
+    gap:10px;
+    padding:0 16px;">
+
+    <button id="closeCameraBtn">
+      キャンセル
+    </button>
+
+    <button id="captureGuideBtn">
+      この位置で撮影
+    </button>
+
+  </div>
+
+</div>
+
 
 </body>
 </html>
