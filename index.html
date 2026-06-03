@@ -415,6 +415,18 @@
     </button>
   </div>
 
+  <div id="orderError"
+       style="
+         display:none;
+         margin-top:12px;
+         padding:12px;
+         border-radius:12px;
+         background:#ffebee;
+         color:#c62828;
+         font-weight:700;
+         text-align:center;">
+  </div>
+
   <div id="orderComplete" style="display:none; margin-top:16px; padding:16px; border-radius:16px; background:#e8f5e9; color:#1b5e20; text-align:center; font-size:18px; font-weight:700;"></div>
 
 
@@ -1050,6 +1062,10 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     function renderCompleteMessage(displayNo) {
       const completeEl = document.getElementById('orderComplete');
 
+      const orderErrorEl = document.getElementById('orderError');
+      orderErrorEl.style.display = 'none';
+      orderErrorEl.textContent = '';
+
       const completeTexts = {
         ja: (id) => `ご注文を受け付けました。<br><br>受付番号：${id}<br><br>完成までしばらくお待ちください。<br>この番号をスクリーンショットで保存してください。`,
         en: (id) => `Your order has been received.<br><br>Order No.: ${id}<br><br>Please wait while we prepare your fan.<br>Please save this number by taking a screenshot.`,
@@ -1394,9 +1410,14 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         console.error(err);
         document.getElementById('sendingOverlay').style.display = 'none';
         if (uploadedImg) draw();
-        noticeEl.textContent = errorTexts[currentLang] || errorTexts.ja;
-        noticeEl.style.color = 'red';
-        noticeEl.style.display = 'block';
+        orderErrorEl.textContent = errorTexts[currentLang] || errorTexts.ja;
+        orderErrorEl.style.display = 'block';
+
+        orderErrorEl.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+
         orderBtn.disabled = false;
         orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || '注文する';
       }
