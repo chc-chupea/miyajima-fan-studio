@@ -2009,18 +2009,52 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     const tempCtx = tempCanvas.getContext('2d');
 
+    const drawMirrored = (drawFn) => {
+      if (currentFacingMode === 'user') {
+        tempCtx.save();
+        tempCtx.translate(targetW, 0);
+        tempCtx.scale(-1, 1);
+        drawFn();
+        tempCtx.restore();
+      } else {
+        drawFn();
+      }
+    };
+
     if (currentFacingMode === 'user') {
-      // インカメラは画面表示をミラーにしているため、保存画像も見た目と同じ向きにする
-      tempCtx.save();
-      tempCtx.translate(targetW, 0);
-      tempCtx.scale(-1, 1);
-      tempCtx.drawImage(
-        video,
-        sx, sy, sw, sh,
-        0, 0, targetW, targetH
-      );
-      tempCtx.restore();
+      // インカメラ専用：
+      // 1) 背景は従来どおり全面に敷く
+      // 2) その上に、上下に余裕を持たせた「少し引き」の映像を重ねる
+      // これにより、編集スペースで拡大・縮小して切りやすくする
+
+      drawMirrored(() => {
+        tempCtx.drawImage(
+          video,
+          sx, sy, sw, sh,
+          0, 0, targetW, targetH
+        );
+      });
+
+      // 少し引きの前景。1.35は「全部入りすぎず、顔が大きくなりすぎない」初期値。
+      // もっと余白が欲しければ 1.25、もっと大きく見せたければ 1.45。
+      const frontFitScale =
+        Math.min(targetW / videoW, targetH / videoH) * 1.35;
+
+      const dw = videoW * frontFitScale;
+      const dh = videoH * frontFitScale;
+      const dx = (targetW - dw) / 2;
+      const dy = (targetH - dh) / 2;
+
+      drawMirrored(() => {
+        tempCtx.drawImage(
+          video,
+          0, 0, videoW, videoH,
+          dx, dy, dw, dh
+        );
+      });
+
     } else {
+      // アウトカメラは従来どおり、画面いっぱいにきれいに切り出す
       tempCtx.drawImage(
         video,
         sx, sy, sw, sh,
