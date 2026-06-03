@@ -1965,21 +1965,15 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
 
-    // 保存画像用の明るさ補正。
-    // 1.08〜1.15の範囲が自然。今回は少し明るめの1.12。
+    // 黄みを避けるため、コントラストは上げず、明るさだけ少し補正
     const brightness = 1.06;
     const contrast = 1.00;
 
     for (let i = 0; i < data.length; i += 4) {
       for (let c = 0; c < 3; c++) {
         let v = data[i + c];
-
-        // brightness
         v = v * brightness;
-
-        // contrast
         v = (v - 128) * contrast + 128;
-
         data[i + c] = Math.max(0, Math.min(255, v));
       }
     }
@@ -2006,18 +2000,37 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     let sx, sy, sw, sh;
 
-    if (videoRatio > targetRatio) {
-      // カメラ映像が横長すぎる場合：左右を切る
-      sh = videoH;
-      sw = videoH * targetRatio;
-      sx = (videoW - sw) / 2;
-      sy = 0;
+    if (currentFacingMode === 'user') {
+      // インカメラ専用：
+      // 二重構造をやめて、1枚だけで描画する。
+      // 通常より少し広めに切り出し、編集スペースで上下左右に動かしやすくする。
+      const marginFactor = 1.18; // 数値を大きくすると、より引きで撮れる
+
+      if (videoRatio > targetRatio) {
+        sh = videoH;
+        sw = Math.min(videoW, videoH * targetRatio * marginFactor);
+        sx = (videoW - sw) / 2;
+        sy = 0;
+      } else {
+        sw = videoW;
+        sh = Math.min(videoH, (videoW / targetRatio) * marginFactor);
+        sx = 0;
+        sy = (videoH - sh) / 2;
+      }
+
     } else {
-      // カメラ映像が縦長すぎる場合：上下を切る
-      sw = videoW;
-      sh = videoW / targetRatio;
-      sx = 0;
-      sy = (videoH - sh) / 2;
+      // アウトカメラは従来どおり
+      if (videoRatio > targetRatio) {
+        sh = videoH;
+        sw = videoH * targetRatio;
+        sx = (videoW - sw) / 2;
+        sy = 0;
+      } else {
+        sw = videoW;
+        sh = videoW / targetRatio;
+        sx = 0;
+        sy = (videoH - sh) / 2;
+      }
     }
 
     // 画面上のズームと保存画像のズームを一致させる
@@ -2037,52 +2050,18 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     const tempCtx = tempCanvas.getContext('2d');
 
-    const drawMirrored = (drawFn) => {
-      if (currentFacingMode === 'user') {
-        tempCtx.save();
-        tempCtx.translate(targetW, 0);
-        tempCtx.scale(-1, 1);
-        drawFn();
-        tempCtx.restore();
-      } else {
-        drawFn();
-      }
-    };
-
     if (currentFacingMode === 'user') {
-      // インカメラ専用：
-      // 1) 背景は従来どおり全面に敷く
-      // 2) その上に、上下に余裕を持たせた「少し引き」の映像を重ねる
-      // これにより、編集スペースで拡大・縮小して切りやすくする
-
-      drawMirrored(() => {
-        tempCtx.drawImage(
-          video,
-          sx, sy, sw, sh,
-          0, 0, targetW, targetH
-        );
-      });
-
-      // 少し引きの前景。1.35は「全部入りすぎず、顔が大きくなりすぎない」初期値。
-      // もっと余白が欲しければ 1.25、もっと大きく見せたければ 1.45。
-      const frontFitScale =
-        Math.min(targetW / videoW, targetH / videoH) * 1.35;
-
-      const dw = videoW * frontFitScale;
-      const dh = videoH * frontFitScale;
-      const dx = (targetW - dw) / 2;
-      const dy = (targetH - dh) / 2;
-
-      drawMirrored(() => {
-        tempCtx.drawImage(
-          video,
-          0, 0, videoW, videoH,
-          dx, dy, dw, dh
-        );
-      });
-
+      // インカメラは画面表示をミラーにしているため、保存画像も見た目と同じ向きにする
+      tempCtx.save();
+      tempCtx.translate(targetW, 0);
+      tempCtx.scale(-1, 1);
+      tempCtx.drawImage(
+        video,
+        sx, sy, sw, sh,
+        0, 0, targetW, targetH
+      );
+      tempCtx.restore();
     } else {
-      // アウトカメラは従来どおり、画面いっぱいにきれいに切り出す
       tempCtx.drawImage(
         video,
         sx, sy, sw, sh,
