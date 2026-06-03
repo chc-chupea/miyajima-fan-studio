@@ -395,18 +395,18 @@
       data-vi="Trơn">無地</option>
 
     <option value="fan2-highres.png"
-      data-ja="母の日"
-      data-en="Mother's Day"
-      data-zh="母亲节"
-      data-ko="어머니의 날"
-      data-vi="Ngày của Mẹ">母の日</option>
+      data-ja="夏①"
+      data-en="Summer ①"
+      data-zh="夏季①"
+      data-ko="여름①"
+      data-vi="Mùa hè ①">夏①</option>
 
     <option value="fan3-highres.png"
-      data-ja="父の日"
-      data-en="Father's Day"
-      data-zh="父亲节"
-      data-ko="아버지의 날"
-      data-vi="Ngày của Cha">父の日</option>
+      data-ja="夏②"
+      data-en="Summer ②"
+      data-zh="夏季②"
+      data-ko="여름②"
+      data-vi="Mùa hè ②">夏②</option>
   </select>
 
   <br />
@@ -680,7 +680,7 @@ Miyajima Fan Studio<br><br>
       getDocs,
       limit
     } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
-    import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
+    import { getStorage, ref, uploadString, getDownloadURL, getBlob } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBKSYZgaSVTu-HO_lS1Tp2eFjSjMuOONNI",
@@ -1364,6 +1364,37 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       });
     }
 
+    async function loadReuseImage(order) {
+      // 再注文時は imageUrl を直接 canvas に描くと CORS で失敗することがある。
+      // storagePath がある場合は Firebase Storage から Blob として取得し、
+      // objectURL にしてから描画する。
+      if (order && order.storagePath) {
+        const blob = await getBlob(ref(storage, order.storagePath));
+        const objectUrl = URL.createObjectURL(blob);
+
+        try {
+          const img = await new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = reject;
+            image.src = objectUrl;
+          });
+
+          return img;
+        } finally {
+          setTimeout(() => {
+            try { URL.revokeObjectURL(objectUrl); } catch (e) {}
+          }, 1000);
+        }
+      }
+
+      if (order && order.imageUrl) {
+        return loadImageFromUrl(order.imageUrl);
+      }
+
+      throw new Error("再注文元の画像情報が見つかりません。");
+    }
+
 
     function resetForSameDesignOrder() {
       document.getElementById('orderComplete').style.display = 'none';
@@ -1745,7 +1776,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         let storagePath = "";
 
         if (isReuseMode && reuseSourceOrder) {
-          const reusedImg = await loadImageFromUrl(reuseSourceOrder.imageUrl);
+          const reusedImg = await loadReuseImage(reuseSourceOrder);
 
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(reusedImg, 0, 0, canvas.width, canvas.height);
