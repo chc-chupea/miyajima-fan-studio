@@ -390,14 +390,24 @@
      data-vi="※ Dùng một ngón tay để di chuyển ảnh. Chụm để phóng to/thu nhỏ, hai ngón tay để xoay."
      style="font-size: 12px; color: #666; margin-bottom: 10px;"></p>
    
+  <button id="retakePhotoBtn"
+    data-ja="📷 撮り直す"
+    data-en="📷 Retake Photo"
+    data-zh="📷 重新拍摄"
+    data-ko="📷 다시 촬영"
+    data-vi="📷 Chụp lại"
+    style="background:#4caf50; color:white; box-shadow:none;">
+    📷 撮り直す
+  </button>
+
   <button id="reselectPhotoBtn"
-    data-ja="写真を選び直す"
-    data-en="Choose Another Photo"
-    data-zh="重新选择照片"
-    data-ko="사진 다시 선택"
-    data-vi="Chọn lại ảnh"
+    data-ja="🖼 写真を選び直す"
+    data-en="🖼 Choose Another Photo"
+    data-zh="🖼 重新选择照片"
+    data-ko="🖼 사진 다시 선택"
+    data-vi="🖼 Chọn lại ảnh"
     style="background:#90caf9; color:#0d47a1; box-shadow:none;">
-    写真を選び直す
+    🖼 写真を選び直す
   </button>
 
   <button id="saveBtn"
@@ -746,12 +756,49 @@ Miyajima Fan Studio<br><br>
      }
      
 
+    function clearFinalPreviewState() {
+      const previewWrapper = document.getElementById('previewWrapper');
+      const previewImg = document.getElementById('previewImage');
+      const previewNotice = document.getElementById('previewNotice');
+      const orderArea = document.getElementById('orderArea');
+      const orderComplete = document.getElementById('orderComplete');
+      const orderError = document.getElementById('orderError');
+      const noticeEl = document.getElementById('notice');
+
+      if (previewWrapper) previewWrapper.style.display = 'none';
+      if (previewImg) previewImg.src = '';
+      if (previewNotice) previewNotice.innerHTML = '';
+      if (orderArea) orderArea.style.display = 'none';
+      if (orderComplete) {
+        orderComplete.style.display = 'none';
+        orderComplete.innerHTML = '';
+      }
+      if (orderError) {
+        orderError.style.display = 'none';
+        orderError.textContent = '';
+      }
+      if (noticeEl) {
+        noticeEl.textContent = '';
+        noticeEl.style.display = 'none';
+      }
+
+      lastCompleteDisplayNo = null;
+
+      const orderBtn = document.getElementById('orderBtn');
+      if (orderBtn) {
+        orderBtn.disabled = false;
+        orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || '注文する';
+      }
+    }
+
+
     document.getElementById('imageLoader').addEventListener('change', function(e) {
       const reader = new FileReader();
       reader.onload = function(event) {
         uploadedImg = new Image();
         uploadedImg.onload = () => {
           fitImageToCanvas(uploadedImg);
+          clearFinalPreviewState();
 
           draw();
 
@@ -769,7 +816,13 @@ Miyajima Fan Studio<br><br>
     });
 
 
+    document.getElementById('retakePhotoBtn').addEventListener('click', async () => {
+      // ガイド付きカメラで撮り直す
+      await openGuidedCamera();
+    });
+
     document.getElementById('reselectPhotoBtn').addEventListener('click', () => {
+      // スマホ内の写真を選び直す
       document.getElementById('imageLoader').click();
     });
 
@@ -1907,6 +1960,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       scale = 1;
       rotation = 0;
 
+      clearFinalPreviewState();
       draw();
       closeGuidedCamera();
 
