@@ -107,7 +107,8 @@
       statusClosedTitle: "受付終了", statusClosedBody: "この注文は受付終了になっています。", unknown: "現在の状況を確認できません。",
       copiesLabel: "注文本数",
       totalLabel: "合計金額",
-      priceTypeLabel: "料金区分"
+      priceTypeLabel: "料金区分",
+      backToCreate: "作成画面に戻る"
     },
     en: {
       title: "Check Order Status", label: "Enter your reception number", button: "Check Status",
@@ -122,7 +123,8 @@
       statusClosedTitle: "Closed", statusClosedBody: "This order has been closed.", unknown: "Unable to check the current status.",
       copiesLabel: "Quantity",
       totalLabel: "Total",
-      priceTypeLabel: "Price Type"
+      priceTypeLabel: "Price Type",
+      backToCreate: "Back to Create Page"
     },
     zh: {
       title: "订单状态确认", label: "请输入受理编号", button: "查看状态",
@@ -137,7 +139,8 @@
       statusClosedTitle: "已结束", statusClosedBody: "此订单已结束。", unknown: "无法确认当前状态。",
       copiesLabel: "订购数量",
       totalLabel: "总计",
-      priceTypeLabel: "价格类型"
+      priceTypeLabel: "价格类型",
+      backToCreate: "返回制作页面"
     },
     ko: {
       title: "주문 상태 확인", label: "접수번호를 입력해 주세요", button: "상태 확인",
@@ -152,7 +155,8 @@
       statusClosedTitle: "접수 종료", statusClosedBody: "이 주문은 종료되었습니다.", unknown: "현재 상태를 확인할 수 없습니다.",
       copiesLabel: "주문 수량",
       totalLabel: "합계",
-      priceTypeLabel: "요금 구분"
+      priceTypeLabel: "요금 구분",
+      backToCreate: "제작 화면으로 돌아가기"
     },
     vi: {
       title: "Kiểm tra trạng thái đơn hàng", label: "Nhập mã số tiếp nhận", button: "Kiểm tra trạng thái",
@@ -167,7 +171,8 @@
       statusClosedTitle: "Đã kết thúc", statusClosedBody: "Đơn hàng này đã kết thúc.", unknown: "Không thể kiểm tra trạng thái hiện tại.",
       copiesLabel: "Số lượng",
       totalLabel: "Tổng cộng",
-      priceTypeLabel: "Loại giá"
+      priceTypeLabel: "Loại giá",
+      backToCreate: "Quay lại màn hình tạo"
     }
   };
 
@@ -310,6 +315,22 @@
         ${totalPriceHtml}
 
         <div>${body}</div>
+
+        <div style="margin-top:20px;">
+          <a href="index.html"
+             style="
+               display:inline-block;
+               width:100%;
+               box-sizing:border-box;
+               padding:12px;
+               background:#ff9800;
+               color:white;
+               text-decoration:none;
+               border-radius:20px;
+               font-weight:bold;">
+            ${t("backToCreate")}
+          </a>
+        </div>
       </div>`;
   }
 
