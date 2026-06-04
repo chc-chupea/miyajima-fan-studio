@@ -318,6 +318,35 @@
   display:none !important;
 }
 
+
+.receipt-code-box {
+  margin:14px auto;
+  padding:16px;
+  border-radius:18px;
+  background:#e3f2fd;
+  color:#0d47a1;
+  text-align:center;
+  box-shadow:0 3px 8px rgba(0,0,0,.12);
+}
+.receipt-code-label {
+  font-size:16px;
+  font-weight:700;
+  margin-bottom:6px;
+}
+.receipt-code-number {
+  font-size:42px;
+  line-height:1.1;
+  font-weight:900;
+  letter-spacing:2px;
+}
+.receipt-code-note {
+  margin-top:10px;
+  font-size:14px;
+  color:#1b5e20;
+  font-weight:700;
+  line-height:1.6;
+}
+
   </style>
 </head>
 <body>
@@ -696,6 +725,9 @@ Miyajima Fan Studio<br><br>
     const db = getFirestore(app);
     const storage = getStorage(app);
 
+    const params = new URLSearchParams(window.location.search);
+    const shopId = (params.get("shop") || "miyajima").replace(/[^a-zA-Z0-9_-]/g, "");
+
     const saveWarningTexts = {
       ja: '⚠️ まだファイルが選ばれていません。うちわに使う画像を選んでください。',
       en: '⚠️ No file selected yet. Please upload an image.',
@@ -731,7 +763,7 @@ Miyajima Fan Studio<br><br>
           <li><b>うちわに合わせる：</b> 指で移動・拡大縮小・回転できます。</li>
           <li><b>本数を選ぶ：</b> 1つの画像で最大10本まで作れます。</li>
           <li><b>SEND：</b> 送信後は変更できません。番号が出るまで閉じないでください。</li>
-          <li><b>待つ：</b> "3"のような受付番号が表示されます。</li>
+          <li><b>待つ：</b> "060410"のような受付番号が表示されます。</li>
           <li><b>受け取る：</b> READYになったら、番号を見せて受取・お支払いください。</li>
         </ol>
       `,
@@ -741,7 +773,7 @@ Miyajima Fan Studio<br><br>
           <li><b>Adjust:</b> Move, zoom, and rotate with your fingers.</li>
           <li><b>Choose copies:</b> Up to 10 fans from one image.</li>
           <li><b>SEND:</b> You cannot change it after sending. Do not close the page until your number appears.</li>
-          <li><b>Wait:</b> Your number, such as "3", and wait time will appear.</li>
+          <li><b>Wait:</b> Your number, such as "060410", and wait time will appear.</li>
           <li><b>Pick up:</b> When READY appears, show your number, pay, and receive your fan.</li>
         </ol>
       `,
@@ -751,7 +783,7 @@ Miyajima Fan Studio<br><br>
           <li><b>调整位置：</b> 可用手指移动、放大缩小、旋转。</li>
           <li><b>选择数量：</b> 同一张图片最多可制作10把团扇。</li>
           <li><b>SEND：</b> 发送后不能更改。请在号码出现前不要关闭页面。</li>
-          <li><b>等待：</b> 会显示"3"等号码和等待时间。</li>
+          <li><b>等待：</b> 会显示“060410”等号码和等待时间。</li>
           <li><b>领取：</b> 显示READY后，请出示号码，付款并领取。</li>
         </ol>
       `,
@@ -761,7 +793,7 @@ Miyajima Fan Studio<br><br>
           <li><b>조정:</b> 손가락으로 이동, 확대/축소, 회전할 수 있습니다.</li>
           <li><b>수량 선택:</b> 한 이미지로 최대 10개까지 만들 수 있습니다.</li>
           <li><b>SEND:</b> 전송 후에는 변경할 수 없습니다. 번호가 나올 때까지 페이지를 닫지 마세요.</li>
-          <li><b>대기:</b> "3" 같은 번호와 대기 시간이 표시됩니다.</li>
+          <li><b>대기:</b> "060410" 같은 번호와 대기 시간이 표시됩니다.</li>
           <li><b>수령:</b> READY가 표시되면 번호를 보여주고 결제 후 받아가세요.</li>
         </ol>
       `,
@@ -1278,6 +1310,13 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       return `${yy}${mm}${dd}`;
     }
 
+    function createDisplayCode(dayKey, displayNo) {
+      // お客さま用の受付番号。例：260604 + 10番 → 060410
+      const mmdd = String(dayKey).slice(2);
+      return `${mmdd}${Number(displayNo)}`;
+    }
+
+
     async function issueQueueId() {
       const dayKey = getTodayKey();
       const counterRef = doc(db, 'counters', dayKey);
@@ -1496,7 +1535,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         totalPriceTexts[currentLang] || totalPriceTexts.ja;
     }
 
-    function renderCompleteMessage(displayNo) {
+    function renderCompleteMessage(displayCode, queueId) {
       const completeEl = document.getElementById('orderComplete');
 
       const orderErrorEl = document.getElementById('orderError');
@@ -1504,34 +1543,49 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       orderErrorEl.textContent = '';
 
       const completeTexts = {
-        ja: (id) => `ご注文を受け付けました。<br><br>受付番号：${id}<br><br>完成までしばらくお待ちください。<br>この番号をスクリーンショットで保存してください。`,
-        en: (id) => `Your order has been received.<br><br>Order No.: ${id}<br><br>Please wait while we prepare your fan.<br>Please save this number by taking a screenshot.`,
-        zh: (id) => `您的订单已受理。<br><br>受理编号：${id}<br><br>请稍候，我们正在制作。<br>请截图保存此编号。`,
-        ko: (id) => `주문이 접수되었습니다.<br><br>접수번호：${id}<br><br>완성될 때까지 잠시 기다려 주세요.<br>이 번호를 스크린샷으로 저장해 주세요.`,
-        vi: (id) => `Đơn hàng đã được tiếp nhận.<br><br>Mã số: ${id}<br><br>Vui lòng chờ trong giây lát.<br>Hãy chụp màn hình và lưu lại mã số này.`
+        ja: () => `ご注文を受け付けました。<br><br>
+          <div class="receipt-code-box">
+            <div class="receipt-code-label">受付番号</div>
+            <div class="receipt-code-number">${displayCode}</div>
+            <div class="receipt-code-note">※受け取り時に必要です<br>スクリーンショットを保存してください</div>
+          </div>
+          完成までしばらくお待ちください。`,
+        en: () => `Your order has been received.<br><br>
+          <div class="receipt-code-box">
+            <div class="receipt-code-label">Order No.</div>
+            <div class="receipt-code-number">${displayCode}</div>
+            <div class="receipt-code-note">* You need this number for pickup.<br>Please save it by taking a screenshot.</div>
+          </div>
+          Please wait while we prepare your fan.`,
+        zh: () => `您的订单已受理。<br><br>
+          <div class="receipt-code-box">
+            <div class="receipt-code-label">受理编号</div>
+            <div class="receipt-code-number">${displayCode}</div>
+            <div class="receipt-code-note">※领取时需要此编号<br>请截图保存</div>
+          </div>
+          请稍候，我们正在制作。`,
+        ko: () => `주문이 접수되었습니다.<br><br>
+          <div class="receipt-code-box">
+            <div class="receipt-code-label">접수번호</div>
+            <div class="receipt-code-number">${displayCode}</div>
+            <div class="receipt-code-note">※수령 시 필요합니다<br>스크린샷으로 저장해 주세요</div>
+          </div>
+          완성될 때까지 잠시 기다려 주세요.`,
+        vi: () => `Đơn hàng đã được tiếp nhận.<br><br>
+          <div class="receipt-code-box">
+            <div class="receipt-code-label">Mã số</div>
+            <div class="receipt-code-number">${displayCode}</div>
+            <div class="receipt-code-note">* Cần mã này khi nhận hàng.<br>Hãy chụp màn hình và lưu lại.</div>
+          </div>
+          Vui lòng chờ trong giây lát.`
       };
 
       const statusGuideTexts = {
-        ja: {
-          title: "この注文の状況を確認する",
-          note: "※別画面で開きます。注文画面はこのまま残ります。"
-        },
-        en: {
-          title: "Check the status of this order",
-          note: "* Opens in a separate screen. This order page will remain open."
-        },
-        zh: {
-          title: "查看此订单状态",
-          note: "※将在新页面打开，当前订单页面会保留。"
-        },
-        ko: {
-          title: "이 주문의 상태 확인",
-          note: "※새 화면으로 열립니다. 주문 화면은 그대로 유지됩니다."
-        },
-        vi: {
-          title: "Kiểm tra trạng thái đơn hàng này",
-          note: "* Mở ở màn hình riêng. Trang đặt hàng hiện tại vẫn được giữ nguyên."
-        }
+        ja: { title: "この注文の状況を確認する", note: "※別画面で開きます。注文画面はこのまま残ります。" },
+        en: { title: "Check the status of this order", note: "* Opens in a separate screen. This order page will remain open." },
+        zh: { title: "查看此订单状态", note: "※将在新页面打开，当前订单页面会保留。" },
+        ko: { title: "이 주문의 상태 확인", note: "※새 화면으로 열립니다. 주문 화면은 그대로 유지됩니다." },
+        vi: { title: "Kiểm tra trạng thái đơn hàng này", note: "* Mở ở màn hình riêng. Trang đặt hàng hiện tại vẫn được giữ nguyên." }
       };
 
       const statusButtonTexts = {
@@ -1559,91 +1613,45 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       };
 
       const completeGuideTexts = {
-        ja: {
-          status: "受け取りまでの状況はこちら",
-          extra: "追加で作る場合はこちら"
-        },
-        en: {
-          status: "Check your pickup status here",
-          extra: "Create another fan"
-        },
-        zh: {
-          status: "请在这里确认领取状态",
-          extra: "如需追加制作，请选择"
-        },
-        ko: {
-          status: "수령 상태는 여기에서 확인하세요",
-          extra: "추가로 만들 경우 선택해 주세요"
-        },
-        vi: {
-          status: "Kiểm tra trạng thái nhận quạt tại đây",
-          extra: "Nếu muốn làm thêm, hãy chọn bên dưới"
-        }
+        ja: { status: "受け取りまでの状況はこちら", extra: "追加で作る場合はこちら" },
+        en: { status: "Check your pickup status here", extra: "Create another fan" },
+        zh: { status: "请在这里确认领取状态", extra: "如需追加制作，请选择" },
+        ko: { status: "수령 상태는 여기에서 확인하세요", extra: "추가로 만들 경우 선택해 주세요" },
+        vi: { status: "Kiểm tra trạng thái nhận quạt tại đây", extra: "Nếu muốn làm thêm, hãy chọn bên dưới" }
       };
 
-      const guideTexts =
-        completeGuideTexts[currentLang] || completeGuideTexts.ja;
-
+      const guideTexts = completeGuideTexts[currentLang] || completeGuideTexts.ja;
       const statusGuide = statusGuideTexts[currentLang] || statusGuideTexts.ja;
 
       completeEl.innerHTML = `
-        ${(completeTexts[currentLang] || completeTexts.ja)(displayNo)}
+        ${(completeTexts[currentLang] || completeTexts.ja)()}
 
         <br><br>
 
-        <div style="
-          font-size:14px;
-          color:#333;
-          font-weight:700;
-          margin-bottom:6px;">
+        <div style="font-size:14px;color:#333;font-weight:700;margin-bottom:6px;">
           ${statusGuide.title}
         </div>
 
-        <div style="
-          font-size:12px;
-          color:#666;
-          margin-bottom:8px;">
+        <div style="font-size:12px;color:#666;margin-bottom:8px;">
           ${statusGuide.note}
         </div>
 
-        <a href="status.html?id=${displayNo}"
+        <a href="status.html?shop=${encodeURIComponent(shopId)}&code=${encodeURIComponent(displayCode)}&queueId=${encodeURIComponent(queueId)}"
            target="_blank"
            rel="noopener"
-           style="
-             display:inline-block;
-             width:100%;
-             box-sizing:border-box;
-             padding:10px 20px;
-             background:#2196f3;
-             color:white;
-             text-decoration:none;
-             border-radius:20px;
-             margin-top:4px;">
+           style="display:inline-block;width:100%;box-sizing:border-box;padding:10px 20px;background:#2196f3;color:white;text-decoration:none;border-radius:20px;margin-top:4px;">
           ${statusButtonTexts[currentLang] || statusButtonTexts.ja}
         </a>
 
-        <div style="
-          font-size:14px;
-          color:#333;
-          font-weight:700;
-          margin-top:18px;
-          margin-bottom:6px;">
+        <div style="font-size:14px;color:#333;font-weight:700;margin-top:18px;margin-bottom:6px;">
           ${guideTexts.extra}
         </div>
 
-        <button id="sameDesignBtn"
-          style="
-            margin-top:4px;
-            background:#4caf50;
-            color:white;">
+        <button id="sameDesignBtn" style="margin-top:4px;background:#4caf50;color:white;">
           ${sameDesignTexts[currentLang] || sameDesignTexts.ja}
         </button>
 
-        <button id="anotherOrderBtn"
-          style="
-            margin-top:8px;
-            background:#ff9800;
-            color:white;">
+        <button id="anotherOrderBtn" style="margin-top:8px;background:#ff9800;color:white;">
           ${anotherOrderTexts[currentLang] || anotherOrderTexts.ja}
         </button>`;
 
@@ -1799,6 +1807,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
         const issued = await issueQueueId();
         const displayNo = Number(issued.shortId);
+        const displayCode = createDisplayCode(issued.dayKey, displayNo);
         const printLabel = createPrintLabel(issued, displayNo, copies);
 
         let imageUrl = "";
@@ -1863,8 +1872,10 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           queueId: issued.queueId,
           shortId: issued.shortId,
           displayNo,
+          displayCode,
           printLabel,
           dayKey: issued.dayKey,
+          shopId,
 
           priceType,
           unitPrice,
@@ -1887,8 +1898,8 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         });
         
         document.getElementById('sendingOverlay').style.display = 'none';
-        lastCompleteDisplayNo = displayNo;
-        renderCompleteMessage(displayNo);
+        lastCompleteDisplayNo = displayCode;
+        renderCompleteMessage(displayCode, issued.queueId);
 
 
 
