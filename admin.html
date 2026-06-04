@@ -42,16 +42,155 @@
     .btn-close { background:#777; }
     .empty { text-align:center; color:#777; padding:30px; }
     .small { font-size:12px; color:#777; margin-top:4px; }
+
+    .settings-card {
+      background:#fff;
+      border-radius:18px;
+      padding:14px;
+      margin-bottom:14px;
+      box-shadow:0 3px 10px rgba(0,0,0,.08);
+    }
+    .settings-card h2 {
+      margin:0 0 12px;
+      color:#1565c0;
+      font-size:18px;
+    }
+    .settings-grid {
+      display:grid;
+      grid-template-columns:160px 1fr;
+      gap:10px;
+      align-items:center;
+    }
+    .settings-grid label {
+      font-weight:700;
+      color:#1565c0;
+      font-size:14px;
+    }
+    .settings-grid input,
+    .settings-grid textarea {
+      width:100%;
+      box-sizing:border-box;
+      padding:10px;
+      border-radius:10px;
+      border:1px solid #ccc;
+      font-size:15px;
+      font-family:'M PLUS Rounded 1c',sans-serif;
+    }
+    .settings-grid textarea {
+      min-height:110px;
+      resize:vertical;
+      line-height:1.5;
+    }
+    .checkbox-row {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:700;
+    }
+    .checkbox-row input {
+      width:auto;
+      transform:scale(1.3);
+    }
+    .settings-actions {
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    #settingsStatus {
+      font-size:13px;
+      font-weight:700;
+      margin-top:8px;
+    }
+    .shop-badge {
+      display:inline-block;
+      background:#e8f5e9;
+      color:#1b5e20;
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:13px;
+      font-weight:700;
+      margin-left:6px;
+    }
+    .danger-note {
+      background:#fff3e0;
+      color:#e65100;
+      border-radius:12px;
+      padding:10px;
+      font-size:13px;
+      line-height:1.5;
+      margin-top:10px;
+    }
+
     @media (max-width:640px) {
       .order-main { grid-template-columns:1fr; }
       .thumb, .no-image { width:100%; max-height:180px; }
       .summary { grid-template-columns:1fr; }
+      .settings-grid { grid-template-columns:1fr; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>店員用 管理画面</h1>
+
+    <div class="settings-card">
+      <h2>ポップアップ設定 <span id="shopBadge" class="shop-badge">miyajima</span></h2>
+
+      <div class="settings-grid">
+        <label for="shopName">会場名</label>
+        <input id="shopName" type="text" placeholder="例：宮島ファンスタジオ">
+
+        <label for="startDate">営業開始日</label>
+        <input id="startDate" type="date">
+
+        <label for="endDate">営業終了日</label>
+        <input id="endDate" type="date">
+
+        <label for="openTime">開店時間</label>
+        <input id="openTime" type="time">
+
+        <label for="closeTime">閉店時間</label>
+        <input id="closeTime" type="time">
+
+        <label for="generalPrice">一般価格</label>
+        <input id="generalPrice" type="number" min="0" step="10" placeholder="800">
+
+        <label for="studentPrice">学割価格</label>
+        <input id="studentPrice" type="number" min="0" step="10" placeholder="500">
+
+        <label for="phone">問い合わせ電話番号</label>
+        <input id="phone" type="tel" placeholder="082-245-1133">
+
+        <label for="pickupDeadlineText">受取期限表示</label>
+        <input id="pickupDeadlineText" type="text" placeholder="例：最終受取期限：6月8日（日）17:00">
+
+        <label for="popupClosed">受取終了モード</label>
+        <div class="checkbox-row">
+          <input id="popupClosed" type="checkbox">
+          <span>ONにすると status.html で受取期限終了表示に切り替えます</span>
+        </div>
+
+        <label for="expiredTitle">期限終了タイトル</label>
+        <input id="expiredTitle" type="text" placeholder="⏰ 受取期限が終了しました">
+
+        <label for="expiredBody">期限終了本文</label>
+        <textarea id="expiredBody" placeholder="ポップアップストアの営業は終了しました。"></textarea>
+      </div>
+
+      <div class="settings-actions">
+        <button id="saveSettingsBtn">設定を保存</button>
+        <button id="reloadSettingsBtn" style="background:#777;">設定を再読込</button>
+      </div>
+
+      <div id="settingsStatus"></div>
+
+      <div class="danger-note">
+        URLの <strong>?shop=miyajima</strong> を変えると、別会場の設定として保存できます。<br>
+        例：<strong>admin.html?shop=fukuyama</strong> / <strong>admin.html?shop=kure</strong>
+      </div>
+    </div>
+
 
     <div class="top-card">
       <div class="summary">
@@ -70,7 +209,7 @@
       </div>
 
       <div class="small">
-        ※Firestoreとリアルタイム連動します。ボタンを押すとお客さまのstatus.htmlにも反映されます。
+        ※Firestoreとリアルタイム連動します。現在の会場ID（shop）に紐づく注文のみ表示します。
       </div>
     </div>
 
@@ -88,6 +227,8 @@
     where,
     onSnapshot,
     doc,
+    getDoc,
+    setDoc,
     updateDoc,
     serverTimestamp
   } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
@@ -107,6 +248,13 @@
 
   let orders = [];
   let currentFilter = "ALL";
+
+  const params = new URLSearchParams(window.location.search);
+  const shopId = (params.get("shop") || "miyajima").replace(/[^a-zA-Z0-9_-]/g, "");
+  const settingsRef = doc(db, "settings", shopId);
+  let popupSettings = null;
+
+  document.getElementById("shopBadge").textContent = shopId;
 
   function getTodayKey() {
     const now = new Date();
@@ -145,13 +293,135 @@
 
   function getUnitPrice(data) {
     if (data.unitPrice) return Number(data.unitPrice);
-    return data.priceType === "student" ? 500 : 800;
+
+    const generalPrice = Number(popupSettings?.generalPrice || 800);
+    const studentPrice = Number(popupSettings?.studentPrice || 500);
+
+    return data.priceType === "student" ? studentPrice : generalPrice;
   }
 
   function getTotalPrice(data) {
     if (data.totalPrice) return Number(data.totalPrice);
     return getUnitPrice(data) * Number(data.copies || 1);
   }
+
+
+  const defaultSettings = {
+    shopName: "宮島ファンスタジオ",
+    generalPrice: 800,
+    studentPrice: 500,
+    startDate: "",
+    endDate: "",
+    openTime: "10:00",
+    closeTime: "17:00",
+    phone: "082-245-1133",
+    pickupDeadlineText: "",
+    popupClosed: false,
+    expiredTitle: "⏰ 受取期限が終了しました",
+    expiredBody: "ポップアップストアの営業は終了しました。<br><br>未受取の商品については、<br>土日祝を除く10時～17時に<br>082-245-1133 へお問い合わせください。"
+  };
+
+  function setSettingsStatus(message, isError = false) {
+    const el = document.getElementById("settingsStatus");
+    el.textContent = message || "";
+    el.style.color = isError ? "#c62828" : "#1b5e20";
+  }
+
+  function fillSettingsForm(settings) {
+    const s = { ...defaultSettings, ...(settings || {}) };
+
+    document.getElementById("shopName").value = s.shopName || "";
+    document.getElementById("startDate").value = s.startDate || "";
+    document.getElementById("endDate").value = s.endDate || "";
+    document.getElementById("openTime").value = s.openTime || "";
+    document.getElementById("closeTime").value = s.closeTime || "";
+    document.getElementById("generalPrice").value = Number(s.generalPrice || 800);
+    document.getElementById("studentPrice").value = Number(s.studentPrice || 500);
+    document.getElementById("phone").value = s.phone || "";
+    document.getElementById("pickupDeadlineText").value = s.pickupDeadlineText || "";
+    document.getElementById("popupClosed").checked = !!s.popupClosed;
+    document.getElementById("expiredTitle").value = s.expiredTitle || "";
+    document.getElementById("expiredBody").value = String(s.expiredBody || "").replace(/<br\s*\/?>/g, "\n");
+  }
+
+  function readSettingsForm() {
+    const expiredBodyRaw = document.getElementById("expiredBody").value.trim();
+
+    return {
+      shopId,
+      shopName: document.getElementById("shopName").value.trim() || defaultSettings.shopName,
+
+      startDate: document.getElementById("startDate").value,
+      endDate: document.getElementById("endDate").value,
+      openTime: document.getElementById("openTime").value || "10:00",
+      closeTime: document.getElementById("closeTime").value || "17:00",
+
+      generalPrice: Number(document.getElementById("generalPrice").value || 800),
+      studentPrice: Number(document.getElementById("studentPrice").value || 500),
+
+      phone: document.getElementById("phone").value.trim() || "082-245-1133",
+      pickupDeadlineText: document.getElementById("pickupDeadlineText").value.trim(),
+
+      popupClosed: document.getElementById("popupClosed").checked,
+
+      expiredTitle: document.getElementById("expiredTitle").value.trim() || defaultSettings.expiredTitle,
+      expiredBody: expiredBodyRaw
+        ? expiredBodyRaw.replace(/\n/g, "<br>")
+        : defaultSettings.expiredBody,
+
+      updatedAt: serverTimestamp()
+    };
+  }
+
+  async function loadSettings() {
+    try {
+      setSettingsStatus("設定を読み込み中です…");
+
+      const snap = await getDoc(settingsRef);
+
+      if (snap.exists()) {
+        popupSettings = { ...defaultSettings, ...snap.data() };
+        fillSettingsForm(popupSettings);
+        setSettingsStatus("設定を読み込みました。");
+      } else {
+        popupSettings = { ...defaultSettings, shopId };
+        fillSettingsForm(popupSettings);
+        setSettingsStatus("未作成の会場設定です。必要に応じて保存してください。");
+      }
+    } catch (error) {
+      console.error(error);
+      setSettingsStatus("設定の読み込みに失敗しました。", true);
+    }
+  }
+
+  async function saveSettings() {
+    try {
+      const settings = readSettingsForm();
+
+      if (!settings.generalPrice || settings.generalPrice < 0) {
+        alert("一般価格を正しく入力してください。");
+        return;
+      }
+
+      if (!settings.studentPrice || settings.studentPrice < 0) {
+        alert("学割価格を正しく入力してください。");
+        return;
+      }
+
+      await setDoc(settingsRef, settings, { merge: true });
+
+      popupSettings = { ...defaultSettings, ...settings };
+      setSettingsStatus("設定を保存しました。");
+      renderOrders();
+
+      alert("設定を保存しました。");
+    } catch (error) {
+      console.error(error);
+      setSettingsStatus("設定の保存に失敗しました。", true);
+      alert("設定の保存に失敗しました。通信状態を確認してください。");
+    }
+  }
+
 
   async function updateStatus(queueId, status) {
     if (!queueId) return;
@@ -286,7 +556,8 @@
 
     const q = query(
       collection(db, "orders"),
-      where("dayKey", "==", dayKey)
+      where("dayKey", "==", dayKey),
+      where("shopId", "==", shopId)
     );
 
     onSnapshot(q, snapshot => {
@@ -318,6 +589,10 @@
     });
   });
 
+  document.getElementById("saveSettingsBtn").addEventListener("click", saveSettings);
+  document.getElementById("reloadSettingsBtn").addEventListener("click", loadSettings);
+
+  await loadSettings();
   startWatch();
 </script>
 </body>
