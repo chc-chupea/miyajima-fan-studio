@@ -1570,7 +1570,6 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       ]);
     }
 
-
     function canvasToPngBlob(targetCanvas) {
       return new Promise((resolve, reject) => {
         targetCanvas.toBlob(blob => {
@@ -1586,26 +1585,27 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     function loadImageFromObjectUrl(objectUrl) {
       return new Promise((resolve, reject) => {
         const img = new Image();
+
         img.onload = () => resolve(img);
-        img.onerror = reject;
+        img.onerror = () => reject(new Error("画像の読み込みに失敗しました。"));
+
         img.src = objectUrl;
       });
     }
 
-    async function loadImageFromUrl(url) {
-      // Firebase Storage の downloadURL を fetch で取得する。
-      // img.crossOrigin 直描画より canvas 汚染を避けやすい。
-      const response = await withTimeout(fetch(url), 15000, '画像取得');
-
-      if (!response.ok) {
-        throw new Error(`画像取得に失敗しました: ${response.status}`);
+    async function blobToImage(blob, label = "画像") {
+      if (!blob || !blob.size) {
+        throw new Error(`${label}のBlobが空です。`);
       }
 
-      const blob = await withTimeout(response.blob(), 15000, '画像Blob変換');
       const objectUrl = URL.createObjectURL(blob);
 
       try {
-        return await withTimeout(loadImageFromObjectUrl(objectUrl), 15000, '画像読み込み');
+        return await withTimeout(
+          loadImageFromObjectUrl(objectUrl),
+          15000,
+          `${label}読み込み`
+        );
       } finally {
         setTimeout(() => {
           try { URL.revokeObjectURL(objectUrl); } catch (e) {}
@@ -1613,46 +1613,157 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       }
     }
 
+    function extractStoragePathFromDownloadUrl(url) {
+      try {
+        const parsed = new URL(url);
+        const marker = "/o/";
+        const index = parsed.pathname.indexOf(marker);
+
+        if (index < 0) return "";
+
+        const encodedPath = parsed.pathname.slice(index + marker.length);
+        return decodeURIComponent(encodedPath);
+      } catch (e) {
+        return "";
+      }
+    }
+
+    async function fetchBlobFromUrl(url, label = "画像URL") {
+      const response = await withTimeout(
+        fetch(url, { mode: "cors", cache: "no-store" }),
+        20000,
+        `${label}取得`
+      );
+
+      if (!response.ok) {
+        throw new Error(`${label}取得に失敗しました: ${response.status}`);
+      }
+
+      return await withTimeout(
+        response.blob(),
+        20000,
+        `${label}Blob変換`
+      );
+    }
+
+    async function loadImageFromUrl(url) {
+      const blob = await fetchBlobFromUrl(url, "画像URL");
+      return await blobToImage(blob, "画像URL");
+    }
+
+    async function loadImageElementDirect(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+
+        img.crossOrigin = "anonymous";
+
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("画像URLの直接読み込みに失敗しました。"));
+
+        img.src = `${url}${url.includes("?") ? "&" : "?"}_=${Date.now()}`;
+      });
+    }
+
     async function loadReuseImage(order) {
       if (!order) {
         throw new Error("再注文元の注文情報がありません。");
       }
 
-      // ① まず storagePath から読む
+      const errors = [];
+
+      const candidates = [];
+
       if (order.storagePath) {
-        try {
-          const blob = await withTimeout(
-            getBlob(ref(storage, order.storagePath)),
-            15000,
-            'Storage画像取得'
-          );
+        candidates.push({
+          type: "storagePath",
+          path: order.storagePath
+        });
+      }
 
-          const objectUrl = URL.createObjectURL(blob);
+      if (order.reuseStoragePath) {
+        candidates.push({
+          type: "reuseStoragePath",
+          path: order.reuseStoragePath
+        });
+      }
 
-          try {
-            return await withTimeout(
-              loadImageFromObjectUrl(objectUrl),
-              15000,
-              'Storage画像読み込み'
-            );
-          } finally {
-            setTimeout(() => {
-              try { URL.revokeObjectURL(objectUrl); } catch (e) {}
-            }, 1000);
-          }
-        } catch (storageErr) {
-          console.warn("storagePathからの再取得に失敗しました。imageUrlを試します:", storageErr);
+      if (order.imageUrl) {
+        const extracted = extractStoragePathFromDownloadUrl(order.imageUrl);
+        if (extracted) {
+          candidates.push({
+            type: "imageUrlから抽出したstoragePath",
+            path: extracted
+          });
         }
       }
 
-      // ② storagePath が失敗した場合だけ imageUrl を試す
-      if (order.imageUrl) {
-        return await loadImageFromUrl(order.imageUrl);
+      if (order.reuseImageUrl) {
+        const extracted = extractStoragePathFromDownloadUrl(order.reuseImageUrl);
+        if (extracted) {
+          candidates.push({
+            type: "reuseImageUrlから抽出したstoragePath",
+            path: extracted
+          });
+        }
       }
 
-      throw new Error("再注文元の画像情報が見つかりません。");
-    }
+      const triedPaths = new Set();
 
+      for (const candidate of candidates) {
+        const path = String(candidate.path || "").trim();
+        if (!path || triedPaths.has(path)) continue;
+        triedPaths.add(path);
+
+        try {
+          console.log(`再注文画像取得: ${candidate.type}`, path);
+
+          const blob = await withTimeout(
+            getBlob(ref(storage, path)),
+            20000,
+            `Storage画像取得 ${candidate.type}`
+          );
+
+          return await blobToImage(blob, candidate.type);
+
+        } catch (err) {
+          console.warn(`再注文画像取得失敗: ${candidate.type}`, err);
+          errors.push(`${candidate.type}: ${err?.message || err}`);
+        }
+      }
+
+      const urlCandidates = [
+        { type: "imageUrl", url: order.imageUrl },
+        { type: "reuseImageUrl", url: order.reuseImageUrl }
+      ];
+
+      const triedUrls = new Set();
+
+      for (const candidate of urlCandidates) {
+        const url = String(candidate.url || "").trim();
+        if (!url || triedUrls.has(url)) continue;
+        triedUrls.add(url);
+
+        try {
+          console.log(`再注文画像URL取得: ${candidate.type}`);
+          return await loadImageFromUrl(url);
+        } catch (err) {
+          console.warn(`再注文画像URL fetch失敗: ${candidate.type}`, err);
+          errors.push(`${candidate.type} fetch: ${err?.message || err}`);
+        }
+
+        try {
+          console.log(`再注文画像URL直接読込: ${candidate.type}`);
+          return await loadImageElementDirect(url);
+        } catch (err) {
+          console.warn(`再注文画像URL直接読込失敗: ${candidate.type}`, err);
+          errors.push(`${candidate.type} direct: ${err?.message || err}`);
+        }
+      }
+
+      throw new Error(
+        "再注文元の画像を読み込めませんでした。詳細: " + errors.join(" / ")
+      );
+    }
 
     function resetForSameDesignOrder() {
       document.getElementById('orderComplete').style.display = 'none';
@@ -2010,8 +2121,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         let storagePath = "";
 
         if (isReuseMode && reuseSourceOrder) {
-          // 追加注文でも必ず新しいPNGを作成する。
-          // 元画像を読み込み、新しい受付番号ラベルを焼き込んでから、新しいStorageパスへ保存する。
+          // status.html経由の追加注文でも、必ず新しい受付番号のPNGを作る。
           const reusedImg = await loadReuseImage(reuseSourceOrder);
 
           ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -2099,6 +2209,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           isReorder: isReuseMode,
           reuseFromQueueId: isReuseMode && reuseSourceOrder ? reuseSourceOrder.queueId : null,
           reuseImageUrl: isReuseMode && reuseSourceOrder ? reuseSourceOrder.imageUrl : null,
+          reuseSourceStoragePath: isReuseMode && reuseSourceOrder ? reuseSourceOrder.storagePath : null,
           reuseStoragePath: isReuseMode && reuseSourceOrder ? reuseSourceOrder.storagePath : null,
 
           status: 'WAIT',
