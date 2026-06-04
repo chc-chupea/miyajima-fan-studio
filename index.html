@@ -1,109 +1,971 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&family=Kosugi+Maru&display=swap" rel="stylesheet">
   <meta charset="UTF-8" />
   <title>Myうちわ - アップロード版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
-      font-family: sans-serif;
-      text-align: center;
-      background-color: #f9f9f9;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      background: linear-gradient(135deg, #f0f7ff, #eaf6ff);
       margin: 0;
-      padding: 10px;
+      padding: 16px;
+      color: #333;
     }
-    #canvasWrapper {
-      position: relative;
+    h1 {
+      text-align: center;
+      font-size: 22px;
+      margin-bottom: 20px;
+      color: #1565c0;
+    }
+    .area {
+      background: #fff;
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .area h2 {
+      font-size: 16px;
+      margin-top: 0;
+      margin-bottom: 12px;
+      color: #1565c0;
+    }
+    select, input[type="file"], button, label {
+      display: block;
       width: 100%;
-      max-width: 900px;
-      aspect-ratio: 4 / 3;
-      margin: 0 auto;
-      background-color: #f4f4f4;
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      background: #fff;
+      box-sizing: border-box;
     }
-    #mainCanvas {
+    button {
+      background: #4cafef;
+      color: white;
+      font-size: 16px;
+      padding: 12px 24px;
+      border-radius: 30px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: transform 0.2s, background 0.3s;
+    }
+    button:hover {
+      background: #2196f3;
+      transform: translateY(-2px);
+    }
+    canvas {
       width: 100%;
       height: auto;
-      background-color: white;
-      touch-action: none;
+      background: #f9f9f9;
+      border-radius: 12px;
+      border: 1px solid #ddd;
     }
-    #templateSelector, #imageLoader, #saveBtn {
-      margin-top: 10px;
-      font-size: 14px;
+    
+
+    #mainCanvas { touch-action: none; } /* モバイルでのページスクロール/ズームを無効化 */
+    
+    #templateLabel {
+      border: none;
+      outline: none;
+    }
+
+    #previewWrapper img {
+      max-width: 100%;
+      border: 6px solid #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      margin-top: 12px;
+    }
+    #previewNotice {
+      font-size: 13px;
+      margin-top: 8px;
+      color: #555;
+    }
+    #langButtons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
     }
     #langButtons button {
-      margin: 0 5px;
-      padding: 5px 10px;
+      flex: 1;
+      padding: 8px;
       font-size: 14px;
+      border: 1px solid #ddd;
+      background: #fdfdfd;
+      color: #333;
+      border-radius: 10px;
+      box-shadow: none;
+    }
+    #langButtons button:hover {
+      background: #f0f0f0;
+    }
+    /* 追加・改善ここまで */
+
+    /* 写真選択ボタン（最重要） */
+    #customFileLabel {
+      background: linear-gradient(135deg, #4cafef, #2196f3);
+      color: #fff;
+      border-radius: 30px;
+      padding: 14px 26px;
       cursor: pointer;
-    }
-    #notice {
-      margin-top: 10px;
-      font-size: 12px;
-      color: green;
-    }
-
-    h1#title {
       font-size: 16px;
+      transition: 0.3s;
+      display: inline-block;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+    }
+    #customFileLabel:hover {
+      background: linear-gradient(135deg, #42a5f5, #1e88e5);
+      transform: scale(1.07);
     }
 
+    /* 印刷用設定 */
     @media print {
       body *:not(.fan-print) {
         display: none !important;
       }
+
       #mainCanvas {
         width: 100%;
         height: auto;
       }
+      canvas {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        -webkit-region-break-inside: avoid;
+      }
     }
+
+
+#cameraGuide {
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:2;
+}
+
+.template-guide-img {
+  position:absolute;
+  left:50%;
+  top:46%;
+  transform:translate(-50%, -50%);
+  width:92vw;
+  max-width:520px;
+  height:auto;
+  max-height:68vh;
+  object-fit:contain;
+  opacity:0.48;
+  filter:drop-shadow(0 0 4px rgba(255,255,255,.95));
+  pointer-events:none;
+}
+
+.template-guide-img.front-camera-guide {
+  width:120vw;
+  max-width:640px;
+  max-height:82vh;
+  top:48%;
+  opacity:0.46;
+}
+
+.camera-dim {
+  position:absolute;
+  inset:0;
+  background:transparent !important;
+  pointer-events:none;
+}
+
+.guide-message {
+  position:absolute;
+  top:70px;
+  left:50%;
+  transform:translateX(-50%);
+  width:80%;
+  max-width:360px;
+  background:rgba(255,255,255,.92);
+  color:#1565c0;
+  padding:10px;
+  border-radius:14px;
+  text-align:center;
+  font-weight:bold;
+  z-index:3;
+}
+
+#cameraVideo {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  filter:brightness(1.06);
+}
+
+#cameraZoom {
+  position:absolute;
+  bottom:92px;
+  left:20px;
+  right:20px;
+  width:calc(100% - 40px);
+  z-index:5;
+  accent-color:#2196f3;
+}
+
+.camera-zoom-label {
+  position:absolute;
+  bottom:124px;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(255,255,255,.92);
+  color:#1565c0;
+  padding:6px 12px;
+  border-radius:12px;
+  font-size:13px;
+  font-weight:bold;
+  z-index:5;
+}
+
+#cameraVideo {
+  transform-origin:center center;
+}
+
+#switchCameraBtn {
+  position:absolute;
+  top:16px;
+  right:16px;
+  width:auto;
+  margin:0;
+  z-index:10;
+  padding:8px 14px;
+  border-radius:18px;
+  background:rgba(33,150,243,.92);
+  color:white;
+  font-size:14px;
+  box-shadow:0 3px 8px rgba(0,0,0,.25);
+}
+
+#imageLoader {
+  display:none !important;
+}
+
+
+#customFileLabel {
+  background:#90caf9 !important;
+  color:#0d47a1 !important;
+  box-shadow:none !important;
+  border:none;
+  text-align:center;
+  cursor:pointer;
+}
+#customFileLabel:hover {
+  background:#64b5f6 !important;
+  transform:none !important;
+}
+
+
+#guidedCameraBtn {
+  background:#4caf50 !important;
+  color:white !important;
+}
+#guidedCameraBtn:hover {
+  background:#43a047 !important;
+}
+
+
+#guidedCameraBtn.cameraSelectBtn,
+#guidedCameraBtn {
+  display:block !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+  margin:10px 0 !important;
+  padding:12px 24px !important;
+  border-radius:30px !important;
+  border:none !important;
+  background:#4caf50 !important;
+  color:white !important;
+  font-size:16px !important;
+  text-align:center !important;
+  box-shadow:0 4px 8px rgba(0,0,0,0.2) !important;
+}
+
+#guidedCameraBtn.cameraSelectBtn:hover,
+#guidedCameraBtn:hover {
+  background:#43a047 !important;
+}
+
+#photoSelectBtn {
+  display:block !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+  margin:10px 0 !important;
+  padding:12px 24px !important;
+  border-radius:30px !important;
+  border:none !important;
+  background:#90caf9 !important;
+  color:#0d47a1 !important;
+  font-size:16px !important;
+  text-align:center !important;
+  box-shadow:none !important;
+  cursor:pointer !important;
+}
+
+#photoSelectBtn:hover {
+  background:#64b5f6 !important;
+  transform:none !important;
+}
+
+#imageLoader {
+  display:none !important;
+}
+
+
+.receipt-code-box {
+  margin:14px auto;
+  padding:16px;
+  border-radius:18px;
+  background:#e3f2fd;
+  color:#0d47a1;
+  text-align:center;
+  box-shadow:0 3px 8px rgba(0,0,0,.12);
+}
+.receipt-code-label {
+  font-size:16px;
+  font-weight:700;
+  margin-bottom:6px;
+}
+.receipt-code-number {
+  font-size:42px;
+  line-height:1.1;
+  font-weight:900;
+  letter-spacing:2px;
+}
+.receipt-code-note {
+  margin-top:10px;
+  font-size:14px;
+  color:#1b5e20;
+  font-weight:700;
+  line-height:1.6;
+}
+
+
+.closed-notice {
+  margin:12px 0;
+  padding:16px;
+  border-radius:16px;
+  background:#fff3e0;
+  color:#e65100;
+  font-weight:700;
+  text-align:center;
+  line-height:1.7;
+  display:none;
+}
+.closed-notice.active {
+  display:block;
+}
+
   </style>
 </head>
 <body>
   <div id="langButtons">
-    <button onclick="setLanguage('ja')">日本語</button>
-    <button onclick="setLanguage('en')">English</button>
-    <button onclick="setLanguage('zh')">中文</button>
-    <button onclick="setLanguage('ko')">한국어</button>
-    <button onclick="setLanguage('vi')">Tiếng Việt</button>
+    <button onclick="setLanguage('ja')">🇯🇵JP</button>
+    <button onclick="setLanguage('en')">🇺🇸EN</button>
+    <button onclick="setLanguage('zh')">🇨🇳中文</button>
+    <button onclick="setLanguage('ko')">🇰🇷KO</button>
+    <button onclick="setLanguage('vi')">🇻🇳VIt</button>
   </div>
 
-  <h1 id="title" data-ja="作っちゃおう！Myうちわ" data-en="Let's Make Our Own Fan!" data-zh="一起来制作我们的团扇！" data-ko="우리만의 부채를 만들어보자!" data-vi="Hãy cùng làm quạt giấy của riêng mình!">作っちゃおう！Myうちわ</h1>
+  <button
+    id="howToBtn"
+    style="margin:10px; padding:10px 20px; border-radius:20px; background:#2196f3; color:white; border:none; cursor:pointer;"
+    data-ja="❓ 使い方"
+    data-en="❓ How to Use"
+    data-zh="❓ 使用方法"
+    data-ko="❓ 사용 방법"
+    data-vi="❓ Cách sử dụng"
+  >
+    ❓ 使い方
+  </button>
 
-  <label id="templateLabel" data-ja="🎨 うちわのデザインを選んでね：" data-en="🎨 Choose a fan design:" data-zh="🎨 请选择一个团扇设计：" data-ko="🎨 부채 디자인을 선택하세요:" data-vi="🎨 Chọn thiết kế quạt:">🎨 うちわのデザインを選んでね：</label>
+  <!-- モーダル -->
+  <div id="howToModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:16px; max-width:600px; width:90%; padding:20px; overflow-y:auto; max-height:90%;">
+      <!-- タイトル -->
+      <h2 id="howToTitle"
+          style="text-align:center; color:#1565c0;"
+          data-ja="📖 Myうちわ LAB 使い方"
+          data-en="📖 How to Use My Uchiwa LAB"
+          data-zh="📖 My团扇LAB 使用方法"
+          data-ko="📖 My우치와 LAB 사용 방법"
+          data-vi="📖 Cách sử dụng My Uchiwa LAB"
+      >📖 Myうちわ LAB 使い方</h2>
+
+      <!-- 本文（言語ごとに <ol> を埋め込んだHTMLを data-* に保持） -->
+      <div id="howToBody" style="text-align:left; line-height:1.6; font-size:14px; color:#333;"></div>
+
+      <!-- 閉じるボタン -->
+      <div style="text-align:center; margin-top:20px;">
+        <button
+          onclick="document.getElementById('howToModal').style.display='none';"
+          style="padding:10px 20px; border:none; border-radius:20px; background:#f44336; color:white; cursor:pointer;"
+          data-ja="閉じる"
+          data-en="Close"
+          data-zh="关闭"
+          data-ko="닫기"
+          data-vi="Đóng"
+        >閉じる</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <h1 id="title" data-ja="Myうちわ LAB" data-en="Let's Make Our Own Fan!" data-zh="一起来制作我们的团扇！" data-ko="우리만의 부채를 만들어보자!" data-vi="Hãy cùng làm quạt giấy của riêng mình!">Myうちわ LAB</h1>
+
+  <div id="popupClosedNotice" class="closed-notice"></div>
+
+  <div class="area" id="area-select">
+    <h2 data-ja="1)デザイン＆写真を選ぶ"
+        data-en="1) Selection"
+        data-zh="① 选择设计和照片"
+        data-ko="① 디자인과 사진 선택"
+        data-vi="① Chọn thiết kế & ảnh">
+        1)デザイン＆写真を選ぶ
+    </h2>
+
+  <label id="templateLabel" data-ja="うちわのデザインを選んでね👇" data-en="Choose a fan design👇" data-zh="请选择一个团扇设计👇" data-ko="부채 디자인을 선택하세요👇" data-vi="Chọn thiết kế quạt👇">うちわのデザインを選んでね👇</label>
   <select id="templateSelector">
-    <option value="fan1-highres.png">無地</option>
-    <option value="fan2-highres.png">夏祭り</option>
-    <option value="fan3-highres.png">父の日</option>
+    <option value="fan1-highres.png"
+      data-ja="無地"
+      data-en="Plain"
+      data-zh="素色"
+      data-ko="무지"
+      data-vi="Trơn">無地</option>
+
+    <option value="fan2-highres.png"
+      data-ja="母の日"
+      data-en="Mother's Day"
+      data-zh="母亲节"
+      data-ko="어머니의 날"
+      data-vi="Ngày của Mẹ">母の日</option>
+
+    <option value="fan3-highres.png"
+      data-ja="父の日"
+      data-en="Father's Day"
+      data-zh="父亲节"
+      data-ko="아버지의 날"
+      data-vi="Ngày của Cha">父の日</option>
   </select>
 
   <br />
-  <input type="file" id="imageLoader" accept="image/*" />
+  <!-- 変更前 -->
+  <!-- <input type="file" id="imageLoader" accept="image/*" /> -->
+  <button id="guidedCameraBtn"
+    data-ja="📷 カメラで撮影する"
+    data-en="📷 Take Photo"
+    data-zh="📷 拍照"
+    data-ko="📷 사진 촬영"
+    data-vi="📷 Chụp ảnh"
+    class="cameraSelectBtn">
+    📷 カメラで撮影する
+  </button>
+
+  <label for="imageLoader"
+    id="photoSelectBtn"
+    data-ja="🖼 写真を選ぶ"
+    data-en="🖼 Choose Photo"
+    data-zh="🖼 选择照片"
+    data-ko="🖼 사진 선택"
+    data-vi="🖼 Chọn ảnh">
+    🖼 写真を選ぶ
+  </label>
+
+  <input
+    type="file"
+    id="imageLoader"
+    accept="image/*">
+
+
   <br />
-  <button id="saveBtn">💾 保存する（ファイル名が受取番号になります）</button>
-  <p id="notice"></p>
+  <p id="reuploadNotice"
+     data-ja="※ 画像は何度でも選び直せます。"
+     data-en="※ You can re-select the image as many times as you like."
+     data-zh="※ 您可以多次重新选择图片。"
+     data-ko="※ 이미지는 언제든지 다시 선택할 수 있습니다."
+     data-vi="※ Bạn có thể chọn lại ảnh bao nhiêu lần cũng được."
+     style="font-size: 12px; color: #666;"></p>
+    </div>
+  
+  <div class="area" id="area-canvas">
+    <h2 data-ja="2) デザイン編集スペース"
+        data-en="2) Canvas"
+        data-zh="② 设计编辑区"
+        data-ko="② 디자인 편집 공간"
+        data-vi="② Khu vực chỉnh sửa thiết kế">
+      2)デザイン編集スペース
+    </h2>
 
   <div id="canvasWrapper">
     <canvas id="mainCanvas" width="3508" height="2480"></canvas>
   </div>
 
-  <!-- 注文フォームへ進むボタン（最初は非表示） -->
-  <br>
-  <button id="go-to-form">📝 注文フォームへ進む</button>
+  <!-- 👇 ここに新しい説明文を追加 -->
+  <p id="editNotice"
+     data-ja="※ 画像は1本の指で位置を動かせます。2本の指で大きさや向きを変えることができます。"
+     data-en="※ Move the image with one finger. Pinch to zoom, use two fingers to rotate."
+     data-zh="※ 用一根手指移动图片。捏合缩放，用两根手指旋转。"
+     data-ko="※ 손가락 한 개로 이미지를 이동합니다. 두 손가락으로 확대/축소 및 회전할 수 있습니다."
+     data-vi="※ Dùng một ngón tay để di chuyển ảnh. Chụm để phóng to/thu nhỏ, hai ngón tay để xoay."
+     style="font-size: 12px; color: #666; margin-bottom: 10px;"></p>
+   
+  <button id="retakePhotoBtn"
+    data-ja="📷 撮り直す"
+    data-en="📷 Retake Photo"
+    data-zh="📷 重新拍摄"
+    data-ko="📷 다시 촬영"
+    data-vi="📷 Chụp lại"
+    style="background:#4caf50; color:white; box-shadow:none;">
+    📷 撮り直す
+  </button>
 
-  <!-- 手動リンク（失敗時の表示用、最初は非表示） -->
-  <div id="manual-link" style="display: none; margin-top: 10px;">
-    フォームに進めない場合は <a href="https://docs.google.com/forms/d/e/1FAIpQLSdAf9ZuaIIWqMmxMPZzhmMs6zFWV_OyyI5OEUvqdCnIpnS-Xg/viewform" target="_blank">こちら</a> をクリックしてください。
+  <button id="reselectPhotoBtn"
+    data-ja="🖼 写真を選び直す"
+    data-en="🖼 Choose Another Photo"
+    data-zh="🖼 重新选择照片"
+    data-ko="🖼 사진 다시 선택"
+    data-vi="🖼 Chọn lại ảnh"
+    style="background:#90caf9; color:#0d47a1; box-shadow:none;">
+    🖼 写真を選び直す
+  </button>
+
+  <button id="saveBtn"
+    data-ja="完成イメージを確認する"
+    data-en="Check Final Image"
+    data-zh="确认完成图像"
+    data-ko="완성 이미지 확인"
+    data-vi="Kiểm tra hình hoàn chỉnh">
+    完成イメージを確認する
+  </button>
+  <p id="notice" style="font-size:14px; color:red;"></p>
+
   </div>
 
-  <footer style="font-size: 6px; color: #888; margin-top: 20px;">
-    © 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br>
-    このウェブアプリケーションは、株式会社中国新聞販売センターの従業員による地域イベント向けの自主開発プロジェクトです。<br>
-    ※本アプリは公式サービスではありませんが、業務との親和性を考慮して使用されています。
-  </footer>
+  <div class="area" id="area-result">
+    <h2 data-ja="3) 完成イメージ"
+        data-en="3) Final Image"
+        data-zh="③ 最终效果图"
+        data-ko="③ 최종 이미지"
+        data-vi="③ Hình hoàn chỉnh">
+      3)完成イメージ
+    </h2>
 
-  <script>
+  <div id="previewWrapper" style="display:none; text-align:center; margin-top:16px;">
+    <img id="previewImage" alt="合成画像プレビュー" style="max-width:90%; border:1px solid #ccc; border-radius:10px;" />
+  </div>
+
+  <!-- ここが新しい案内文表示領域 -->
+  <div id="previewNotice" style="font-size:14px; color:black; margin-top:10px;"></div>
+
+  <div id="reuseNotice"
+       style="
+         display:none;
+         margin-top:12px;
+         padding:12px;
+         border-radius:12px;
+         background:#e8f5e9;
+         color:#1b5e20;
+         font-weight:700;
+         text-align:center;">
+  </div>
+
+  <!-- 宮島版：Firebase注文エリア -->
+  <div id="orderArea" style="display:none; margin-top:16px; text-align:left;">
+    
+  <div id="priceTypeArea" style="margin:12px 0;">
+    <label style="font-weight:bold;"
+      data-ja="料金区分を選んでください"
+      data-en="Choose price type"
+      data-zh="请选择价格类型"
+      data-ko="요금 구분을 선택하세요"
+      data-vi="Chọn loại giá">
+      料金区分を選んでください
+    </label>
+
+    <label style="display:block;">
+      <input type="radio" name="priceType" value="general" checked>
+      <span id="generalPriceText"
+        data-ja="一般 800円／本"
+        data-en="General ¥800 / fan"
+        data-zh="普通价格 800日元/把"
+        data-ko="일반 800엔 / 개"
+        data-vi="Thông thường 800 yên / chiếc">
+        一般 800円／本
+      </span>
+    </label>
+
+    <label style="display:block;">
+      <input type="radio" name="priceType" value="student">
+      <span id="studentPriceText"
+        data-ja="学割 500円／本"
+        data-en="Student ¥500 / fan"
+        data-zh="学生优惠 500日元/把"
+        data-ko="학생 할인 500엔 / 개"
+        data-vi="Ưu đãi học sinh 500 yên / chiếc">
+        学割 500円／本
+      </span>
+    </label>
+
+    <p
+      style="font-size:12px;color:#666;margin-top:4px;"
+      data-ja="※学割は学生証の提示、または制服着用で対象です。"
+      data-en="* Student discount is available with a student ID or school uniform."
+      data-zh="* 学生优惠适用于出示学生证或穿着校服的顾客。"
+      data-ko="* 학생 할인은 학생증 제시 또는 교복 착용 시 적용됩니다."
+      data-vi="* Ưu đãi học sinh áp dụng khi xuất trình thẻ học sinh hoặc mặc đồng phục."
+    >
+      ※学割は学生証の提示、または制服着用で対象です。
+    </p>
+  </div>
+
+  <label for="copiesSelect"
+      data-ja="注文本数を選んでください"
+      data-en="Choose number of fans"
+      data-zh="请选择订购数量"
+      data-ko="주문 수량을 선택하세요"
+      data-vi="Chọn số lượng quạt">
+      注文本数を選んでください
+    </label>
+
+    <p id="copiesHint"
+       style="
+         font-size:13px;
+         color:#666;
+         margin:4px 0 10px;">
+    </p>
+
+    <select id="copiesSelect">
+      <option value="1">1本</option>
+      <option value="2">2本</option>
+      <option value="3">3本</option>
+      <option value="4">4本</option>
+      <option value="5">5本</option>
+      <option value="6">6本</option>
+      <option value="7">7本</option>
+      <option value="8">8本</option>
+      <option value="9">9本</option>
+      <option value="10">10本</option>
+    </select>
+
+    <div id="totalPriceBox"
+         style="
+           margin-top:12px;
+           padding:12px;
+           background:#fff8e1;
+           border-radius:12px;
+           font-size:18px;
+           font-weight:bold;
+           color:#e65100;">
+      合計：800円
+    </div>
+
+    <button id="orderBtn"
+      data-ja="注文する"
+      data-en="Place Order"
+      data-zh="提交订单"
+      data-ko="주문하기"
+      data-vi="Đặt hàng">
+      注文する
+    </button>
+  </div>
+
+  <div id="orderError"
+       style="
+         display:none;
+         margin-top:12px;
+         padding:12px;
+         border-radius:12px;
+         background:#ffebee;
+         color:#c62828;
+         font-weight:700;
+         text-align:center;">
+  </div>
+
+  <div id="orderComplete" style="display:none; margin-top:16px; padding:16px; border-radius:16px; background:#e8f5e9; color:#1b5e20; text-align:center; font-size:18px; font-weight:700;"></div>
+
+
+  <footer id="footer-text" style="font-size: 6px; color: #888; margin-top: 20px;"
+data-ja="© 2026 Hitomi Sasaki<br>Miyajima Fan Studio<br><br>© 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br>このウェブアプリケーションは、株式会社中国新聞販売センターの従業員による地域イベント向けの自主開発プロジェクトです。<br>※本アプリは公式サービスではありませんが、業務との親和性を考慮して使用されています。"
+
+data-en="© 2026 Hitomi Sasaki<br>Miyajima Fan Studio<br><br>© 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br>This web application is an independent project developed for local events and tourism activities.<br>*This is not an official service."
+
+data-zh="© 2026 Hitomi Sasaki<br>宫岛团扇工作室<br><br>© 2025 中国新闻销售中心。由佐佐木瞳开发。保留所有权利。<br>本应用程序是为地区活动和旅游体验而开发的自主项目。<br>*本应用并非官方服务。"
+
+data-ko="© 2026 Hitomi Sasaki<br>미야지마 부채 스튜디오<br><br>© 2025 주고쿠 신문 판매 센터. 사사키 히토미 개발. 모든 권리 보유.<br>본 웹앱은 지역 행사와 관광 체험을 위해 개발된 프로젝트입니다.<br>*공식 서비스가 아닙니다."
+
+data-vi="© 2026 Hitomi Sasaki<br>Xưởng Quạt Miyajima<br><br>© 2025 Trung tâm Phân phối Báo Chugoku. Phát triển bởi Hitomi Sasaki. Bảo lưu mọi quyền.<br>Đây là dự án được phát triển cho các sự kiện địa phương và hoạt động du lịch.<br>*Đây không phải là dịch vụ chính thức."
+>
+
+© 2026 Hitomi Sasaki<br>
+Miyajima Fan Studio<br><br>
+
+© 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br>
+このウェブアプリケーションは、株式会社中国新聞販売センターの従業員による地域イベント向けの自主開発プロジェクトです。<br>
+※本アプリは公式サービスではありませんが、業務との親和性を考慮して使用されています。
+
+</footer>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+    import {
+      getFirestore,
+      doc,
+      runTransaction,
+      setDoc,
+      serverTimestamp,
+      collection,
+      query,
+      where,
+      getDocs,
+      getDoc,
+      limit
+    } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+    import { getStorage, ref, uploadString, getDownloadURL, getBlob } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBKSYZgaSVTu-HO_lS1Tp2eFjSjMuOONNI",
+      authDomain: "my-uchiwa-queue.firebaseapp.com",
+      projectId: "my-uchiwa-queue",
+      storageBucket: "my-uchiwa-queue.firebasestorage.app",
+      messagingSenderId: "245883628081",
+      appId: "1:245883628081:web:ab7f00f01ba256ebca8310",
+      measurementId: "G-W4S3EKL9TY"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    const params = new URLSearchParams(window.location.search);
+    const shopId = (params.get("shop") || "miyajima").replace(/[^a-zA-Z0-9_-]/g, "");
+
+    const defaultSettings = {
+      shopId,
+      shopName: "宮島ファンスタジオ",
+      shopCode: "M",
+      generalPrice: 800,
+      studentPrice: 500,
+      pickupDeadlineText: "",
+      popupClosed: false,
+      expiredTitle: "⏰ 受取期限が終了しました",
+      expiredBody: "ポップアップストアの営業は終了しました。<br><br>未受取の商品については、<br>土日祝を除く10時～17時に<br>082-245-1133 へお問い合わせください。"
+    };
+
+    let popupSettings = { ...defaultSettings };
+
+    async function loadSettings() {
+      try {
+        const snap = await getDoc(doc(db, "settings", shopId));
+        popupSettings = snap.exists()
+          ? { ...defaultSettings, ...snap.data() }
+          : { ...defaultSettings };
+      } catch (error) {
+        console.error("設定の読み込みに失敗しました:", error);
+        popupSettings = { ...defaultSettings };
+      }
+
+      applySettingsToScreen();
+    }
+
+    function nl2br(value) {
+      return String(value || "").replace(/\n/g, "<br>");
+    }
+
+    function getGeneralPrice() {
+      return Number(popupSettings?.generalPrice || 800);
+    }
+
+    function getStudentPrice() {
+      return Number(popupSettings?.studentPrice || 500);
+    }
+
+    function getUnitPriceByType(priceType) {
+      return priceType === "student" ? getStudentPrice() : getGeneralPrice();
+    }
+
+    function applySettingsToScreen() {
+      const shopName = popupSettings?.shopName || defaultSettings.shopName;
+      document.title = `${shopName} - Myうちわ LAB`;
+
+      const titleEl = document.getElementById("title");
+      if (titleEl) {
+        titleEl.textContent = shopName;
+        ["ja", "en", "zh", "ko", "vi"].forEach(lang => {
+          titleEl.dataset[lang] = shopName;
+        });
+      }
+
+      updatePriceTexts();
+      updateTotalPrice();
+      updatePopupClosedMode();
+    }
+
+    function updatePriceTexts() {
+      const generalPrice = getGeneralPrice();
+      const studentPrice = getStudentPrice();
+
+      const generalText = {
+        ja: `一般 ${generalPrice.toLocaleString()}円／本`,
+        en: `General ¥${generalPrice.toLocaleString()} / fan`,
+        zh: `普通价格 ${generalPrice.toLocaleString()}日元/把`,
+        ko: `일반 ${generalPrice.toLocaleString()}엔 / 개`,
+        vi: `Thông thường ${generalPrice.toLocaleString()} yên / chiếc`
+      };
+
+      const studentText = {
+        ja: `学割 ${studentPrice.toLocaleString()}円／本`,
+        en: `Student ¥${studentPrice.toLocaleString()} / fan`,
+        zh: `学生优惠 ${studentPrice.toLocaleString()}日元/把`,
+        ko: `학생 할인 ${studentPrice.toLocaleString()}엔 / 개`,
+        vi: `Ưu đãi học sinh ${studentPrice.toLocaleString()} yên / chiếc`
+      };
+
+      const generalEl = document.getElementById("generalPriceText");
+      const studentEl = document.getElementById("studentPriceText");
+
+      if (generalEl) {
+        Object.keys(generalText).forEach(lang => generalEl.dataset[lang] = generalText[lang]);
+        generalEl.textContent = generalText[currentLang] || generalText.ja;
+      }
+
+      if (studentEl) {
+        Object.keys(studentText).forEach(lang => studentEl.dataset[lang] = studentText[lang]);
+        studentEl.textContent = studentText[currentLang] || studentText.ja;
+      }
+    }
+
+    function updatePopupClosedMode() {
+      const closed = popupSettings?.popupClosed === true;
+      const notice = document.getElementById("popupClosedNotice");
+
+      if (notice) {
+        if (closed) {
+          const title = popupSettings?.expiredTitle || defaultSettings.expiredTitle;
+          const body = popupSettings?.expiredBody || defaultSettings.expiredBody;
+          notice.innerHTML = `${title}<br><br>${nl2br(body)}`;
+          notice.classList.add("active");
+        } else {
+          notice.innerHTML = "";
+          notice.classList.remove("active");
+        }
+      }
+
+      const orderBtn = document.getElementById("orderBtn");
+      if (orderBtn) {
+        orderBtn.disabled = closed;
+        if (closed) {
+          orderBtn.textContent = currentLang === "en" ? "Closed" : "受付終了";
+          orderBtn.style.background = "#777";
+        } else {
+          orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || "注文する";
+          orderBtn.style.background = "";
+        }
+      }
+    }
+
+    const saveWarningTexts = {
+      ja: '⚠️ まだファイルが選ばれていません。うちわに使う画像を選んでください。',
+      en: '⚠️ No file selected yet. Please upload an image.',
+      zh: '⚠️ 尚未选择文件，请上传图片。',
+      ko: '⚠️ 아직 파일이 선택되지 않았습니다. 이미지를 업로드하세요.',
+      vi: '⚠️ Chưa chọn tệp. Vui lòng tải ảnh lên.',
+    };
+    
+
+    const copiesHintTexts = {
+      ja: "旅の思い出に、ご家族・ご友人の分もまとめて注文できます。",
+      en: "You can order fans for your family and friends together.",
+      zh: "也可以为家人和朋友一起订购。",
+      ko: "가족·친구의 부채도 함께 주문할 수 있습니다.",
+      vi: "Bạn có thể đặt thêm cho gia đình và bạn bè."
+    };
+
+    const reuseNoticeTexts = {
+      ja: "前回の完成画像を使って追加注文します。写真や位置の編集はできません。本数を選んで注文してください。",
+      en: "You are ordering again with the finished image from your previous order. The photo and position cannot be edited. Please choose the number of fans.",
+      zh: "将使用上次完成的图像追加订购。无法编辑照片或位置。请选择数量后下单。",
+      ko: "이전 주문의 완성 이미지를 사용해 추가 주문합니다. 사진이나 위치는 수정할 수 없습니다. 수량을 선택해 주문해 주세요.",
+      vi: "Bạn sẽ đặt thêm bằng hình đã hoàn thành từ đơn trước. Không thể chỉnh sửa ảnh hoặc vị trí. Vui lòng chọn số lượng quạt."
+    };
+
+
+    // 使い方モーダル本文：HTMLに長文を書かず、ここで管理する
+    // 宮島ポップアップ版：Googleフォーム・保存案内ではなく、Queue受付の流れに変更
+    const howToTexts = {
+      ja: `
+        <ol>
+          <li><b>写真を選ぶ：</b> その場で撮影、またはスマホ内の写真を選びます。</li>
+          <li><b>うちわに合わせる：</b> 指で移動・拡大縮小・回転できます。</li>
+          <li><b>本数を選ぶ：</b> 1つの画像で最大10本まで作れます。</li>
+          <li><b>SEND：</b> 送信後は変更できません。番号が出るまで閉じないでください。</li>
+          <li><b>待つ：</b> "M060410"のような受付番号が表示されます。</li>
+          <li><b>受け取る：</b> READYになったら、番号を見せて受取・お支払いください。</li>
+        </ol>
+      `,
+      en: `
+        <ol>
+          <li><b>Choose a photo:</b> Take a photo or select one from your phone.</li>
+          <li><b>Adjust:</b> Move, zoom, and rotate with your fingers.</li>
+          <li><b>Choose copies:</b> Up to 10 fans from one image.</li>
+          <li><b>SEND:</b> You cannot change it after sending. Do not close the page until your number appears.</li>
+          <li><b>Wait:</b> Your number, such as "M060410", and wait time will appear.</li>
+          <li><b>Pick up:</b> When READY appears, show your number, pay, and receive your fan.</li>
+        </ol>
+      `,
+      zh: `
+        <ol>
+          <li><b>选择照片：</b> 现场拍照，或从手机中选择照片。</li>
+          <li><b>调整位置：</b> 可用手指移动、放大缩小、旋转。</li>
+          <li><b>选择数量：</b> 同一张图片最多可制作10把团扇。</li>
+          <li><b>SEND：</b> 发送后不能更改。请在号码出现前不要关闭页面。</li>
+          <li><b>等待：</b> 会显示“M060410”等号码和等待时间。</li>
+          <li><b>领取：</b> 显示READY后，请出示号码，付款并领取。</li>
+        </ol>
+      `,
+      ko: `
+        <ol>
+          <li><b>사진 선택:</b> 바로 촬영하거나 휴대폰 안의 사진을 선택합니다.</li>
+          <li><b>조정:</b> 손가락으로 이동, 확대/축소, 회전할 수 있습니다.</li>
+          <li><b>수량 선택:</b> 한 이미지로 최대 10개까지 만들 수 있습니다.</li>
+          <li><b>SEND:</b> 전송 후에는 변경할 수 없습니다. 번호가 나올 때까지 페이지를 닫지 마세요.</li>
+          <li><b>대기:</b> "M060410" 같은 번호와 대기 시간이 표시됩니다.</li>
+          <li><b>수령:</b> READY가 표시되면 번호를 보여주고 결제 후 받아가세요.</li>
+        </ol>
+      `,
+      vi: `
+        <ol>
+          <li><b>Chọn ảnh:</b> Chụp tại chỗ hoặc chọn ảnh trong điện thoại.</li>
+          <li><b>Chỉnh ảnh:</b> Dùng ngón tay để di chuyển, phóng to/thu nhỏ và xoay.</li>
+          <li><b>Chọn số lượng:</b> Tối đa 10 quạt cho một ảnh.</li>
+          <li><b>SEND:</b> Sau khi gửi sẽ không thể chỉnh sửa. Đừng đóng trang cho đến khi số của bạn hiện ra.</li>
+          <li><b>Chờ:</b> Số như "M060410" và thời gian chờ sẽ được hiển thị.</li>
+          <li><b>Nhận quạt:</b> Khi hiện READY, hãy đưa số, thanh toán và nhận quạt.</li>
+        </ol>
+      `
+    };
+
+    let currentLang = 'ja'; // デフォルトは日本語
+    let lastCompleteDisplayNo = null;
+    let lastCompleteQueueId = null;
+    let reuseQueueId = null;
+    let isReuseMode = false;
+    let reuseSourceOrder = null;
+
+    
     const canvas = document.getElementById('mainCanvas');
     const ctx = canvas.getContext('2d');
     let uploadedImg = null;
+    let cameraStream = null;
+    let cameraZoom = 1;
+    let currentFacingMode = 'environment';
     let imgX = 100, imgY = 100, scale = 1, rotation = 0;
     let isDragging = false, lastX, lastY;
 
@@ -118,8 +980,23 @@
 
     templateImg.onload = () => draw();
 
+    function fitImageToCanvas(img) {
+      imgX = canvas.width / 2;
+      imgY = canvas.height / 2;
+
+      scale =
+        Math.max(
+          canvas.width / img.width,
+          canvas.height / img.height
+        ) * 1.0;
+
+      rotation = 0;
+    }
+
+
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
       if (uploadedImg) {
         ctx.save();
         ctx.translate(imgX, imgY);
@@ -128,44 +1005,134 @@
         ctx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
         ctx.restore();
       }
+     
       if (templateImg.complete) {
-        ctx.drawImage(templateImg, 0, 0, canvas.width, canvas.height);
+         ctx.drawImage(templateImg, 0, 0, canvas.width, canvas.height);
+       }
+     }
+     
+
+    function clearFinalPreviewState() {
+      const previewWrapper = document.getElementById('previewWrapper');
+      const previewImg = document.getElementById('previewImage');
+      const previewNotice = document.getElementById('previewNotice');
+      const orderArea = document.getElementById('orderArea');
+      const orderComplete = document.getElementById('orderComplete');
+      const orderError = document.getElementById('orderError');
+      const noticeEl = document.getElementById('notice');
+
+      if (previewWrapper) previewWrapper.style.display = 'none';
+      if (previewImg) previewImg.src = '';
+      if (previewNotice) previewNotice.innerHTML = '';
+      if (orderArea) orderArea.style.display = 'none';
+      if (orderComplete) {
+        orderComplete.style.display = 'none';
+        orderComplete.innerHTML = '';
+      }
+      if (orderError) {
+        orderError.style.display = 'none';
+        orderError.textContent = '';
+      }
+      if (noticeEl) {
+        noticeEl.textContent = '';
+        noticeEl.style.display = 'none';
+      }
+
+      lastCompleteDisplayNo = null;
+      lastCompleteQueueId = null;
+
+      const orderBtn = document.getElementById('orderBtn');
+      if (orderBtn) {
+        orderBtn.disabled = false;
+        orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || '注文する';
       }
     }
+
 
     document.getElementById('imageLoader').addEventListener('change', function(e) {
       const reader = new FileReader();
       reader.onload = function(event) {
         uploadedImg = new Image();
         uploadedImg.onload = () => {
-          imgX = canvas.width / 2;
-          imgY = canvas.height / 2;
-          scale = 1;
-          rotation = 0;
+          fitImageToCanvas(uploadedImg);
+          clearFinalPreviewState();
+
           draw();
+
+          // 画像が読み込まれたら「デザイン編集スペース」へ自動スクロール
+          document.getElementById('area-canvas').scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+
         };
+
         uploadedImg.src = event.target.result;
       };
       reader.readAsDataURL(e.target.files[0]);
     });
 
-    canvas.addEventListener('mousedown', e => {
-      isDragging = true;
-      lastX = e.offsetX;
-      lastY = e.offsetY;
+
+    document.getElementById('retakePhotoBtn').addEventListener('click', async () => {
+      // ガイド付きカメラで撮り直す
+      await openGuidedCamera();
     });
 
-    canvas.addEventListener('mousemove', e => {
-      if (isDragging && uploadedImg) {
-        imgX += e.offsetX - lastX;
-        imgY += e.offsetY - lastY;
-        lastX = e.offsetX;
-        lastY = e.offsetY;
-        draw();
+    document.getElementById('reselectPhotoBtn').addEventListener('click', () => {
+      // スマホ内の写真を選び直す
+      document.getElementById('imageLoader').click();
+    });
+
+
+    let dragMode = null; // "move" または "rotate"
+
+    canvas.addEventListener("mousedown", (e) => {
+      if (!uploadedImg) return;
+      isDragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+
+      if (e.button === 0) {
+        dragMode = "move";   // 左クリック → 移動
+      } else if (e.button === 2) {
+        dragMode = "rotate"; // 右クリック → 回転
       }
     });
 
-    canvas.addEventListener('mouseup', () => isDragging = false);
+    canvas.addEventListener("mouseup", () => {
+      isDragging = false;
+      dragMode = null;
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+      isDragging = false;
+      dragMode = null;
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+      if (!isDragging || !uploadedImg) return;
+
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+
+      if (dragMode === "move") {
+        imgX += dx; // 横移動
+        imgY += dy; // 縦移動
+      } else if (dragMode === "rotate") {
+        rotation += dx * 0.005; // 横ドラッグで回転
+      }
+
+      lastX = e.clientX;
+      lastY = e.clientY;
+
+      draw();
+    });
+
+    // 右クリックメニューを無効化（必須）
+    canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+
+
     canvas.addEventListener('wheel', e => {
       if (uploadedImg) {
         scale += e.deltaY * -0.001;
@@ -182,74 +1149,185 @@
       draw();
     });
 
-    document.getElementById('saveBtn').addEventListener('click', () => {
-      const link = document.createElement('a');
-      canvas.toBlob(blob => {
-        // JPEG形式に変換して品質を設定
-        const quality = 0.7; // 画像品質を70%に設定（これで圧縮）
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.download = getTimestampBasedFileName();
-        link.click();
-        document.getElementById('notice').textContent = '📸 保存しました！';
+// ---------- 保存ボタンの新しい処理（ここに置き換える） ----------
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const noticeEl = document.getElementById('notice');
 
-        // 📌 フォームへ進むボタンを表示（← ここは toBlob のコールバック内に入れる）
-        //document.getElementById('go-to-form').style.display = 'inline-block';
-      }, 'image/jpeg', 0.9); // 'image/jpeg' 形式で圧縮を適用
-    });
+  if (!uploadedImg && !isReuseMode) {
+    noticeEl.textContent = saveWarningTexts[currentLang] || saveWarningTexts['ja'];
+    noticeEl.style.color = 'red';
+    noticeEl.style.display = 'block';
+    return;
+  }
 
-    // --- タッチ操作用変数 ---
+  // canvas を Blob にしてプレビュー表示（長押しで保存する方式）
+  canvas.toBlob(blob => {
+    const errorTexts = {
+      ja: '画像作成に失敗しました。もう一度お試しください。',
+      en: 'Failed to create image. Please try again.',
+      zh: '生成图像失败。请再试一次。',
+      ko: '이미지 생성에 실패했습니다. 다시 시도해주세요.',
+      vi: 'Tạo hình ảnh thất bại. Vui lòng thử lại.'
+    };
+
+    if (!blob) {
+      noticeEl.textContent = errorTexts[currentLang] || errorTexts['ja'];
+      noticeEl.style.color = 'red';
+      return;
+    }
+
+    // 前の object URL があれば解放
+    if (window._lastPreviewURL) {
+      try { URL.revokeObjectURL(window._lastPreviewURL); } catch (e) {}
+      window._lastPreviewURL = null;
+    }
+
+    const url = URL.createObjectURL(blob);
+    window._lastPreviewURL = url;
+
+    // プレビュー要素を表示
+    const previewWrapper = document.getElementById('previewWrapper');
+    const previewImg = document.getElementById('previewImage');
+    previewImg.src = url;
+    previewWrapper.style.display = 'block';
+
+    const previewNotice = document.getElementById('previewNotice');
+    const previewNoticeTexts = {
+      ja: `完成イメージを確認してください。
+
+    写真を変更したい場合は、
+    上の「②デザイン編集スペース」に戻ってください。
+
+    問題なければ本数を選んで
+    「注文する」を押してください。
+
+    ※注文後は内容を変更できません。`,
+
+      en: `Please check the final image.
+
+    If you would like to make changes,
+    return to the editing area above.
+
+    If everything looks good,
+    choose the number of fans and press "Place Order".`,
+
+      zh: `请确认完成图像。
+
+    如需修改，
+    请返回上方的编辑区域进行编辑。
+
+    确认无误后，
+    请选择数量并点击“提交订单”。`,
+
+      ko: `완성 이미지를 확인하세요.
+
+    수정하고 싶다면
+    위의 편집 공간으로 돌아가 편집해 주세요.
+
+    문제가 없다면
+    수량을 선택한 후
+    "주문하기"를 눌러 주세요.`,
+
+      vi: `Vui lòng kiểm tra hình hoàn chỉnh.
+
+    Nếu muốn chỉnh sửa,
+    hãy quay lại khu vực chỉnh sửa phía trên.
+
+    Nếu mọi thứ đều ổn,
+    hãy chọn số lượng và nhấn "Đặt hàng".`
+    };
+
+    previewNotice.innerHTML = previewNoticeTexts[currentLang] || previewNoticeTexts['ja'];
+    document.getElementById('orderArea').style.display = 'block';
+    document.getElementById('orderComplete').style.display = 'none';
+
+    // スクロールして目立たせる
+    previewWrapper.scrollIntoView({ behavior: 'smooth' });
+
+  }, 'image/png'); // PNG で生成
+});
+// -------------------------------------------------------------------
+
+    // ★ スマホ（タッチ）用：一体化＆座標補正（ここから）
     let lastTouchDist = null;
     let lastTouchAngle = null;
+
+    // 1本指ドラッグ用に「直近のクライアント座標」を保持（CSSピクセル）
+    let lastClientX = null;
+    let lastClientY = null;
+
+    // キャンバスのCSSサイズ → 論理解像度の倍率を取得
+    function getScaleFactors() {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        scaleX: canvas.width / rect.width,
+        scaleY: canvas.height / rect.height,
+      };
+    }
+
+    // 2本指用はクライアント座標（CSSピクセル）のままでOK（比率で処理するため）
+    function getTouchPosClient(touch) {
+      return { x: touch.clientX, y: touch.clientY };
+    }
 
     canvas.addEventListener('touchstart', e => {
       if (!uploadedImg) return;
 
       if (e.touches.length === 1) {
+        // 1本指ドラッグ開始（クライアント座標を保持）
+        const p = getTouchPosClient(e.touches[0]);
+        lastClientX = p.x;
+        lastClientY = p.y;
         isDragging = true;
-        lastX = e.touches[0].clientX;
-        lastY = e.touches[0].clientY;
-      }
-
-      if (e.touches.length === 2) {
+      } else if (e.touches.length === 2) {
+        // 2本指（ピンチ＆回転）準備
         isDragging = false;
-        const dx = e.touches[1].clientX - e.touches[0].clientX;
-        const dy = e.touches[1].clientY - e.touches[0].clientY;
+        const p0 = getTouchPosClient(e.touches[0]);
+        const p1 = getTouchPosClient(e.touches[1]);
+        const dx = p1.x - p0.x;
+        const dy = p1.y - p0.y;
         lastTouchDist = Math.hypot(dx, dy);
         lastTouchAngle = Math.atan2(dy, dx);
       }
 
       e.preventDefault();
-    });
+    }, { passive: false });
 
     canvas.addEventListener('touchmove', e => {
       if (!uploadedImg) return;
 
-      if (e.touches.length === 1 && isDragging) {
-        const dx = e.touches[0].clientX - lastX;
-        const dy = e.touches[0].clientY - lastY;
-        imgX += dx;
-        imgY += dy;
-        lastX = e.touches[0].clientX;
-        lastY = e.touches[0].clientY;
-        draw();
-      }
+      if (isDragging && e.touches.length === 1) {
+        // 1本指ドラッグ：CSSピクセル→キャンバス座標に換算して移動
+        const p = getTouchPosClient(e.touches[0]);
+        const { scaleX, scaleY } = getScaleFactors();
 
-      if (e.touches.length === 2) {
-        const dx = e.touches[1].clientX - e.touches[0].clientX;
-        const dy = e.touches[1].clientY - e.touches[0].clientY;
+        const dxCanvas = (p.x - lastClientX) * scaleX;
+        const dyCanvas = (p.y - lastClientY) * scaleY;
+
+        imgX += dxCanvas;
+        imgY += dyCanvas;
+
+        lastClientX = p.x;
+        lastClientY = p.y;
+
+        draw(); // 毎回再描画
+      } else if (e.touches.length === 2) {
+        // ピンチズーム & 回転（CSSピクセル比でOK）
+        const p0 = getTouchPosClient(e.touches[0]);
+        const p1 = getTouchPosClient(e.touches[1]);
+        const dx = p1.x - p0.x;
+        const dy = p1.y - p0.y;
+
         const newDist = Math.hypot(dx, dy);
         const newAngle = Math.atan2(dy, dx);
 
-        // スケーリング
-        if (lastTouchDist !== null) {
+        if (lastTouchDist != null) {
           const scaleChange = newDist / lastTouchDist;
           scale *= scaleChange;
           scale = Math.max(0.1, Math.min(5, scale));
         }
 
-        // 回転
-        if (lastTouchAngle !== null) {
+        if (lastTouchAngle != null) {
           const angleChange = newAngle - lastTouchAngle;
           rotation += angleChange;
         }
@@ -260,26 +1338,1123 @@
       }
 
       e.preventDefault();
-    });
+    }, { passive: false });
 
     canvas.addEventListener('touchend', e => {
+      // 指が減ったら2本指状態の履歴をクリア
       if (e.touches.length < 2) {
         lastTouchDist = null;
         lastTouchAngle = null;
       }
       if (e.touches.length === 0) {
         isDragging = false;
+        lastClientX = null;
+        lastClientY = null;
       }
       e.preventDefault();
-    });
+    }, { passive: false });
 
-    function setLanguage(lang) {
-      document.querySelectorAll('[data-ja]').forEach(el => {
-        if (el.dataset[lang]) {
-          el.innerHTML = el.dataset[lang];
+    canvas.addEventListener('touchcancel', () => {
+      // OSやブラウザ都合でキャンセルされた場合の保険
+      isDragging = false;
+      lastTouchDist = null;
+      lastTouchAngle = null;
+      lastClientX = null;
+      lastClientY = null;
+    }, { passive: false });
+    // ★ スマホ（タッチ）用：一体化＆座標補正（ここまで）
+
+    function checkReuseParam() {
+      const params = new URLSearchParams(window.location.search);
+
+      const reuse = params.get('reuseQueueId');
+
+      if (!reuse) return;
+
+      reuseQueueId = reuse;
+      isReuseMode = true;
+
+      console.log('再注文モード:', reuseQueueId);
+    }
+
+    async function loadReuseOrder() {
+      if (!isReuseMode || !reuseQueueId) return;
+
+      const q = query(
+        collection(db, 'orders'),
+        where('queueId', '==', reuseQueueId),
+        limit(1)
+      );
+
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        alert('元の注文が見つかりませんでした。受付番号をご確認ください。');
+        isReuseMode = false;
+        return;
+      }
+
+      reuseSourceOrder = {
+        id: snap.docs[0].id,
+        ...snap.docs[0].data()
+      };
+
+      console.log('再注文元データ:', reuseSourceOrder);
+    }
+
+    function applyReuseModeToScreen() {
+      if (!isReuseMode || !reuseSourceOrder) return;
+
+      const reuseNotice = document.getElementById('reuseNotice');
+      reuseNotice.textContent =
+        reuseNoticeTexts[currentLang] || reuseNoticeTexts.ja;
+      reuseNotice.style.display = 'block';
+
+      const previewWrapper = document.getElementById('previewWrapper');
+      const previewImg = document.getElementById('previewImage');
+
+      previewImg.src = reuseSourceOrder.imageUrl;
+      previewWrapper.style.display = 'block';
+
+      document.getElementById('previewNotice').innerHTML =
+        reuseNoticeTexts[currentLang] || reuseNoticeTexts.ja;
+
+      document.getElementById('orderArea').style.display = 'block';
+      document.getElementById('orderComplete').style.display = 'none';
+
+      document.getElementById('area-canvas').style.display = 'none';
+      document.getElementById('area-select').style.display = 'none';
+
+      if (reuseSourceOrder.priceType) {
+        const priceRadio = document.querySelector(
+          `input[name="priceType"][value="${reuseSourceOrder.priceType}"]`
+        );
+
+        if (priceRadio) {
+          priceRadio.checked = true;
         }
+      }
+
+      document.getElementById('copiesSelect').value = '1';
+
+      updateTotalPrice();
+
+      document.getElementById('area-result').scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
       });
     }
+
+
+
+    function getTodayKey() {
+      const now = new Date();
+      const yy = String(now.getFullYear()).slice(-2);
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      return `${yy}${mm}${dd}`;
+    }
+
+    function getShopCode() {
+      const code =
+        popupSettings?.shopCode ||
+        defaultSettings.shopCode ||
+        String(shopId || "miyajima").slice(0, 1).toUpperCase();
+
+      return String(code)
+        .trim()
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase()
+        .slice(0, 4) || "M";
+    }
+
+    function createDisplayCode(dayKey, displayNo) {
+      // お客さま用の受付番号。
+      // 例：宮島 shopCode=M / dayKey=260604 / 10番 → M060410
+      const mmdd = String(dayKey).slice(2);
+      return `${getShopCode()}${mmdd}${Number(displayNo)}`;
+    }
+
+
+    async function issueQueueId() {
+      const dayKey = getTodayKey();
+
+      // 会場ごと・日付ごとに別カウンタ
+      const counterKey = `${shopId}_${dayKey}`;
+      const counterRef = doc(db, 'counters', counterKey);
+
+      const nextNumber = await runTransaction(db, async (transaction) => {
+        const counterSnap = await transaction.get(counterRef);
+        const current = counterSnap.exists()
+          ? (counterSnap.data().lastNumber || 0)
+          : 0;
+
+        const next = current + 1;
+
+        transaction.set(counterRef, {
+          shopId,
+          dayKey,
+          lastNumber: next,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        return next;
+      });
+
+      const shortId = String(nextNumber).padStart(4, '0');
+
+      return {
+        dayKey,
+        shortId,
+        queueId: `${shopId}-${dayKey}-${shortId}`
+      };
+    }
+
+
+    function createPrintLabel(issued, displayNo, copies) {
+      const fullDate = `20${issued.dayKey}`;
+      const serial = String(displayNo).padStart(4, '0');
+      const copiesText = String(copies).padStart(2, '0');
+      return `${fullDate}-${serial}-${copiesText}`;
+    }
+
+    function drawPrintLabel(labelText) {
+      ctx.save();
+
+      // A4 300dpi相当のキャンバスでは、6pt ≒ 25px
+      const fontSize = 25;
+      const paddingX = 9;
+      const paddingY = 5;
+
+      // A4横サイズ基準：
+      // 左下端から 横7.0cm・高さ2.5cm の位置に配置
+      // canvas: 3508px × 2480px = A4横 29.7cm × 21.0cm
+      const pxPerCmX = canvas.width / 29.7;
+      const pxPerCmY = canvas.height / 21.0;
+
+      const labelLeftCm = 20.5;
+      const labelBottomCm = 2.5;
+
+      ctx.font = `700 ${fontSize}px Arial, sans-serif`;
+      ctx.textBaseline = 'middle';
+
+      const textWidth = ctx.measureText(labelText).width;
+      const boxWidth = textWidth + paddingX * 2;
+      const boxHeight = fontSize + paddingY * 2;
+
+      const x = labelLeftCm * pxPerCmX;
+      const y = canvas.height - (labelBottomCm * pxPerCmY) - boxHeight;
+
+      // 背景に左右されず読めるように白い小ラベル
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.fillRect(x, y, boxWidth, boxHeight);
+
+      // ごく薄い枠で、白背景でもラベル位置が分かるようにする
+      ctx.strokeStyle = 'rgba(21, 101, 192, 0.35)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, boxWidth, boxHeight);
+
+      // 青文字
+      ctx.fillStyle = '#1565c0';
+      ctx.fillText(labelText, x + paddingX, y + boxHeight / 2);
+
+      ctx.restore();
+    }
+
+    function withTimeout(promise, ms, label) {
+      return Promise.race([
+        promise,
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error(`${label || '処理'}がタイムアウトしました`)), ms);
+        })
+      ]);
+    }
+
+    function loadImageFromObjectUrl(objectUrl) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = objectUrl;
+      });
+    }
+
+    async function loadImageFromUrl(url) {
+      // Firebase Storage の downloadURL を fetch で取得する。
+      // img.crossOrigin 直描画より canvas 汚染を避けやすい。
+      const response = await withTimeout(fetch(url), 15000, '画像取得');
+
+      if (!response.ok) {
+        throw new Error(`画像取得に失敗しました: ${response.status}`);
+      }
+
+      const blob = await withTimeout(response.blob(), 15000, '画像Blob変換');
+      const objectUrl = URL.createObjectURL(blob);
+
+      try {
+        return await withTimeout(loadImageFromObjectUrl(objectUrl), 15000, '画像読み込み');
+      } finally {
+        setTimeout(() => {
+          try { URL.revokeObjectURL(objectUrl); } catch (e) {}
+        }, 1000);
+      }
+    }
+
+    async function loadReuseImage(order) {
+      if (!order) {
+        throw new Error("再注文元の注文情報がありません。");
+      }
+
+      // まず公開 downloadURL から読む。
+      // これが一番、status.html からの追加注文で安定しやすい。
+      if (order.imageUrl) {
+        return await loadImageFromUrl(order.imageUrl);
+      }
+
+      // imageUrl がない古い注文だけ Storage SDK を使う。
+      if (order.storagePath) {
+        const blob = await withTimeout(
+          getBlob(ref(storage, order.storagePath)),
+          15000,
+          'Storage画像取得'
+        );
+
+        const objectUrl = URL.createObjectURL(blob);
+
+        try {
+          return await withTimeout(loadImageFromObjectUrl(objectUrl), 15000, 'Storage画像読み込み');
+        } finally {
+          setTimeout(() => {
+            try { URL.revokeObjectURL(objectUrl); } catch (e) {}
+          }, 1000);
+        }
+      }
+
+      throw new Error("再注文元の画像情報が見つかりません。");
+    }
+
+
+    function resetForSameDesignOrder() {
+      document.getElementById('orderComplete').style.display = 'none';
+      document.getElementById('orderArea').style.display = 'block';
+      document.getElementById('copiesSelect').value = '1';
+
+      const orderBtn = document.getElementById('orderBtn');
+      orderBtn.disabled = false;
+      orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || '注文する';
+
+      document.getElementById('area-result').scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+
+    function resetForNewDesignOrder() {
+      uploadedImg = null;
+
+      imgX = canvas.width / 2;
+      imgY = canvas.height / 2;
+      scale = 1;
+      rotation = 0;
+
+      draw();
+
+      document.getElementById('imageLoader').value = '';
+      document.getElementById('previewWrapper').style.display = 'none';
+      document.getElementById('previewImage').src = '';
+      document.getElementById('previewNotice').innerHTML = '';
+      document.getElementById('orderComplete').style.display = 'none';
+      document.getElementById('orderArea').style.display = 'none';
+      document.getElementById('copiesSelect').value = '1';
+      lastCompleteDisplayNo = null;
+      lastCompleteQueueId = null;
+      document.getElementById('notice').textContent = '';
+      document.getElementById('notice').style.display = 'none';
+
+      const orderBtn = document.getElementById('orderBtn');
+      orderBtn.disabled = false;
+      orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || '注文する';
+
+      document.getElementById('area-select').scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+
+    function updateTotalPrice() {
+
+      const priceType =
+        document.querySelector('input[name="priceType"]:checked')?.value;
+
+      const copies =
+        Number(document.getElementById('copiesSelect').value || 1);
+
+      const unitPrice = getUnitPriceByType(priceType);
+
+      const totalPrice = unitPrice * copies;
+
+      const totalPriceTexts = {
+        ja: `合計：${totalPrice.toLocaleString()}円`,
+        en: `Total: ¥${totalPrice.toLocaleString()}`,
+        zh: `总计：${totalPrice.toLocaleString()}日元`,
+        ko: `합계：${totalPrice.toLocaleString()}엔`,
+        vi: `Tổng cộng: ${totalPrice.toLocaleString()} yên`
+      };
+
+      document.getElementById('totalPriceBox').textContent =
+        totalPriceTexts[currentLang] || totalPriceTexts.ja;
+    }
+
+    function renderCompleteMessage(displayCode, queueId) {
+      const completeEl = document.getElementById('orderComplete');
+
+      const orderErrorEl = document.getElementById('orderError');
+      orderErrorEl.style.display = 'none';
+      orderErrorEl.textContent = '';
+
+      const completeTexts = {
+        ja: () => `ご注文を受け付けました。<br><br>
+          <div class="receipt-code-box">
+            <div class="receipt-code-label">受付番号</div>
+            <div class="receipt-code-number">${displayCode}</div>
+            <div class="receipt-code-note">※受け取り時に必要です<br>スクリーンショットを保存してください</div>
+          </div>
+          完成までしばらくお待ちください。`,
+        en: () => `Your order has been received.<br><br>
+          <div class="receipt-code-box">
+            <div class="receipt-code-label">Order No.</div>
+            <div class="receipt-code-number">${displayCode}</div>
+            <div class="receipt-code-note">* You need this number for pickup.<br>Please save it by taking a screenshot.</div>
+          </div>
+          Please wait while we prepare your fan.`,
+        zh: () => `您的订单已受理。<br><br>
+          <div class="receipt-code-box">
+            <div class="receipt-code-label">受理编号</div>
+            <div class="receipt-code-number">${displayCode}</div>
+            <div class="receipt-code-note">※领取时需要此编号<br>请截图保存</div>
+          </div>
+          请稍候，我们正在制作。`,
+        ko: () => `주문이 접수되었습니다.<br><br>
+          <div class="receipt-code-box">
+            <div class="receipt-code-label">접수번호</div>
+            <div class="receipt-code-number">${displayCode}</div>
+            <div class="receipt-code-note">※수령 시 필요합니다<br>스크린샷으로 저장해 주세요</div>
+          </div>
+          완성될 때까지 잠시 기다려 주세요.`,
+        vi: () => `Đơn hàng đã được tiếp nhận.<br><br>
+          <div class="receipt-code-box">
+            <div class="receipt-code-label">Mã số</div>
+            <div class="receipt-code-number">${displayCode}</div>
+            <div class="receipt-code-note">* Cần mã này khi nhận hàng.<br>Hãy chụp màn hình và lưu lại.</div>
+          </div>
+          Vui lòng chờ trong giây lát.`
+      };
+
+      const statusGuideTexts = {
+        ja: { title: "この注文の状況を確認する", note: "※別画面で開きます。注文画面はこのまま残ります。" },
+        en: { title: "Check the status of this order", note: "* Opens in a separate screen. This order page will remain open." },
+        zh: { title: "查看此订单状态", note: "※将在新页面打开，当前订单页面会保留。" },
+        ko: { title: "이 주문의 상태 확인", note: "※새 화면으로 열립니다. 주문 화면은 그대로 유지됩니다." },
+        vi: { title: "Kiểm tra trạng thái đơn hàng này", note: "* Mở ở màn hình riêng. Trang đặt hàng hiện tại vẫn được giữ nguyên." }
+      };
+
+      const statusButtonTexts = {
+        ja: "この注文の状況を確認する",
+        en: "Check This Order",
+        zh: "查看此订单状态",
+        ko: "이 주문 상태 확인",
+        vi: "Kiểm tra đơn hàng này"
+      };
+
+      const sameDesignTexts = {
+        ja: "同じデザインで追加注文",
+        en: "Order More of This Design",
+        zh: "追加订购相同设计",
+        ko: "같은 디자인 추가 주문",
+        vi: "Đặt thêm cùng thiết kế"
+      };
+
+      const anotherOrderTexts = {
+        ja: "新しいデザインでもう1度作る",
+        en: "Create a New Design",
+        zh: "重新制作新设计",
+        ko: "새로운 디자인으로 다시 만들기",
+        vi: "Tạo lại với thiết kế mới"
+      };
+
+      const completeGuideTexts = {
+        ja: { status: "受け取りまでの状況はこちら", extra: "追加で作る場合はこちら" },
+        en: { status: "Check your pickup status here", extra: "Create another fan" },
+        zh: { status: "请在这里确认领取状态", extra: "如需追加制作，请选择" },
+        ko: { status: "수령 상태는 여기에서 확인하세요", extra: "추가로 만들 경우 선택해 주세요" },
+        vi: { status: "Kiểm tra trạng thái nhận quạt tại đây", extra: "Nếu muốn làm thêm, hãy chọn bên dưới" }
+      };
+
+      const guideTexts = completeGuideTexts[currentLang] || completeGuideTexts.ja;
+      const statusGuide = statusGuideTexts[currentLang] || statusGuideTexts.ja;
+
+      completeEl.innerHTML = `
+        ${(completeTexts[currentLang] || completeTexts.ja)()}
+
+        <br><br>
+
+        <div style="font-size:14px;color:#333;font-weight:700;margin-bottom:6px;">
+          ${statusGuide.title}
+        </div>
+
+        <div style="font-size:12px;color:#666;margin-bottom:8px;">
+          ${statusGuide.note}
+        </div>
+
+        <a href="status.html?shop=${encodeURIComponent(shopId)}&code=${encodeURIComponent(displayCode)}&queueId=${encodeURIComponent(queueId)}"
+           target="_blank"
+           rel="noopener"
+           style="display:inline-block;width:100%;box-sizing:border-box;padding:10px 20px;background:#2196f3;color:white;text-decoration:none;border-radius:20px;margin-top:4px;">
+          ${statusButtonTexts[currentLang] || statusButtonTexts.ja}
+        </a>
+
+        <div style="font-size:14px;color:#333;font-weight:700;margin-top:18px;margin-bottom:6px;">
+          ${guideTexts.extra}
+        </div>
+
+        <button id="sameDesignBtn" style="margin-top:4px;background:#4caf50;color:white;">
+          ${sameDesignTexts[currentLang] || sameDesignTexts.ja}
+        </button>
+
+        <button id="anotherOrderBtn" style="margin-top:8px;background:#ff9800;color:white;">
+          ${anotherOrderTexts[currentLang] || anotherOrderTexts.ja}
+        </button>`;
+
+      document.getElementById('sameDesignBtn')
+        ?.addEventListener('click', resetForSameDesignOrder);
+
+      document.getElementById('anotherOrderBtn')
+        ?.addEventListener('click', resetForNewDesignOrder);
+    }
+
+    async function submitOrder() {
+      const orderBtn = document.getElementById('orderBtn');
+      const noticeEl = document.getElementById('notice');
+      const completeEl = document.getElementById('orderComplete');
+      const orderErrorEl = document.getElementById('orderError');
+
+      orderErrorEl.style.display = 'none';
+      orderErrorEl.textContent = '';
+
+      if (!uploadedImg && !isReuseMode) {
+        noticeEl.textContent = saveWarningTexts[currentLang] || saveWarningTexts['ja'];
+        noticeEl.style.color = 'red';
+        noticeEl.style.display = 'block';
+        return;
+      }
+
+      if (popupSettings?.popupClosed === true) {
+        orderErrorEl.textContent = popupSettings?.expiredTitle || '受付終了';
+        orderErrorEl.style.display = 'block';
+        orderErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
+      const copies = Number(document.getElementById('copiesSelect').value || 1);
+      const template = isReuseMode && reuseSourceOrder ? (reuseSourceOrder.template || templateSelector.value) : templateSelector.value;
+
+      const priceType =
+        document.querySelector('input[name="priceType"]:checked')?.value || 'general';
+
+      const unitPrice = getUnitPriceByType(priceType);
+
+      const totalPrice =
+        unitPrice * copies;
+
+      const templateName =
+        isReuseMode
+          ? '同じ完成画像'
+          : document.querySelector('#templateSelector option:checked').textContent;
+
+      const priceTypeLabelTexts = {
+        ja: priceType === 'student' ? '学割' : '一般',
+        en: priceType === 'student' ? 'Student' : 'General',
+        zh: priceType === 'student' ? '学生优惠' : '普通价格',
+        ko: priceType === 'student' ? '학생 할인' : '일반',
+        vi: priceType === 'student' ? 'Ưu đãi học sinh' : 'Thông thường'
+      };
+
+      const priceTypeLabel =
+        priceTypeLabelTexts[currentLang] || priceTypeLabelTexts.ja;
+
+      const confirmText = {
+        ja:
+        `ご注文内容をご確認ください
+
+        デザイン：${templateName}
+        料金区分：${priceTypeLabel}
+        単価：${unitPrice.toLocaleString()}円／本
+        注文数：${copies}本
+        合計金額：${totalPrice.toLocaleString()}円
+
+        送信後は変更できません。
+
+        注文しますか？`,
+
+        en:
+        `Please confirm your order
+
+        Design: ${templateName}
+        Price type: ${priceTypeLabel}
+        Unit price: ¥${unitPrice.toLocaleString()} / fan
+        Quantity: ${copies}
+        Total: ¥${totalPrice.toLocaleString()}
+
+        This cannot be changed after submission.
+
+        Submit order?`,
+
+        zh:
+        `请确认订单内容
+
+        设计：${templateName}
+        价格类型：${priceTypeLabel}
+        单价：${unitPrice.toLocaleString()}日元/把
+        数量：${copies}
+        总计：${totalPrice.toLocaleString()}日元
+
+        发送后无法修改。
+
+        是否提交？`,
+
+        ko:
+        `주문 내용을 확인해 주세요
+
+        디자인：${templateName}
+        요금 구분：${priceTypeLabel}
+        단가：${unitPrice.toLocaleString()}엔/개
+        수량：${copies}
+        합계：${totalPrice.toLocaleString()}엔
+
+        전송 후에는 변경할 수 없습니다.
+
+        주문하시겠습니까？`,
+
+        vi:
+        `Vui lòng xác nhận đơn hàng
+
+        Mẫu: ${templateName}
+        Loại giá: ${priceTypeLabel}
+        Đơn giá: ${unitPrice.toLocaleString()} yên/chiếc
+        Số lượng: ${copies}
+        Tổng cộng: ${totalPrice.toLocaleString()} yên
+
+        Sau khi gửi sẽ không thể thay đổi.
+
+        Gửi đơn hàng?`
+      };
+
+      if (!confirm(confirmText[currentLang] || confirmText.ja)) {
+        return;
+      }
+
+      const submittingTexts = {
+        ja: '送信中です…<br>画面を閉じないでください',
+        en: 'Submitting…<br>Please do not close this page',
+        zh: '正在提交…<br>请不要关闭页面',
+        ko: '전송 중입니다…<br>페이지를 닫지 마세요',
+        vi: 'Đang gửi…<br>Vui lòng không đóng trang'
+      };
+      const errorTexts = {
+        ja: '注文の送信に失敗しました。通信状態を確認して、もう一度お試しください。',
+        en: 'Failed to submit your order. Please check your connection and try again.',
+        zh: '订单提交失败。请检查网络后重试。',
+        ko: '주문 전송에 실패했습니다. 통신 상태를 확인하고 다시 시도해 주세요.',
+        vi: 'Không gửi được đơn hàng. Vui lòng kiểm tra kết nối và thử lại.'
+      };
+
+
+      try {
+
+        document.getElementById('sendingOverlay').innerHTML =
+          (submittingTexts[currentLang] || submittingTexts.ja);
+
+        document.getElementById('sendingOverlay').style.display = 'block';
+
+        orderBtn.disabled = true;
+        orderBtn.textContent = submittingTexts[currentLang] || submittingTexts.ja;
+        noticeEl.textContent = '';
+        completeEl.style.display = 'none';
+
+        const issued = await issueQueueId();
+        const displayNo = Number(issued.shortId);
+        const displayCode = createDisplayCode(issued.dayKey, displayNo);
+        const printLabel = createPrintLabel(issued, displayNo, copies);
+
+        let imageUrl = "";
+        let storagePath = "";
+
+        if (isReuseMode && reuseSourceOrder) {
+          try {
+            const reusedImg = await loadReuseImage(reuseSourceOrder);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(reusedImg, 0, 0, canvas.width, canvas.height);
+
+            drawPrintLabel(printLabel);
+
+            const pngDataUrl = canvas.toDataURL('image/png');
+
+            storagePath =
+              `orders/${shopId}/${issued.dayKey}/${issued.queueId}.png`;
+
+            const storageRef = ref(storage, storagePath);
+
+            await withTimeout(
+              uploadString(storageRef, pngDataUrl, 'data_url', { contentType: 'image/png' }),
+              20000,
+              '再注文画像アップロード'
+            );
+
+            imageUrl = await withTimeout(
+              getDownloadURL(storageRef),
+              10000,
+              '再注文画像URL取得'
+            );
+
+          } catch (reuseImageErr) {
+            // 画像再取得・再アップロードで止まる場合の保険。
+            // 注文自体は成立させ、元の完成画像をそのまま使う。
+            // Firestoreには新しい受付番号・本数・料金を保存する。
+            console.warn('再注文画像の再作成に失敗したため、元画像を引き継ぎます:', reuseImageErr);
+
+            imageUrl = reuseSourceOrder.imageUrl || "";
+            storagePath = reuseSourceOrder.storagePath || "";
+          }
+        } else {
+          draw();
+
+          drawPrintLabel(printLabel);
+
+          const pngDataUrl = canvas.toDataURL('image/png');
+
+          draw();
+
+          storagePath =
+            `orders/${shopId}/${issued.dayKey}/${issued.queueId}.png`;
+
+          const storageRef = ref(storage, storagePath);
+
+          await uploadString(storageRef, pngDataUrl, 'data_url', {
+            contentType: 'image/png'
+          });
+
+          imageUrl = await getDownloadURL(storageRef);
+        }
+
+        const orderRef = doc(db, 'orders', issued.queueId);
+        await setDoc(orderRef, {
+          queueId: issued.queueId,
+          shortId: issued.shortId,
+          displayNo,
+          displayCode,
+          printLabel,
+          dayKey: issued.dayKey,
+          shopId,
+          shopName: popupSettings?.shopName || defaultSettings.shopName,
+          shopCode: getShopCode(),
+
+          priceType,
+          unitPrice,
+          totalPrice,
+
+          copies,
+          template,
+          imageUrl,
+          storagePath,
+
+          isReorder: isReuseMode,
+          reuseFromQueueId: isReuseMode && reuseSourceOrder ? reuseSourceOrder.queueId : null,
+          reuseImageUrl: isReuseMode && reuseSourceOrder ? reuseSourceOrder.imageUrl : null,
+          reuseStoragePath: isReuseMode && reuseSourceOrder ? reuseSourceOrder.storagePath : null,
+
+          status: 'WAIT',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          source: 'miyajima-fan-studio'
+        });
+        
+        document.getElementById('sendingOverlay').style.display = 'none';
+        lastCompleteDisplayNo = displayCode;
+        lastCompleteQueueId = issued.queueId;
+        renderCompleteMessage(displayCode, issued.queueId);
+
+
+
+        completeEl.style.display = 'block';
+        document.getElementById('orderArea').style.display = 'none';
+        completeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch (err) {
+        console.error(err);
+        document.getElementById('sendingOverlay').style.display = 'none';
+        if (uploadedImg && !isReuseMode) draw();
+        orderErrorEl.textContent = errorTexts[currentLang] || errorTexts.ja;
+        orderErrorEl.style.display = 'block';
+
+        orderErrorEl.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+
+        orderBtn.disabled = false;
+        orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || '注文する';
+      }
+    }
+
+    document.getElementById('orderBtn').addEventListener('click', submitOrder);
+
+    function getCurrentGuideClass() {
+      const template = templateSelector.value;
+
+      if (template.includes('fan2')) return 'guide-fan2';
+      if (template.includes('fan3')) return 'guide-fan3';
+      return 'guide-fan1';
+    }
+
+    function getGuideMessage() {
+      const template = templateSelector.value;
+
+      if (template.includes('fan2')) {
+    return 'うちわの中に顔や体を入れてね';
+      }
+
+      if (template.includes('fan3')) {
+    return 'うちわの中に顔や体を入れてね';
+  }
+
+    return 'うちわの中に顔や体を入れてね';
+  }
+
+
+  function updateSwitchCameraButton() {
+    const btn = document.getElementById('switchCameraBtn');
+    if (!btn) return;
+
+    const texts = {
+      ja: currentFacingMode === 'environment' ? '🤳 インカメラ' : '📷 アウトカメラ',
+      en: currentFacingMode === 'environment' ? '🤳 Front' : '📷 Rear',
+      zh: currentFacingMode === 'environment' ? '🤳 前置摄像头' : '📷 后置摄像头',
+      ko: currentFacingMode === 'environment' ? '🤳 전면 카메라' : '📷 후면 카메라',
+      vi: currentFacingMode === 'environment' ? '🤳 Camera trước' : '📷 Camera sau'
+    };
+
+    btn.textContent = texts[currentLang] || texts.ja;
+  }
+
+  function updateCameraMirror() {
+    const video = document.getElementById('cameraVideo');
+    if (!video) return;
+
+    const mirror = currentFacingMode === 'user';
+    const scaleX = mirror ? -1 : 1;
+    const zoom = Math.max(1, Number(cameraZoom || 1));
+
+    video.style.transform = `scaleX(${scaleX}) scale(${zoom})`;
+  }
+
+  async function switchCamera() {
+    const btn = document.getElementById('switchCameraBtn');
+    if (btn) btn.disabled = true;
+
+    currentFacingMode =
+      currentFacingMode === 'environment' ? 'user' : 'environment';
+
+    closeGuidedCamera();
+    await openGuidedCamera();
+
+    if (btn) btn.disabled = false;
+  }
+
+  async function openGuidedCamera() {
+    const modal = document.getElementById('cameraModal');
+    const video = document.getElementById('cameraVideo');
+    const guide = document.getElementById('cameraGuide');
+    const zoomSlider = document.getElementById('cameraZoom');
+
+    guide.innerHTML = `
+      <div class="camera-dim"></div>
+      <img
+        class="template-guide-img ${currentFacingMode === 'user' ? 'front-camera-guide' : ''}"
+        src="${templateSelector.value}"
+        alt="うちわガイド">
+      <div class="guide-message">${getGuideMessage()}</div>
+    `;
+
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: currentFacingMode },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          focusMode: 'continuous'
+        },
+        audio: false
+      });
+
+      video.srcObject = cameraStream;
+
+      cameraZoom = 1;
+      if (zoomSlider) {
+        zoomSlider.value = '1';
+        zoomSlider.oninput = () => {
+          cameraZoom = Number(zoomSlider.value || 1);
+          updateCameraMirror();
+        };
+      }
+
+      updateCameraMirror();
+      updateSwitchCameraButton();
+
+      modal.style.display = 'block';
+
+    } catch (err) {
+      alert('カメラを起動できませんでした。カメラの許可を確認してください。');
+      console.error(err);
+    }
+  }
+
+  function closeGuidedCamera() {
+  const modal = document.getElementById('cameraModal');
+  const video = document.getElementById('cameraVideo');
+
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+
+    video.srcObject = null;
+    video.style.transform = 'scaleX(1) scale(1)';
+    cameraZoom = 1;
+    modal.style.display = 'none';
+  }
+
+  function applySavedPhotoBrightness(ctx, width, height) {
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+
+    // 黄みを避けるため、コントラストは上げず、明るさだけ少し補正
+    const brightness = 1.06;
+    const contrast = 1.00;
+
+    for (let i = 0; i < data.length; i += 4) {
+      for (let c = 0; c < 3; c++) {
+        let v = data[i + c];
+        v = v * brightness;
+        v = (v - 128) * contrast + 128;
+        data[i + c] = Math.max(0, Math.min(255, v));
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+  }
+
+
+  function captureGuidedPhoto() {
+    const video = document.getElementById('cameraVideo');
+
+    if (!video.videoWidth || !video.videoHeight) {
+      alert('カメラ映像の準備がまだできていません。少し待ってから撮影してください。');
+      return;
+    }
+
+    const targetW = canvas.width;
+    const targetH = canvas.height;
+    const targetRatio = targetW / targetH;
+
+    const videoW = video.videoWidth;
+    const videoH = video.videoHeight;
+    const videoRatio = videoW / videoH;
+
+    let tempCanvas;
+    let tempCtx;
+
+    if (currentFacingMode === 'user') {
+      // インカメラ専用：
+      // スマホ縦写真として保存する。
+      // ただし編集画面でガイド時の見え方と大きくズレないよう、
+      // 初期配置は少し大きめにする。
+      const portraitW = 1800;
+      const portraitH = 2400;
+      const portraitRatio = portraitW / portraitH;
+
+      let sx, sy, sw, sh;
+
+      // 縦長比率で切り出す。横扁平にしない。
+      if (videoRatio > portraitRatio) {
+        sh = videoH;
+        sw = videoH * portraitRatio;
+        sx = (videoW - sw) / 2;
+        sy = 0;
+      } else {
+        sw = videoW;
+        sh = videoW / portraitRatio;
+        sx = 0;
+        sy = (videoH - sh) / 2;
+      }
+
+      // 画面上のズームと保存画像のズームを一致させる
+      const z = Math.max(1, Number(cameraZoom || 1));
+      if (z > 1) {
+        const centerX = sx + sw / 2;
+        const centerY = sy + sh / 2;
+        sw = sw / z;
+        sh = sh / z;
+        sx = centerX - sw / 2;
+        sy = centerY - sh / 2;
+      }
+
+      tempCanvas = document.createElement('canvas');
+      tempCanvas.width = portraitW;
+      tempCanvas.height = portraitH;
+      tempCtx = tempCanvas.getContext('2d');
+
+      // インカメラは画面表示がミラーなので、保存画像も見た目と同じ向きにする
+      tempCtx.save();
+      tempCtx.translate(portraitW, 0);
+      tempCtx.scale(-1, 1);
+      tempCtx.drawImage(
+        video,
+        sx, sy, sw, sh,
+        0, 0, portraitW, portraitH
+      );
+      tempCtx.restore();
+
+      applySavedPhotoBrightness(tempCtx, portraitW, portraitH);
+
+    } else {
+      // アウトカメラは従来どおり、A4横比率で全面に切り出す
+      let sx, sy, sw, sh;
+
+      if (videoRatio > targetRatio) {
+        sh = videoH;
+        sw = videoH * targetRatio;
+        sx = (videoW - sw) / 2;
+        sy = 0;
+      } else {
+        sw = videoW;
+        sh = videoW / targetRatio;
+        sx = 0;
+        sy = (videoH - sh) / 2;
+      }
+
+      const z = Math.max(1, Number(cameraZoom || 1));
+      if (z > 1) {
+        const centerX = sx + sw / 2;
+        const centerY = sy + sh / 2;
+        sw = sw / z;
+        sh = sh / z;
+        sx = centerX - sw / 2;
+        sy = centerY - sh / 2;
+      }
+
+      tempCanvas = document.createElement('canvas');
+      tempCanvas.width = targetW;
+      tempCanvas.height = targetH;
+      tempCtx = tempCanvas.getContext('2d');
+
+      tempCtx.drawImage(
+        video,
+        sx, sy, sw, sh,
+        0, 0, targetW, targetH
+      );
+
+      applySavedPhotoBrightness(tempCtx, targetW, targetH);
+    }
+
+    const dataUrl = tempCanvas.toDataURL('image/png');
+
+    uploadedImg = new Image();
+
+    uploadedImg.onload = () => {
+      rotation = 0;
+
+      if (currentFacingMode === 'user') {
+        // インカメ縦写真の初期配置。
+        // ガイド撮影時の見え方に近づけるため、横幅をキャンバスの約68%にする。
+        // 以前より大きめなので、撮影後の見た目との差が小さい。
+        scale = (canvas.width * 0.68) / uploadedImg.width;
+
+        imgX = canvas.width / 2;
+
+        // 顔が中央〜やや上に来やすいよう、少し下げて配置。
+        // 頭が切れる場合は 0.03、顔が下がりすぎる場合は 0.00 に調整。
+        imgY = canvas.height / 2 + canvas.height * 0.02;
+
+      } else {
+        // アウトカメラはA4横画像なので等倍
+        scale = 1;
+        imgX = canvas.width / 2;
+        imgY = canvas.height / 2;
+      }
+
+      clearFinalPreviewState();
+      draw();
+      closeGuidedCamera();
+
+      document.getElementById('area-canvas').scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    };
+
+    uploadedImg.src = dataUrl;
+  }
+
+
+    function setLanguage(lang) {
+      currentLang = lang;
+
+      document.querySelectorAll('[data-ja]').forEach(el => {
+        if (el.dataset[lang]) {
+          if (el.tagName === "OPTION" || el.tagName === "BUTTON" || el.tagName === "LABEL") {
+            el.textContent = el.dataset[lang]; // ボタン・ラベル・セレクト用
+          } else {
+            el.innerHTML = el.dataset[lang];   // h1やpなど
+          }
+        }
+      });
+
+      // 使い方モーダル本文だけは、長文をJS側で管理
+      const howToBody = document.getElementById('howToBody');
+      if (howToBody && howToTexts[lang]) {
+        howToBody.innerHTML = howToTexts[lang];
+      }
+
+      const copiesHint = document.getElementById('copiesHint');
+      if (copiesHint) {
+        copiesHint.textContent =
+          copiesHintTexts[lang] || copiesHintTexts.ja;
+      }
+
+      if (typeof updatePriceTexts === 'function') {
+        updatePriceTexts();
+      }
+
+      if (typeof updateTotalPrice === 'function') {
+        updateTotalPrice();
+      }
+
+      if (typeof updatePopupClosedMode === 'function') {
+        updatePopupClosedMode();
+      }
+
+      if (lastCompleteDisplayNo !== null) {
+        const completeEl = document.getElementById('orderComplete');
+
+        if (completeEl && completeEl.style.display !== 'none') {
+          renderCompleteMessage(lastCompleteDisplayNo, lastCompleteQueueId);
+        }
+      }
+
+      if (typeof updateSwitchCameraButton === 'function') {
+        updateSwitchCameraButton();
+      }
+    } // ← setLanguage終了
 
     function getTimestampBasedFileName() {
       const now = new Date();
@@ -290,20 +2465,147 @@
       const min = String(now.getMinutes()).padStart(2, '0');
       const slot = Math.floor(parseInt(min) / 30) * 30;
       const slotStr = String(slot).padStart(2, '0');
-      const rand = Math.floor(Math.random() * 900) + 100;
-      return `uchiwa_${y}${m}${d}_${h}${slotStr}_${rand}.jpg`;
+      return `uchiwa_${y}${m}${d}_${h}${slotStr}.png`;
     }
 
+    document
+      .querySelectorAll('input[name="priceType"]')
+      .forEach(el => {
+        el.addEventListener('change', updateTotalPrice);
+      });
 
-    // 📌 フォームへ進むボタンクリック時の処理
-    document.getElementById('go-to-form').addEventListener('click', function () {
-        window.location.href = "https://docs.google.com/forms/d/e/1FAIpQLSdAf9ZuaIIWqMmxMPZzhmMs6zFWV_OyyI5OEUvqdCnIpnS-Xg/viewform";
+    document
+      .getElementById('copiesSelect')
+      .addEventListener('change', updateTotalPrice);
 
-        // 念のため5秒後に手動リンクを表示
-        setTimeout(() => {
-            document.getElementById('manual-link').style.display = 'block';
-        }, 5000);
+    window.addEventListener('load', async () => {
+      const userLang = navigator.language || navigator.userLanguage;
+
+      await loadSettings();
+
+      if (userLang.startsWith('en')) setLanguage('en');
+      else if (userLang.startsWith('zh')) setLanguage('zh');
+      else if (userLang.startsWith('ko')) setLanguage('ko');
+      else if (userLang.startsWith('vi')) setLanguage('vi');
+      else setLanguage('ja');
+
+      checkReuseParam();
+      await loadReuseOrder();
+
+      if (isReuseMode && reuseSourceOrder) {
+        applyReuseModeToScreen();
+      }
+
+      updateTotalPrice();
     });
-  </script>
+
+    window.setLanguage = setLanguage;
+
+    // 「使い方」ボタンを押したらモーダルを表示
+    document.getElementById('howToBtn').addEventListener('click', () => {
+      document.getElementById('howToModal').style.display = 'flex';
+    });
+
+
+    document.getElementById('guidedCameraBtn')
+      .addEventListener('click', openGuidedCamera);
+
+    document.getElementById('closeCameraBtn')
+      .addEventListener('click', closeGuidedCamera);
+
+    document.getElementById('captureGuideBtn')
+      .addEventListener('click', captureGuidedPhoto);
+
+    document.getElementById('switchCameraBtn')
+      .addEventListener('click', switchCamera);
+
+
+
+</script>
+
+<div id="sendingOverlay"
+     style="
+       display:none;
+       position:fixed;
+       top:0;
+       left:0;
+       width:100%;
+       height:100%;
+       background:rgba(255,255,255,0.95);
+       z-index:99999;
+       text-align:center;
+       padding-top:40vh;
+       font-size:22px;
+       font-weight:bold;
+       color:#1565c0;">
+  送信中です…<br>
+  画面を閉じないでください
+</div>
+
+<div id="cameraModal" style="
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#000;
+  z-index:99999;
+  color:white;
+">
+
+  <video id="cameraVideo"
+    autoplay
+    playsinline
+    style="
+      width:100%;
+      height:100%;
+      object-fit:cover;">
+  </video>
+
+  <button id="switchCameraBtn"
+    data-ja="カメラ切替"
+    data-en="Switch Camera"
+    data-zh="切换摄像头"
+    data-ko="카메라 전환"
+    data-vi="Đổi camera">
+    カメラ切替
+  </button>
+
+  <div id="cameraGuide" style="
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:2;
+  "></div>
+
+  <div class="camera-zoom-label">ズーム</div>
+  <input id="cameraZoom"
+    type="range"
+    min="1"
+    max="3"
+    step="0.1"
+    value="1">
+
+  <div style="
+    position:absolute;
+    bottom:20px;
+    left:0;
+    right:0;
+    display:flex;
+    gap:10px;
+    padding:0 16px;
+    z-index:4;">
+
+    <button id="closeCameraBtn">
+      キャンセル
+    </button>
+
+    <button id="captureGuideBtn">
+      この位置で撮影
+    </button>
+
+  </div>
+
+</div>
+
+
 </body>
 </html>
