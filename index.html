@@ -2025,8 +2025,12 @@ document.getElementById('saveBtn').addEventListener('click', () => {
             );
 
           } catch (reuseImageErr) {
-            console.error('再注文画像の再作成に失敗しました:', reuseImageErr);
-            throw reuseImageErr;
+            // 再注文画像の再アップロードに失敗しても、追加注文自体は成立させる。
+            // 元注文の完成画像URLを引き継ぐことで、管理画面・status画面で画像表示できるようにする。
+            console.warn('再注文画像の再作成に失敗したため、元画像URLを引き継ぎます:', reuseImageErr);
+
+            imageUrl = reuseSourceOrder.imageUrl || "";
+            storagePath = reuseSourceOrder.storagePath || "";
           }
 
         } else {
@@ -2070,6 +2074,10 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           template,
           imageUrl,
           storagePath,
+          imageStorageMode:
+            isReuseMode && reuseSourceOrder && storagePath === reuseSourceOrder.storagePath
+              ? 'linked_original'
+              : 'new_upload',
 
           isReorder: isReuseMode,
           reuseFromQueueId: isReuseMode && reuseSourceOrder ? reuseSourceOrder.queueId : null,
