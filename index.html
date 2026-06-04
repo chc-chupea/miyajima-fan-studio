@@ -2018,14 +2018,10 @@ document.getElementById('saveBtn').addEventListener('click', () => {
             );
 
           } catch (reuseImageErr) {
-            // 画像再取得・再アップロードで止まる場合の保険。
-            // 注文自体は成立させ、元の完成画像をそのまま使う。
-            // Firestoreには新しい受付番号・本数・料金を保存する。
-            console.warn('再注文画像の再作成に失敗したため、元画像を引き継ぎます:', reuseImageErr);
-
-            imageUrl = reuseSourceOrder.imageUrl || "";
-            storagePath = reuseSourceOrder.storagePath || "";
+            console.error('再注文画像の再作成に失敗しました:', reuseImageErr);
+            throw reuseImageErr;
           }
+
         } else {
           draw();
 
