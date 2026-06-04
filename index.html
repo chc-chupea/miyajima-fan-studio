@@ -1605,29 +1605,36 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         throw new Error("再注文元の注文情報がありません。");
       }
 
-      // まず公開 downloadURL から読む。
-      // これが一番、status.html からの追加注文で安定しやすい。
-      if (order.imageUrl) {
-        return await loadImageFromUrl(order.imageUrl);
+      // ① まず storagePath から読む
+      if (order.storagePath) {
+        try {
+          const blob = await withTimeout(
+            getBlob(ref(storage, order.storagePath)),
+            15000,
+            'Storage画像取得'
+          );
+
+          const objectUrl = URL.createObjectURL(blob);
+
+          try {
+            return await withTimeout(
+              loadImageFromObjectUrl(objectUrl),
+              15000,
+              'Storage画像読み込み'
+            );
+          } finally {
+            setTimeout(() => {
+              try { URL.revokeObjectURL(objectUrl); } catch (e) {}
+            }, 1000);
+          }
+        } catch (storageErr) {
+          console.warn("storagePathからの再取得に失敗しました。imageUrlを試します:", storageErr);
+        }
       }
 
-      // imageUrl がない古い注文だけ Storage SDK を使う。
-      if (order.storagePath) {
-        const blob = await withTimeout(
-          getBlob(ref(storage, order.storagePath)),
-          15000,
-          'Storage画像取得'
-        );
-
-        const objectUrl = URL.createObjectURL(blob);
-
-        try {
-          return await withTimeout(loadImageFromObjectUrl(objectUrl), 15000, 'Storage画像読み込み');
-        } finally {
-          setTimeout(() => {
-            try { URL.revokeObjectURL(objectUrl); } catch (e) {}
-          }, 1000);
-        }
+      // ② storagePath が失敗した場合だけ imageUrl を試す
+      if (order.imageUrl) {
+        return await loadImageFromUrl(order.imageUrl);
       }
 
       throw new Error("再注文元の画像情報が見つかりません。");
