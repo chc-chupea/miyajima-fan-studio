@@ -1974,7 +1974,9 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
             const pngDataUrl = canvas.toDataURL('image/png');
 
-            storagePath = `orders/${issued.dayKey}/${issued.shortId}.png`;
+            storagePath =
+              `orders/${shopId}/${issued.dayKey}/${issued.queueId}.png`;
+
             const storageRef = ref(storage, storagePath);
 
             await withTimeout(
@@ -2007,7 +2009,9 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
           draw();
 
-          storagePath = `orders/${issued.dayKey}/${issued.shortId}.png`;
+          storagePath =
+            `orders/${shopId}/${issued.dayKey}/${issued.queueId}.png`;
+
           const storageRef = ref(storage, storagePath);
 
           await uploadString(storageRef, pngDataUrl, 'data_url', {
