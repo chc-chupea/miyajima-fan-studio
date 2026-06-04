@@ -347,6 +347,22 @@
   line-height:1.6;
 }
 
+
+.closed-notice {
+  margin:12px 0;
+  padding:16px;
+  border-radius:16px;
+  background:#fff3e0;
+  color:#e65100;
+  font-weight:700;
+  text-align:center;
+  line-height:1.7;
+  display:none;
+}
+.closed-notice.active {
+  display:block;
+}
+
   </style>
 </head>
 <body>
@@ -404,6 +420,8 @@
 
 
   <h1 id="title" data-ja="Myうちわ LAB" data-en="Let's Make Our Own Fan!" data-zh="一起来制作我们的团扇！" data-ko="우리만의 부채를 만들어보자!" data-vi="Hãy cùng làm quạt giấy của riêng mình!">Myうちわ LAB</h1>
+
+  <div id="popupClosedNotice" class="closed-notice"></div>
 
   <div class="area" id="area-select">
     <h2 data-ja="1)デザイン＆写真を選ぶ"
@@ -707,6 +725,7 @@ Miyajima Fan Studio<br><br>
       query,
       where,
       getDocs,
+      getDoc,
       limit
     } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
     import { getStorage, ref, uploadString, getDownloadURL, getBlob } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
@@ -727,6 +746,129 @@ Miyajima Fan Studio<br><br>
 
     const params = new URLSearchParams(window.location.search);
     const shopId = (params.get("shop") || "miyajima").replace(/[^a-zA-Z0-9_-]/g, "");
+
+    const defaultSettings = {
+      shopId,
+      shopName: "宮島ファンスタジオ",
+      generalPrice: 800,
+      studentPrice: 500,
+      pickupDeadlineText: "",
+      popupClosed: false,
+      expiredTitle: "⏰ 受取期限が終了しました",
+      expiredBody: "ポップアップストアの営業は終了しました。<br><br>未受取の商品については、<br>土日祝を除く10時～17時に<br>082-245-1133 へお問い合わせください。"
+    };
+
+    let popupSettings = { ...defaultSettings };
+
+    async function loadSettings() {
+      try {
+        const snap = await getDoc(doc(db, "settings", shopId));
+        popupSettings = snap.exists()
+          ? { ...defaultSettings, ...snap.data() }
+          : { ...defaultSettings };
+      } catch (error) {
+        console.error("設定の読み込みに失敗しました:", error);
+        popupSettings = { ...defaultSettings };
+      }
+
+      applySettingsToScreen();
+    }
+
+    function nl2br(value) {
+      return String(value || "").replace(/\n/g, "<br>");
+    }
+
+    function getGeneralPrice() {
+      return Number(popupSettings?.generalPrice || 800);
+    }
+
+    function getStudentPrice() {
+      return Number(popupSettings?.studentPrice || 500);
+    }
+
+    function getUnitPriceByType(priceType) {
+      return priceType === "student" ? getStudentPrice() : getGeneralPrice();
+    }
+
+    function applySettingsToScreen() {
+      const shopName = popupSettings?.shopName || defaultSettings.shopName;
+      document.title = `${shopName} - Myうちわ LAB`;
+
+      const titleEl = document.getElementById("title");
+      if (titleEl) {
+        titleEl.textContent = shopName;
+        ["ja", "en", "zh", "ko", "vi"].forEach(lang => {
+          titleEl.dataset[lang] = shopName;
+        });
+      }
+
+      updatePriceTexts();
+      updateTotalPrice();
+      updatePopupClosedMode();
+    }
+
+    function updatePriceTexts() {
+      const generalPrice = getGeneralPrice();
+      const studentPrice = getStudentPrice();
+
+      const generalText = {
+        ja: `一般 ${generalPrice.toLocaleString()}円／本`,
+        en: `General ¥${generalPrice.toLocaleString()} / fan`,
+        zh: `普通价格 ${generalPrice.toLocaleString()}日元/把`,
+        ko: `일반 ${generalPrice.toLocaleString()}엔 / 개`,
+        vi: `Thông thường ${generalPrice.toLocaleString()} yên / chiếc`
+      };
+
+      const studentText = {
+        ja: `学割 ${studentPrice.toLocaleString()}円／本`,
+        en: `Student ¥${studentPrice.toLocaleString()} / fan`,
+        zh: `学生优惠 ${studentPrice.toLocaleString()}日元/把`,
+        ko: `학생 할인 ${studentPrice.toLocaleString()}엔 / 개`,
+        vi: `Ưu đãi học sinh ${studentPrice.toLocaleString()} yên / chiếc`
+      };
+
+      const generalEl = document.getElementById("generalPriceText");
+      const studentEl = document.getElementById("studentPriceText");
+
+      if (generalEl) {
+        Object.keys(generalText).forEach(lang => generalEl.dataset[lang] = generalText[lang]);
+        generalEl.textContent = generalText[currentLang] || generalText.ja;
+      }
+
+      if (studentEl) {
+        Object.keys(studentText).forEach(lang => studentEl.dataset[lang] = studentText[lang]);
+        studentEl.textContent = studentText[currentLang] || studentText.ja;
+      }
+    }
+
+    function updatePopupClosedMode() {
+      const closed = popupSettings?.popupClosed === true;
+      const notice = document.getElementById("popupClosedNotice");
+
+      if (notice) {
+        if (closed) {
+          const title = popupSettings?.expiredTitle || defaultSettings.expiredTitle;
+          const body = popupSettings?.expiredBody || defaultSettings.expiredBody;
+          notice.innerHTML = `${title}<br><br>${nl2br(body)}`;
+          notice.classList.add("active");
+        } else {
+          notice.innerHTML = "";
+          notice.classList.remove("active");
+        }
+      }
+
+      const orderBtn = document.getElementById("orderBtn");
+      if (orderBtn) {
+        orderBtn.disabled = closed;
+        if (closed) {
+          orderBtn.textContent = currentLang === "en" ? "Closed" : "受付終了";
+          orderBtn.style.background = "#777";
+        } else {
+          orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || "注文する";
+          orderBtn.style.background = "";
+        }
+      }
+    }
 
     const saveWarningTexts = {
       ja: '⚠️ まだファイルが選ばれていません。うちわに使う画像を選んでください。',
@@ -803,7 +945,7 @@ Miyajima Fan Studio<br><br>
           <li><b>Chỉnh ảnh:</b> Dùng ngón tay để di chuyển, phóng to/thu nhỏ và xoay.</li>
           <li><b>Chọn số lượng:</b> Tối đa 10 quạt cho một ảnh.</li>
           <li><b>SEND:</b> Sau khi gửi sẽ không thể chỉnh sửa. Đừng đóng trang cho đến khi số của bạn hiện ra.</li>
-          <li><b>Chờ:</b> Số như "3" và thời gian chờ sẽ được hiển thị.</li>
+          <li><b>Chờ:</b> Số như "060410" và thời gian chờ sẽ được hiển thị.</li>
           <li><b>Nhận quạt:</b> Khi hiện READY, hãy đưa số, thanh toán và nhận quạt.</li>
         </ol>
       `
@@ -811,6 +953,7 @@ Miyajima Fan Studio<br><br>
 
     let currentLang = 'ja'; // デフォルトは日本語
     let lastCompleteDisplayNo = null;
+    let lastCompleteQueueId = null;
     let reuseQueueId = null;
     let isReuseMode = false;
     let reuseSourceOrder = null;
@@ -895,6 +1038,7 @@ Miyajima Fan Studio<br><br>
       }
 
       lastCompleteDisplayNo = null;
+      lastCompleteQueueId = null;
 
       const orderBtn = document.getElementById('orderBtn');
       if (orderBtn) {
@@ -1497,6 +1641,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       document.getElementById('orderArea').style.display = 'none';
       document.getElementById('copiesSelect').value = '1';
       lastCompleteDisplayNo = null;
+      lastCompleteQueueId = null;
       document.getElementById('notice').textContent = '';
       document.getElementById('notice').style.display = 'none';
 
@@ -1518,8 +1663,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const copies =
         Number(document.getElementById('copiesSelect').value || 1);
 
-      const unitPrice =
-        priceType === 'student' ? 500 : 800;
+      const unitPrice = getUnitPriceByType(priceType);
 
       const totalPrice = unitPrice * copies;
 
@@ -1678,14 +1822,20 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         return;
       }
 
+      if (popupSettings?.popupClosed === true) {
+        orderErrorEl.textContent = popupSettings?.expiredTitle || '受付終了';
+        orderErrorEl.style.display = 'block';
+        orderErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
       const copies = Number(document.getElementById('copiesSelect').value || 1);
       const template = isReuseMode && reuseSourceOrder ? (reuseSourceOrder.template || templateSelector.value) : templateSelector.value;
 
       const priceType =
         document.querySelector('input[name="priceType"]:checked')?.value || 'general';
 
-      const unitPrice =
-        priceType === 'student' ? 500 : 800;
+      const unitPrice = getUnitPriceByType(priceType);
 
       const totalPrice =
         unitPrice * copies;
@@ -1876,6 +2026,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           printLabel,
           dayKey: issued.dayKey,
           shopId,
+          shopName: popupSettings?.shopName || defaultSettings.shopName,
 
           priceType,
           unitPrice,
@@ -1899,6 +2050,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         
         document.getElementById('sendingOverlay').style.display = 'none';
         lastCompleteDisplayNo = displayCode;
+        lastCompleteQueueId = issued.queueId;
         renderCompleteMessage(displayCode, issued.queueId);
 
 
@@ -2248,15 +2400,23 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           copiesHintTexts[lang] || copiesHintTexts.ja;
       }
 
+      if (typeof updatePriceTexts === 'function') {
+        updatePriceTexts();
+      }
+
       if (typeof updateTotalPrice === 'function') {
         updateTotalPrice();
+      }
+
+      if (typeof updatePopupClosedMode === 'function') {
+        updatePopupClosedMode();
       }
 
       if (lastCompleteDisplayNo !== null) {
         const completeEl = document.getElementById('orderComplete');
 
         if (completeEl && completeEl.style.display !== 'none') {
-          renderCompleteMessage(lastCompleteDisplayNo);
+          renderCompleteMessage(lastCompleteDisplayNo, lastCompleteQueueId);
         }
       }
 
@@ -2289,6 +2449,8 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     window.addEventListener('load', async () => {
       const userLang = navigator.language || navigator.userLanguage;
+
+      await loadSettings();
 
       if (userLang.startsWith('en')) setLanguage('en');
       else if (userLang.startsWith('zh')) setLanguage('zh');
