@@ -728,7 +728,7 @@ Miyajima Fan Studio<br><br>
       getDoc,
       limit
     } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
-    import { getStorage, ref, uploadString, getDownloadURL, getBlob } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
+    import { getStorage, ref, uploadString, uploadBytes, getDownloadURL, getBlob } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBKSYZgaSVTu-HO_lS1Tp2eFjSjMuOONNI",
@@ -1570,6 +1570,19 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       ]);
     }
 
+
+    function canvasToPngBlob(targetCanvas) {
+      return new Promise((resolve, reject) => {
+        targetCanvas.toBlob(blob => {
+          if (!blob) {
+            reject(new Error("PNG画像の作成に失敗しました。"));
+            return;
+          }
+          resolve(blob);
+        }, 'image/png');
+      });
+    }
+
     function loadImageFromObjectUrl(objectUrl) {
       return new Promise((resolve, reject) => {
         const img = new Image();
@@ -1997,61 +2010,68 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         let storagePath = "";
 
         if (isReuseMode && reuseSourceOrder) {
-          try {
-            const reusedImg = await loadReuseImage(reuseSourceOrder);
+          // 追加注文でも必ず新しいPNGを作成する。
+          // 元画像を読み込み、新しい受付番号ラベルを焼き込んでから、新しいStorageパスへ保存する。
+          const reusedImg = await loadReuseImage(reuseSourceOrder);
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(reusedImg, 0, 0, canvas.width, canvas.height);
-
-            drawPrintLabel(printLabel);
-
-            const pngDataUrl = canvas.toDataURL('image/png');
-
-            storagePath =
-              `orders/${shopId}/${issued.dayKey}/${issued.queueId}.png`;
-
-            const storageRef = ref(storage, storagePath);
-
-            await withTimeout(
-              uploadString(storageRef, pngDataUrl, 'data_url', { contentType: 'image/png' }),
-              20000,
-              '再注文画像アップロード'
-            );
-
-            imageUrl = await withTimeout(
-              getDownloadURL(storageRef),
-              10000,
-              '再注文画像URL取得'
-            );
-
-          } catch (reuseImageErr) {
-            // 再注文画像の再アップロードに失敗しても、追加注文自体は成立させる。
-            // 元注文の完成画像URLを引き継ぐことで、管理画面・status画面で画像表示できるようにする。
-            console.warn('再注文画像の再作成に失敗したため、元画像URLを引き継ぎます:', reuseImageErr);
-
-            imageUrl = reuseSourceOrder.imageUrl || "";
-            storagePath = reuseSourceOrder.storagePath || "";
-          }
-
-        } else {
-          draw();
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(reusedImg, 0, 0, canvas.width, canvas.height);
 
           drawPrintLabel(printLabel);
-
-          const pngDataUrl = canvas.toDataURL('image/png');
-
-          draw();
 
           storagePath =
             `orders/${shopId}/${issued.dayKey}/${issued.queueId}.png`;
 
           const storageRef = ref(storage, storagePath);
 
-          await uploadString(storageRef, pngDataUrl, 'data_url', {
-            contentType: 'image/png'
-          });
+          const pngBlob = await withTimeout(
+            canvasToPngBlob(canvas),
+            20000,
+            '再注文PNG作成'
+          );
 
-          imageUrl = await getDownloadURL(storageRef);
+          await withTimeout(
+            uploadBytes(storageRef, pngBlob, { contentType: 'image/png' }),
+            30000,
+            '再注文画像アップロード'
+          );
+
+          imageUrl = await withTimeout(
+            getDownloadURL(storageRef),
+            10000,
+            '再注文画像URL取得'
+          );
+
+        } else {
+          draw();
+
+          drawPrintLabel(printLabel);
+
+          storagePath =
+            `orders/${shopId}/${issued.dayKey}/${issued.queueId}.png`;
+
+          const storageRef = ref(storage, storagePath);
+
+          const pngBlob = await withTimeout(
+            canvasToPngBlob(canvas),
+            20000,
+            'PNG作成'
+          );
+
+          // 画面上の編集キャンバスには番号ラベルを残さない
+          draw();
+
+          await withTimeout(
+            uploadBytes(storageRef, pngBlob, { contentType: 'image/png' }),
+            30000,
+            '画像アップロード'
+          );
+
+          imageUrl = await withTimeout(
+            getDownloadURL(storageRef),
+            10000,
+            '画像URL取得'
+          );
         }
 
         const orderRef = doc(db, 'orders', issued.queueId);
@@ -2074,10 +2094,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           template,
           imageUrl,
           storagePath,
-          imageStorageMode:
-            isReuseMode && reuseSourceOrder && storagePath === reuseSourceOrder.storagePath
-              ? 'linked_original'
-              : 'new_upload',
+          imageStorageMode: 'new_upload',
 
           isReorder: isReuseMode,
           reuseFromQueueId: isReuseMode && reuseSourceOrder ? reuseSourceOrder.queueId : null,
