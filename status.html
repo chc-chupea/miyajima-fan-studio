@@ -59,9 +59,9 @@
 
     <div class="card">
       <label id="numberLabel" for="numberInput">受付番号を入力してください</label>
-      <input id="numberInput" inputmode="numeric" pattern="[0-9]*" placeholder="例：060410" />
+      <input id="numberInput" inputmode="text" autocapitalize="characters" placeholder="例：M060410" />
       <button id="checkBtn" class="primary">状況を確認する</button>
-      <div id="hint" class="sub">受付番号は、注文完了画面に表示された数字です。</div>
+      <div id="hint" class="sub">受付番号は、注文完了画面に表示された番号です。</div>
     </div>
 
     <div class="card">
@@ -114,9 +114,9 @@
   const texts = {
     ja: {
       title: "注文状況確認", label: "受付番号を入力してください", button: "状況を確認する",
-      hint: "受付番号は、注文完了画面に表示された数字です。例：060410", placeholder: "例：060410",
+      hint: "受付番号は、注文完了画面に表示された番号です。例：M060410", placeholder: "例：M060410",
       initial: "受付番号を入力して、状況を確認してください。", checking: "確認中です…",
-      invalid: "受付番号を数字で入力してください。例：060410", notFound: "注文が見つかりませんでした。受付番号をご確認ください。",
+      invalid: "受付番号を数字で入力してください。例：M060410", notFound: "注文が見つかりませんでした。受付番号をご確認ください。",
       receptionNo: "受付番号",
       statusWaitTitle: "⏳ 受付済み", statusWaitBody: "宮島観光をお楽しみください。<br>うちわが完成したら、このページで確認できます。",
       statusPrintingTitle: "🖨 作成中", statusPrintingBody: "ただいまうちわを作成しています。<br>宮島観光をお楽しみください。",
@@ -131,9 +131,9 @@
     },
     en: {
       title: "Check Order Status", label: "Enter your reception number", button: "Check Status",
-      hint: "Your reception number is shown after placing your order. Example: 060410", placeholder: "Example: 060410",
+      hint: "Your reception number is shown after placing your order. Example: M060410", placeholder: "Example: M060410",
       initial: "Enter your reception number to check the status.", checking: "Checking…",
-      invalid: "Please enter your reception number using numbers only. Example: 060410", notFound: "Order not found. Please check your reception number.",
+      invalid: "Please enter your reception number using numbers only. Example: M060410", notFound: "Order not found. Please check your reception number.",
       receptionNo: "Reception No.",
       statusWaitTitle: "⏳ Received", statusWaitBody: "Please enjoy sightseeing in Miyajima.<br>You can check this page when your fan is ready.",
       statusPrintingTitle: "🖨 In Production", statusPrintingBody: "We are making your fan now.<br>Please enjoy sightseeing in Miyajima.",
@@ -148,9 +148,9 @@
     },
     zh: {
       title: "订单状态确认", label: "请输入受理编号", button: "查看状态",
-      hint: "受理编号是下单完成画面中显示的数字。", placeholder: "例：060410",
+      hint: "受理编号是下单完成画面中显示的号码。例：M060410", placeholder: "例：M060410",
       initial: "请输入受理编号以查看状态。", checking: "正在确认…",
-      invalid: "请用数字输入受理编号。", notFound: "未找到订单。请确认受理编号。",
+      invalid: "请输入受理编号。例：M060410", notFound: "未找到订单。请确认受理编号。",
       receptionNo: "受理编号",
       statusWaitTitle: "⏳ 已受理", statusWaitBody: "请尽情享受宫岛观光。<br>团扇完成后，可在此页面确认。",
       statusPrintingTitle: "🖨 制作中", statusPrintingBody: "我们正在制作您的团扇。<br>请尽情享受宫岛观光。",
@@ -165,9 +165,9 @@
     },
     ko: {
       title: "주문 상태 확인", label: "접수번호를 입력해 주세요", button: "상태 확인",
-      hint: "접수번호는 주문 완료 화면에 표시된 숫자입니다.", placeholder: "예: 3",
+      hint: "접수번호는 주문 완료 화면에 표시된 번호입니다. 예: M060410", placeholder: "예: M060410",
       initial: "접수번호를 입력하여 상태를 확인해 주세요.", checking: "확인 중입니다…",
-      invalid: "접수번호는 숫자로 입력해 주세요.", notFound: "주문을 찾을 수 없습니다. 접수번호를 확인해 주세요.",
+      invalid: "접수번호를 입력해 주세요. 예: M060410", notFound: "주문을 찾을 수 없습니다. 접수번호를 확인해 주세요.",
       receptionNo: "접수번호",
       statusWaitTitle: "⏳ 접수 완료", statusWaitBody: "미야지마 관광을 즐겨 주세요.<br>부채가 완성되면 이 페이지에서 확인할 수 있습니다.",
       statusPrintingTitle: "🖨 제작 중", statusPrintingBody: "현재 부채를 제작하고 있습니다.<br>미야지마 관광을 즐겨 주세요.",
@@ -182,9 +182,9 @@
     },
     vi: {
       title: "Kiểm tra trạng thái đơn hàng", label: "Nhập mã số tiếp nhận", button: "Kiểm tra trạng thái",
-      hint: "Mã số tiếp nhận là số hiển thị sau khi đặt hàng.", placeholder: "Ví dụ: 3",
+      hint: "Mã số tiếp nhận hiển thị sau khi đặt hàng. Ví dụ: M060410", placeholder: "Ví dụ: M060410",
       initial: "Nhập mã số tiếp nhận để kiểm tra trạng thái.", checking: "Đang kiểm tra…",
-      invalid: "Vui lòng nhập mã số bằng số.", notFound: "Không tìm thấy đơn hàng. Vui lòng kiểm tra mã số.",
+      invalid: "Vui lòng nhập mã số. Ví dụ: M060410", notFound: "Không tìm thấy đơn hàng. Vui lòng kiểm tra mã số.",
       receptionNo: "Mã số",
       statusWaitTitle: "⏳ Đã tiếp nhận", statusWaitBody: "Hãy tận hưởng chuyến tham quan Miyajima.<br>Khi quạt hoàn thành, bạn có thể kiểm tra tại trang này.",
       statusPrintingTitle: "🖨 Đang làm", statusPrintingBody: "Chúng tôi đang làm quạt của bạn.<br>Hãy tận hưởng chuyến tham quan Miyajima.",
@@ -230,9 +230,10 @@
   }
 
   function normalizeCode(value) {
-    const raw = String(value || "").trim();
-    const onlyNumber = raw.replace(/[^\d]/g, "");
-    return onlyNumber || null;
+    return String(value || "")
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
   }
 
 
@@ -385,24 +386,9 @@
     else if (status === "CLOSED") { title = t("statusClosedTitle"); body = t("statusClosedBody"); cls = "picked"; }
     else { title = status; body = t("unknown"); cls = ""; }
 
-    const reorderHtml = !isExpiredView
-      ? `
-          <a href="${getReorderUrl(queueId)}"
-             style="
-               display:inline-block;
-               width:100%;
-               box-sizing:border-box;
-               padding:12px;
-               background:#4caf50;
-               color:white;
-               text-decoration:none;
-               border-radius:20px;
-               font-weight:bold;
-               margin-top:10px;">
-            ${t("reorderSameImage")}
-          </a>
-        `
-      : "";
+    // status.html は状況確認専用にする。
+    // 追加注文は注文完了直後の index.html 側だけに残す。
+    const reorderHtml = "";
 
     document.getElementById("statusBox").innerHTML = `
       <div class="${cls}">
