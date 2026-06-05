@@ -40,6 +40,7 @@
     .btn-picked { background:#9c27b0; }
     .btn-wait { background:#f9a825; color:#333; }
     .btn-close { background:#777; }
+    .btn-download { background:#00a86b; }
     .empty { text-align:center; color:#777; padding:30px; }
     .small { font-size:12px; color:#777; margin-top:4px; }
 
@@ -767,11 +768,49 @@
               </div>
 
               <div class="actions">
-                <button class="btn-wait" data-id="${escapeHtml(queueId)}" data-status="WAIT">受付済みに戻す</button>
-                <button class="btn-printing" data-id="${escapeHtml(queueId)}" data-status="PRINTING">印刷中</button>
-                <button class="btn-ready" data-id="${escapeHtml(queueId)}" data-status="READY">完成</button>
-                <button class="btn-picked" data-id="${escapeHtml(queueId)}" data-status="PICKED_UP">受渡済</button>
-                <button class="btn-close" data-id="${escapeHtml(queueId)}" data-status="CLOSED">終了</button>
+
+                <button
+                  class="btn-download"
+                  data-url="${escapeHtml(imageUrl)}"
+                  data-code="${escapeHtml(displayCode)}">
+                  印刷用PNG保存
+                </button>
+
+                <button
+                  class="btn-printing"
+                  data-id="${escapeHtml(queueId)}"
+                  data-status="PRINTING">
+                  印刷中
+                </button>
+
+                <button
+                  class="btn-ready"
+                  data-id="${escapeHtml(queueId)}"
+                  data-status="READY">
+                  完成
+                </button>
+
+                <button
+                  class="btn-picked"
+                  data-id="${escapeHtml(queueId)}"
+                  data-status="PICKED_UP">
+                  受渡済
+                </button>
+
+                <button
+                  class="btn-wait"
+                  data-id="${escapeHtml(queueId)}"
+                  data-status="WAIT">
+                  受付済みに戻す
+                </button>
+
+                <button
+                  class="btn-close"
+                  data-id="${escapeHtml(queueId)}"
+                  data-status="CLOSED">
+                  終了
+                </button>
+
               </div>
             </div>
           </div>
@@ -779,9 +818,43 @@
       `;
     }).join("");
 
-    document.querySelectorAll(".actions button").forEach(btn => {
+    document.querySelectorAll(".actions button:not(.btn-download)").forEach(btn => {
       btn.addEventListener("click", () => {
         updateStatus(btn.dataset.id, btn.dataset.status);
+      });
+    });
+
+    document.querySelectorAll(".btn-download").forEach(btn => {
+      btn.addEventListener("click", async () => {
+
+        const url = btn.dataset.url;
+        const code = btn.dataset.code || "uchiwa";
+
+            // ★ここを追加
+            if (!url) {
+              alert("画像がありません");
+              return;
+            }
+
+
+        try {
+          const response = await fetch(url);
+          const blob = await response.blob();
+
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `${code}.png`;
+
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+
+          URL.revokeObjectURL(a.href);
+
+        } catch (e) {
+          console.error(e);
+          alert("PNG保存に失敗しました");
+        }
       });
     });
   }
