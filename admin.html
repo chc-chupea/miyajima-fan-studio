@@ -112,6 +112,67 @@
       font-weight:700;
       margin-left:6px;
     }
+
+    .shop-create-card {
+      background:#fff;
+      border-radius:18px;
+      padding:14px;
+      margin-bottom:14px;
+      box-shadow:0 3px 10px rgba(0,0,0,.08);
+      border-left:8px solid #4caf50;
+    }
+    .shop-create-card h2 {
+      margin:0 0 10px;
+      color:#1b5e20;
+      font-size:18px;
+    }
+    .shop-create-grid {
+      display:grid;
+      grid-template-columns:160px 1fr;
+      gap:10px;
+      align-items:center;
+    }
+    .shop-create-grid label {
+      font-weight:700;
+      color:#1b5e20;
+      font-size:14px;
+    }
+    .shop-create-grid input {
+      width:100%;
+      box-sizing:border-box;
+      padding:10px;
+      border-radius:10px;
+      border:1px solid #ccc;
+      font-size:15px;
+      font-family:'M PLUS Rounded 1c',sans-serif;
+    }
+    .shop-links {
+      margin-top:10px;
+      display:grid;
+      grid-template-columns:1fr;
+      gap:6px;
+      font-size:13px;
+    }
+    .shop-links a {
+      display:block;
+      padding:8px 10px;
+      border-radius:10px;
+      background:#e3f2fd;
+      color:#0d47a1;
+      text-decoration:none;
+      word-break:break-all;
+      font-weight:700;
+    }
+    .helper-note {
+      background:#e8f5e9;
+      color:#1b5e20;
+      border-radius:12px;
+      padding:10px;
+      font-size:13px;
+      line-height:1.6;
+      margin-top:10px;
+    }
+
     .danger-note {
       background:#fff3e0;
       color:#e65100;
@@ -179,6 +240,7 @@
       .thumb, .no-image { width:100%; max-height:180px; }
       .summary { grid-template-columns:1fr; }
       .settings-grid { grid-template-columns:1fr; }
+      .shop-create-grid { grid-template-columns:1fr; }
     }
   </style>
 </head>
@@ -186,12 +248,42 @@
   <div class="wrap">
     <h1>店員用 管理画面</h1>
 
+    <div class="shop-create-card">
+      <h2>新しい会場を作る</h2>
+      <div class="helper-note">
+        ① 会場名と会場IDを入力 → ②「この会場で開く」を押す → ③ ポップアップ設定を保存、の順で登録できます。<br>
+        会場IDは半角英数字がおすすめです。例：<strong>miyajima</strong> / <strong>fukuyama</strong> / <strong>kure</strong> / <strong>test02</strong>
+      </div>
+
+      <div class="shop-create-grid" style="margin-top:10px;">
+        <label for="newShopName">会場名</label>
+        <input id="newShopName" type="text" placeholder="例：福山ファンスタジオ">
+
+        <label for="newShopId">会場ID</label>
+        <input id="newShopId" type="text" placeholder="例：fukuyama">
+
+        <label for="newShopCode">受付番号の頭文字</label>
+        <input id="newShopCode" type="text" maxlength="4" placeholder="例：F">
+      </div>
+
+      <div class="settings-actions">
+        <button id="openNewShopBtn" style="background:#4caf50;">この会場で開く</button>
+        <button id="fillCurrentShopBtn" style="background:#777;">現在の会場情報をコピー</button>
+      </div>
+
+      <div id="shopPreviewLinks" class="shop-links"></div>
+    </div>
+
+
     <div class="settings-card">
       <h2>ポップアップ設定 <span id="shopBadge" class="shop-badge">miyajima</span></h2>
 
       <div class="settings-grid">
         <label for="shopName">会場名</label>
         <input id="shopName" type="text" placeholder="例：宮島ファンスタジオ">
+
+        <label for="shopCode">受付番号の頭文字</label>
+        <input id="shopCode" type="text" maxlength="4" placeholder="例：M">
 
         <label for="startDate">営業開始日</label>
         <input id="startDate" type="date">
@@ -240,8 +332,9 @@
       <div id="closedModeBanner" class="closed-mode-banner">受取終了モード ON</div>
 
       <div class="danger-note">
-        URLの <strong>?shop=miyajima</strong> を変えると、別会場の設定として保存できます。<br>
-        例：<strong>admin.html?shop=fukuyama</strong> / <strong>admin.html?shop=kure</strong>
+        現在開いている会場IDに保存されます。別会場を作る場合は、上の「新しい会場を作る」から開いて保存してください。<br>
+        注文画面：<strong>index.html?shop=<span id="currentShopIdText">miyajima</span></strong><br>
+        状況確認：<strong>status.html?shop=<span id="currentShopIdText2">miyajima</span></strong>
       </div>
     </div>
 
@@ -264,7 +357,7 @@
 
 
       <div class="search-row">
-        <input id="searchCodeInput" inputmode="numeric" placeholder="受付番号で検索（例：060410）">
+        <input id="searchCodeInput" inputmode="text" autocapitalize="characters" placeholder="受付番号で検索（例：M060410）">
         <button id="clearSearchBtn" class="btn-clear">クリア</button>
       </div>
 
@@ -316,6 +409,8 @@
   let popupSettings = null;
 
   document.getElementById("shopBadge").textContent = shopId;
+  document.getElementById("currentShopIdText").textContent = shopId;
+  document.getElementById("currentShopIdText2").textContent = shopId;
 
   function getTodayKey() {
     const now = new Date();
@@ -336,6 +431,39 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+
+  function normalizeShopId(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]/g, "");
+  }
+
+  function normalizeShopCode(value) {
+    return String(value || "")
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 4) || "M";
+  }
+
+  function updateNewShopPreview() {
+    const id = normalizeShopId(document.getElementById("newShopId")?.value);
+    const box = document.getElementById("shopPreviewLinks");
+    if (!box) return;
+
+    if (!id) {
+      box.innerHTML = `<div class="small">会場IDを入力すると、各画面のリンクが表示されます。</div>`;
+      return;
+    }
+
+    box.innerHTML = `
+      <a href="admin.html?shop=${encodeURIComponent(id)}">管理画面を開く：admin.html?shop=${escapeHtml(id)}</a>
+      <a href="index.html?shop=${encodeURIComponent(id)}" target="_blank" rel="noopener">注文画面：index.html?shop=${escapeHtml(id)}</a>
+      <a href="status.html?shop=${encodeURIComponent(id)}" target="_blank" rel="noopener">状況確認画面：status.html?shop=${escapeHtml(id)}</a>
+    `;
   }
 
   function statusText(status) {
@@ -369,6 +497,7 @@
 
   const defaultSettings = {
     shopName: "宮島ファンスタジオ",
+    shopCode: "M",
     generalPrice: 800,
     studentPrice: 500,
     startDate: "",
@@ -392,6 +521,7 @@
     const s = { ...defaultSettings, ...(settings || {}) };
 
     document.getElementById("shopName").value = s.shopName || "";
+    document.getElementById("shopCode").value = s.shopCode || defaultSettings.shopCode || "M";
     document.getElementById("startDate").value = s.startDate || "";
     document.getElementById("endDate").value = s.endDate || "";
     document.getElementById("openTime").value = s.openTime || "";
@@ -413,6 +543,7 @@
     return {
       shopId,
       shopName: document.getElementById("shopName").value.trim() || defaultSettings.shopName,
+      shopCode: normalizeShopCode(document.getElementById("shopCode").value || defaultSettings.shopCode),
 
       startDate: document.getElementById("startDate").value,
       endDate: document.getElementById("endDate").value,
@@ -460,6 +591,11 @@
   async function saveSettings() {
     try {
       const settings = readSettingsForm();
+
+      if (!settings.shopCode) {
+        alert("受付番号の頭文字を入力してください。例：M");
+        return;
+      }
 
       if (!settings.generalPrice || settings.generalPrice < 0) {
         alert("一般価格を正しく入力してください。");
@@ -510,7 +646,8 @@
     const dayKey = String(data.dayKey || "");
     const displayNo = data.displayNo || Number(data.shortId || 0) || "";
     if (dayKey.length >= 6 && displayNo) {
-      return `${dayKey.slice(2)}${Number(displayNo)}`;
+      const code = data.shopCode || popupSettings?.shopCode || "";
+      return `${code}${dayKey.slice(2)}${Number(displayNo)}`;
     }
 
     return displayNo ? String(displayNo) : "";
@@ -578,7 +715,7 @@
         : orders.filter(item => String(item.data.status || "WAIT").toUpperCase() === currentFilter);
 
     const visibleOrders = searchCode
-      ? statusFiltered.filter(item => getDisplayCode(item.data).includes(searchCode))
+      ? statusFiltered.filter(item => getDisplayCode(item.data).toUpperCase().includes(searchCode))
       : statusFiltered;
 
     if (visibleOrders.length === 0) {
@@ -691,7 +828,9 @@
   document.getElementById("reloadSettingsBtn").addEventListener("click", loadSettings);
 
   document.getElementById("searchCodeInput").addEventListener("input", (e) => {
-    searchCode = String(e.target.value || "").replace(/[^\d]/g, "");
+    searchCode = String(e.target.value || "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
     e.target.value = searchCode;
     renderOrders();
   });
@@ -706,7 +845,91 @@
 
 
 
+
+  document.getElementById("newShopId").addEventListener("input", (e) => {
+    e.target.value = normalizeShopId(e.target.value);
+    updateNewShopPreview();
+  });
+
+  document.getElementById("newShopCode").addEventListener("input", (e) => {
+    e.target.value = normalizeShopCode(e.target.value);
+  });
+
+  document.getElementById("newShopName").addEventListener("input", () => {
+    const name = document.getElementById("newShopName").value.trim();
+    const idInput = document.getElementById("newShopId");
+    const codeInput = document.getElementById("newShopCode");
+
+    if (!idInput.value && name) {
+      const known = {
+        "宮島": "miyajima",
+        "福山": "fukuyama",
+        "呉": "kure"
+      };
+
+      const hit = Object.keys(known).find(key => name.includes(key));
+      if (hit) idInput.value = known[hit];
+    }
+
+    if (!codeInput.value && name) {
+      if (name.includes("宮島")) codeInput.value = "M";
+      else if (name.includes("福山")) codeInput.value = "F";
+      else if (name.includes("呉")) codeInput.value = "K";
+      else {
+        const id = normalizeShopId(idInput.value);
+        if (id) codeInput.value = normalizeShopCode(id.slice(0, 1));
+      }
+    }
+
+    updateNewShopPreview();
+  });
+
+  document.getElementById("openNewShopBtn").addEventListener("click", () => {
+    const id = normalizeShopId(document.getElementById("newShopId").value);
+    const name = document.getElementById("newShopName").value.trim();
+    const code = normalizeShopCode(document.getElementById("newShopCode").value);
+
+    if (!id) {
+      alert("会場IDを入力してください。例：fukuyama");
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("shop", id);
+    if (name) sessionStorage.setItem(`newShopName_${id}`, name);
+    if (code) sessionStorage.setItem(`newShopCode_${id}`, code);
+
+    window.location.href = url.toString();
+  });
+
+  document.getElementById("fillCurrentShopBtn").addEventListener("click", () => {
+    document.getElementById("newShopName").value = document.getElementById("shopName").value || "";
+    document.getElementById("newShopId").value = shopId;
+    document.getElementById("newShopCode").value = document.getElementById("shopCode").value || "";
+    updateNewShopPreview();
+  });
+
+  updateNewShopPreview();
+
+  const pendingName = sessionStorage.getItem(`newShopName_${shopId}`);
+  const pendingCode = sessionStorage.getItem(`newShopCode_${shopId}`);
+
   await loadSettings();
+
+  if (pendingName) {
+    document.getElementById("shopName").value = pendingName;
+  }
+
+  if (pendingCode) {
+    document.getElementById("shopCode").value = normalizeShopCode(pendingCode);
+  }
+
+  if (pendingName || pendingCode) {
+    setSettingsStatus("新しい会場情報を仮入力しました。内容を確認して『設定を保存』を押してください。");
+    sessionStorage.removeItem(`newShopName_${shopId}`);
+    sessionStorage.removeItem(`newShopCode_${shopId}`);
+  }
+
   startWatch();
 </script>
 </body>
