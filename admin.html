@@ -825,36 +825,25 @@
     });
 
     document.querySelectorAll(".btn-download").forEach(btn => {
-      btn.addEventListener("click", async () => {
+      btn.addEventListener("click", () => {
 
         const url = btn.dataset.url;
         const code = btn.dataset.code || "uchiwa";
 
-            // ★ここを追加
-            if (!url) {
-              alert("画像がありません");
-              return;
-            }
-
-
-        try {
-          const response = await fetch(url);
-          const blob = await response.blob();
-
-          const a = document.createElement("a");
-          a.href = URL.createObjectURL(blob);
-          a.download = `${code}.png`;
-
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-
-          URL.revokeObjectURL(a.href);
-
-        } catch (e) {
-          console.error(e);
-          alert("PNG保存に失敗しました");
+        if (!url) {
+          alert("画像がありません");
+          return;
         }
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${code}.png`;
+        a.target = "_blank";
+        a.rel = "noopener";
+
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
       });
     });
   }
