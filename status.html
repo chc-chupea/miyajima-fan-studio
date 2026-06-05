@@ -386,10 +386,7 @@
     else if (status === "CLOSED") { title = t("statusClosedTitle"); body = t("statusClosedBody"); cls = "picked"; }
     else { title = status; body = t("unknown"); cls = ""; }
 
-    // status.html は状況確認専用にする。
-    // 追加注文は注文完了直後の index.html 側だけに残す。
-    const reorderHtml = "";
-
+    
     document.getElementById("statusBox").innerHTML = `
       <div class="${cls}">
         <div class="status-title">${title}</div>
@@ -408,23 +405,7 @@
 
         <div>${body}</div>
 
-        <div style="margin-top:20px;">
-          <a href="${getCreateUrl()}"
-             style="
-               display:inline-block;
-               width:100%;
-               box-sizing:border-box;
-               padding:12px;
-               background:#ff9800;
-               color:white;
-               text-decoration:none;
-               border-radius:20px;
-               font-weight:bold;">
-            ${t("backToCreate")}
-          </a>
-
-          ${reorderHtml}
-        </div>
+        <div style="margin-top:20px;"></div>
       </div>`;
   }
 
