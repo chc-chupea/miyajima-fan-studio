@@ -819,34 +819,43 @@
     }).join("");
 
     document.querySelectorAll(".actions button:not(.btn-download)").forEach(btn => {
-      btn.addEventListener("click", () => {
-        updateStatus(btn.dataset.id, btn.dataset.status);
-      });
-    });
+  btn.addEventListener("click", () => {
+    updateStatus(btn.dataset.id, btn.dataset.status);
+  });
+});
 
-    document.querySelectorAll(".btn-download").forEach(btn => {
-      btn.addEventListener("click", () => {
+  document.querySelectorAll(".btn-download").forEach(btn => {
+    btn.addEventListener("click", async () => {
 
-        const url = btn.dataset.url;
-        const code = btn.dataset.code || "uchiwa";
+      const url = btn.dataset.url;
+      const code = btn.dataset.code || "uchiwa";
 
-        if (!url) {
-          alert("画像がありません");
-          return;
-        }
+      if (!url) {
+        alert("画像がありません");
+        return;
+      }
+
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
 
         const a = document.createElement("a");
-        a.href = url;
+        a.href = URL.createObjectURL(blob);
         a.download = `${code}.png`;
-        a.target = "_blank";
-        a.rel = "noopener";
 
         document.body.appendChild(a);
         a.click();
         a.remove();
-      });
+
+        URL.revokeObjectURL(a.href);
+
+      } catch (e) {
+        console.error(e);
+        alert("PNG保存に失敗しました");
+      }
     });
-  }
+  });
+    }
 
   function startWatch() {
     const dayKey = getTodayKey();
