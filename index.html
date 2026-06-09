@@ -1998,6 +1998,14 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     async function submitOrder() {
       const orderBtn = document.getElementById('orderBtn');
+
+      if (orderBtn.disabled) {
+        return;
+      }
+
+      orderBtn.disabled = true;
+      orderBtn.textContent = "送信中...";
+
       const noticeEl = document.getElementById('notice');
       const completeEl = document.getElementById('orderComplete');
       const orderErrorEl = document.getElementById('orderError');
@@ -2009,6 +2017,13 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         noticeEl.textContent = saveWarningTexts[currentLang] || saveWarningTexts['ja'];
         noticeEl.style.color = 'red';
         noticeEl.style.display = 'block';
+
+        orderBtn.disabled = false;
+        orderBtn.textContent =
+          orderBtn.dataset[currentLang] ||
+          orderBtn.dataset.ja ||
+          "注文する";
+
         return;
       }
 
@@ -2016,6 +2031,13 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         orderErrorEl.textContent = popupSettings?.expiredTitle || '受付終了';
         orderErrorEl.style.display = 'block';
         orderErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        orderBtn.disabled = false;
+        orderBtn.textContent =
+          orderBtn.dataset[currentLang] ||
+          orderBtn.dataset.ja ||
+          "注文する";
+
         return;
       }
 
@@ -2031,6 +2053,12 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           behavior: 'smooth',
           block: 'center'
         });
+
+        orderBtn.disabled = false;
+          orderBtn.textContent =
+            orderBtn.dataset[currentLang] ||
+            orderBtn.dataset.ja ||
+            "注文する";
 
         return;
       }
@@ -2279,8 +2307,17 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         completeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } catch (err) {
         console.error(err);
+
         document.getElementById('sendingOverlay').style.display = 'none';
+
+        orderBtn.disabled = false;
+        orderBtn.textContent =
+          orderBtn.dataset[currentLang] ||
+          orderBtn.dataset.ja ||
+          "注文する";
+
         if (uploadedImg && !isReuseMode) draw();
+
         orderErrorEl.textContent = errorTexts[currentLang] || errorTexts.ja;
         orderErrorEl.style.display = 'block';
 
@@ -2288,9 +2325,6 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           behavior: 'smooth',
           block: 'center'
         });
-
-        orderBtn.disabled = false;
-        orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || '注文する';
       }
     }
 
