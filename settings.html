@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>設定画面 - Miyajima Fan Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family:'M PLUS Rounded 1c',sans-serif; background:#f3f7fb; margin:0; padding:14px; color:#333; }
+    .wrap { max-width:960px; margin:0 auto; }
+    h1 { text-align:center; color:#1565c0; font-size:22px; margin:12px 0 18px; }
+    .settings-card, .shop-create-card, .nav-card { background:#fff; border-radius:18px; padding:14px; margin-bottom:14px; box-shadow:0 3px 10px rgba(0,0,0,.08); }
+    .settings-card h2 { margin:0 0 12px; color:#1565c0; font-size:18px; }
+    .settings-grid, .shop-create-grid { display:grid; grid-template-columns:160px 1fr; gap:10px; align-items:center; }
+    .settings-grid label, .shop-create-grid label { font-weight:700; color:#1565c0; font-size:14px; }
+    .shop-create-grid label { color:#1b5e20; }
+    input, textarea { width:100%; box-sizing:border-box; padding:10px; border-radius:10px; border:1px solid #ccc; font-size:15px; font-family:'M PLUS Rounded 1c',sans-serif; }
+    textarea { min-height:110px; resize:vertical; line-height:1.5; }
+    button, .nav-card a { border:none; border-radius:20px; padding:10px 14px; font-weight:700; cursor:pointer; background:#2196f3; color:#fff; text-decoration:none; display:inline-block; }
+    .settings-actions, .nav-links { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    .checkbox-row { display:flex; align-items:center; gap:8px; font-weight:700; }
+    .checkbox-row input { width:auto; transform:scale(1.3); }
+    #settingsStatus { font-size:13px; font-weight:700; margin-top:8px; }
+    .shop-badge { display:inline-block; background:#e8f5e9; color:#1b5e20; padding:4px 10px; border-radius:999px; font-size:13px; font-weight:700; margin-left:6px; }
+    .shop-create-card { border-left:8px solid #4caf50; }
+    .shop-create-card h2 { margin:0 0 10px; color:#1b5e20; font-size:18px; }
+    .shop-links { margin-top:10px; display:grid; grid-template-columns:1fr; gap:6px; font-size:13px; }
+    .shop-links a { display:block; padding:8px 10px; border-radius:10px; background:#e3f2fd; color:#0d47a1; text-decoration:none; word-break:break-all; font-weight:700; }
+    .helper-note { background:#e8f5e9; color:#1b5e20; border-radius:12px; padding:10px; font-size:13px; line-height:1.6; margin-top:10px; }
+    .danger-note { background:#fff3e0; color:#e65100; border-radius:12px; padding:10px; font-size:13px; line-height:1.5; margin-top:10px; }
+    .closed-mode-banner { display:none; margin-top:10px; padding:10px; border-radius:12px; background:#fff3e0; color:#e65100; font-weight:700; text-align:center; }
+    .closed-mode-banner.active { display:block; }
+    .small { font-size:12px; color:#666; margin-top:4px; }
+    @media (max-width:640px) { .settings-grid, .shop-create-grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>ポップアップ設定画面</h1>
+
+    <div class="nav-card">
+      <strong>管理者用の設定画面です。</strong>
+      <div class="small">現場作業は admin.html、受け渡し・問い合わせは ready_inquiry.html を使ってください。</div>
+      <div class="nav-links">
+        <a id="adminLink" href="admin.html?shop=miyajima">作業画面</a>
+        <a id="readyLink" href="ready_inquiry.html?shop=miyajima">受け渡し・問い合わせ画面</a>
+        <a id="orderLink" href="index.html?shop=miyajima" target="_blank" rel="noopener">注文画面</a>
+      </div>
+    </div>
+
+    <div class="shop-create-card">
+      <h2>新しい会場を作る</h2>
+      <div class="helper-note">① 会場名と会場IDを入力 → ②「この会場で開く」を押す → ③ ポップアップ設定を保存、の順で登録できます。<br>会場IDは半角英数字がおすすめです。例：<strong>miyajima</strong> / <strong>fukuyama</strong> / <strong>kure</strong> / <strong>test02</strong></div>
+      <div class="shop-create-grid" style="margin-top:10px;">
+        <label for="newShopName">会場名</label><input id="newShopName" type="text" placeholder="例：福山ファンスタジオ">
+        <label for="newShopId">会場ID</label><input id="newShopId" type="text" placeholder="例：fukuyama">
+        <label for="newShopCode">受付番号の頭文字</label><input id="newShopCode" type="text" maxlength="4" placeholder="例：F">
+      </div>
+      <div class="settings-actions">
+        <button id="openNewShopBtn" style="background:#4caf50;">この会場で開く</button>
+        <button id="fillCurrentShopBtn" style="background:#777;">現在の会場情報をコピー</button>
+      </div>
+      <div id="shopPreviewLinks" class="shop-links"></div>
+    </div>
+
+    <div class="settings-card">
+      <h2>ポップアップ設定 <span id="shopBadge" class="shop-badge">miyajima</span></h2>
+      <div class="settings-grid">
+        <label for="shopName">会場名</label><input id="shopName" type="text" placeholder="例：宮島ファンスタジオ">
+        <label for="shopCode">受付番号の頭文字</label><input id="shopCode" type="text" maxlength="4" placeholder="例：M">
+        <label for="startDate">営業開始日</label><input id="startDate" type="date">
+        <label for="endDate">営業終了日</label><input id="endDate" type="date">
+        <label for="openTime">開店時間</label><input id="openTime" type="time">
+        <label for="closeTime">閉店時間</label><input id="closeTime" type="time">
+        <label for="generalPrice">一般価格</label><input id="generalPrice" type="number" min="0" step="10" placeholder="800">
+        <label for="studentPrice">学割価格</label><input id="studentPrice" type="number" min="0" step="10" placeholder="500">
+        <label for="phone">問い合わせ電話番号</label><input id="phone" type="tel" placeholder="082-245-1133">
+        <label for="pickupDeadlineText">受取期限表示</label><input id="pickupDeadlineText" type="text" placeholder="例：最終受取期限：6月8日（日）17:00">
+        <label for="popupClosed">受取終了モード</label><div class="checkbox-row"><input id="popupClosed" type="checkbox"><span>ONにすると status.html で受取期限終了表示に切り替えます</span></div>
+        <label for="expiredTitle">期限終了タイトル</label><input id="expiredTitle" type="text" placeholder="⏰ 受取期限が終了しました">
+        <label for="expiredBody">期限終了本文</label><textarea id="expiredBody" placeholder="ポップアップストアの営業は終了しました。"></textarea>
+      </div>
+      <div class="settings-actions">
+        <button id="saveSettingsBtn">設定を保存</button>
+        <button id="reloadSettingsBtn" style="background:#777;">設定を再読込</button>
+      </div>
+      <div id="settingsStatus"></div>
+      <div id="closedModeBanner" class="closed-mode-banner">受取終了モード ON</div>
+      <div class="danger-note">現在開いている会場IDに保存されます。別会場を作る場合は、上の「新しい会場を作る」から開いて保存してください。<br>注文画面：<strong>index.html?shop=<span id="currentShopIdText">miyajima</span></strong><br>状況確認：<strong>status.html?shop=<span id="currentShopIdText2">miyajima</span></strong></div>
+    </div>
+  </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBKSYZgaSVTu-HO_lS1Tp2eFjSjMuOONNI",
+    authDomain: "my-uchiwa-queue.firebaseapp.com",
+    projectId: "my-uchiwa-queue",
+    storageBucket: "my-uchiwa-queue.firebasestorage.app",
+    messagingSenderId: "245883628081",
+    appId: "1:245883628081:web:ab7f00f01ba256ebca8310",
+    measurementId: "G-W4S3EKL9TY"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const params = new URLSearchParams(window.location.search);
+  const shopId = (params.get("shop") || "miyajima").replace(/[^a-zA-Z0-9_-]/g, "");
+  const settingsRef = doc(db, "settings", shopId);
+  let popupSettings = null;
+
+  document.getElementById("shopBadge").textContent = shopId;
+  document.getElementById("currentShopIdText").textContent = shopId;
+  document.getElementById("currentShopIdText2").textContent = shopId;
+  document.getElementById("adminLink").href = `admin.html?shop=${encodeURIComponent(shopId)}`;
+  document.getElementById("readyLink").href = `ready_inquiry.html?shop=${encodeURIComponent(shopId)}`;
+  document.getElementById("orderLink").href = `index.html?shop=${encodeURIComponent(shopId)}`;
+
+  const defaultSettings = {
+    shopName: "宮島ファンスタジオ", shopCode: "M", generalPrice: 800, studentPrice: 500,
+    startDate: "", endDate: "", openTime: "10:00", closeTime: "17:00", phone: "082-245-1133", pickupDeadlineText: "",
+    popupClosed: false, expiredTitle: "⏰ 受取期限が終了しました",
+    expiredBody: "ポップアップストアの営業は終了しました。<br><br>未受取の商品については、<br>土日祝を除く10時～17時に<br>082-245-1133 へお問い合わせください。"
+  };
+
+  function setSettingsStatus(message, isError = false) {
+    const el = document.getElementById("settingsStatus");
+    el.textContent = message || "";
+    el.style.color = isError ? "#c62828" : "#1b5e20";
+  }
+  function normalizeShopId(value) { return String(value || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, ""); }
+  function normalizeShopCode(value) { return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4) || "M"; }
+
+  function updateNewShopPreview() {
+    const id = normalizeShopId(document.getElementById("newShopId")?.value);
+    const box = document.getElementById("shopPreviewLinks");
+    if (!box) return;
+    if (!id) { box.innerHTML = `<div class="small">会場IDを入力すると、各画面のリンクが表示されます。</div>`; return; }
+    box.innerHTML = `
+      <a href="settings.html?shop=${encodeURIComponent(id)}">設定画面を開く：settings.html?shop=${id}</a>
+      <a href="admin.html?shop=${encodeURIComponent(id)}" target="_blank" rel="noopener">作業画面：admin.html?shop=${id}</a>
+      <a href="index.html?shop=${encodeURIComponent(id)}" target="_blank" rel="noopener">注文画面：index.html?shop=${id}</a>
+      <a href="ready_inquiry.html?shop=${encodeURIComponent(id)}" target="_blank" rel="noopener">受け渡し・問い合わせ画面：ready_inquiry.html?shop=${id}</a>`;
+  }
+
+  function updateClosedModeBanner() {
+    const banner = document.getElementById("closedModeBanner");
+    if (!banner) return;
+    const isClosed = !!document.getElementById("popupClosed")?.checked;
+    banner.classList.toggle("active", isClosed);
+    banner.textContent = isClosed ? "受取終了モード ON：status.html は受取期限終了表示になります" : "";
+  }
+
+  function fillSettingsForm(settings) {
+    const s = { ...defaultSettings, ...(settings || {}) };
+    document.getElementById("shopName").value = s.shopName || "";
+    document.getElementById("shopCode").value = s.shopCode || defaultSettings.shopCode || "M";
+    document.getElementById("startDate").value = s.startDate || "";
+    document.getElementById("endDate").value = s.endDate || "";
+    document.getElementById("openTime").value = s.openTime || "";
+    document.getElementById("closeTime").value = s.closeTime || "";
+    document.getElementById("generalPrice").value = Number(s.generalPrice || 800);
+    document.getElementById("studentPrice").value = Number(s.studentPrice || 500);
+    document.getElementById("phone").value = s.phone || "";
+    document.getElementById("pickupDeadlineText").value = s.pickupDeadlineText || "";
+    document.getElementById("popupClosed").checked = !!s.popupClosed;
+    document.getElementById("expiredTitle").value = s.expiredTitle || "";
+    document.getElementById("expiredBody").value = String(s.expiredBody || "").replace(/<br\s*\/?/g, "\n");
+    updateClosedModeBanner();
+  }
+
+  function readSettingsForm() {
+    const expiredBodyRaw = document.getElementById("expiredBody").value.trim();
+    return {
+      shopId,
+      shopName: document.getElementById("shopName").value.trim() || defaultSettings.shopName,
+      shopCode: normalizeShopCode(document.getElementById("shopCode").value || defaultSettings.shopCode),
+      startDate: document.getElementById("startDate").value,
+      endDate: document.getElementById("endDate").value,
+      openTime: document.getElementById("openTime").value || "10:00",
+      closeTime: document.getElementById("closeTime").value || "17:00",
+      generalPrice: Number(document.getElementById("generalPrice").value || 800),
+      studentPrice: Number(document.getElementById("studentPrice").value || 500),
+      phone: document.getElementById("phone").value.trim() || "082-245-1133",
+      pickupDeadlineText: document.getElementById("pickupDeadlineText").value.trim(),
+      popupClosed: document.getElementById("popupClosed").checked,
+      expiredTitle: document.getElementById("expiredTitle").value.trim() || defaultSettings.expiredTitle,
+      expiredBody: expiredBodyRaw ? expiredBodyRaw.replace(/\n/g, "<br>") : defaultSettings.expiredBody,
+      updatedAt: serverTimestamp()
+    };
+  }
+
+  async function loadSettings() {
+    try {
+      setSettingsStatus("設定を読み込み中です…");
+      const snap = await getDoc(settingsRef);
+      if (snap.exists()) {
+        popupSettings = { ...defaultSettings, ...snap.data() };
+        fillSettingsForm(popupSettings);
+        setSettingsStatus("設定を読み込みました。");
+      } else {
+        popupSettings = { ...defaultSettings, shopId };
+        fillSettingsForm(popupSettings);
+        setSettingsStatus("未作成の会場設定です。必要に応じて保存してください。");
+      }
+    } catch (error) {
+      console.error(error);
+      setSettingsStatus("設定の読み込みに失敗しました。", true);
+    }
+  }
+
+  async function saveSettings() {
+    try {
+      const settings = readSettingsForm();
+      if (!settings.shopCode) { alert("受付番号の頭文字を入力してください。例：M"); return; }
+      if (!settings.generalPrice || settings.generalPrice < 0) { alert("一般価格を正しく入力してください。"); return; }
+      if (!settings.studentPrice || settings.studentPrice < 0) { alert("学割価格を正しく入力してください。"); return; }
+      await setDoc(settingsRef, settings, { merge: true });
+      popupSettings = { ...defaultSettings, ...settings };
+      setSettingsStatus("設定を保存しました。");
+      updateClosedModeBanner();
+      alert("設定を保存しました。");
+    } catch (error) {
+      console.error(error);
+      setSettingsStatus("設定の保存に失敗しました。", true);
+      alert("設定の保存に失敗しました。通信状態を確認してください。");
+    }
+  }
+
+  document.getElementById("saveSettingsBtn").addEventListener("click", saveSettings);
+  document.getElementById("reloadSettingsBtn").addEventListener("click", loadSettings);
+  document.getElementById("popupClosed").addEventListener("change", updateClosedModeBanner);
+  document.getElementById("newShopId").addEventListener("input", (e) => { e.target.value = normalizeShopId(e.target.value); updateNewShopPreview(); });
+  document.getElementById("newShopCode").addEventListener("input", (e) => { e.target.value = normalizeShopCode(e.target.value); });
+  document.getElementById("newShopName").addEventListener("input", () => {
+    const name = document.getElementById("newShopName").value.trim();
+    const idInput = document.getElementById("newShopId");
+    const codeInput = document.getElementById("newShopCode");
+    if (!idInput.value && name) {
+      const known = { "宮島": "miyajima", "福山": "fukuyama", "呉": "kure" };
+      const hit = Object.keys(known).find(key => name.includes(key));
+      if (hit) idInput.value = known[hit];
+    }
+    if (!codeInput.value && name) {
+      if (name.includes("宮島")) codeInput.value = "M";
+      else if (name.includes("福山")) codeInput.value = "F";
+      else if (name.includes("呉")) codeInput.value = "K";
+      else {
+        const id = normalizeShopId(idInput.value);
+        if (id) codeInput.value = normalizeShopCode(id.slice(0, 1));
+      }
+    }
+    updateNewShopPreview();
+  });
+  document.getElementById("openNewShopBtn").addEventListener("click", () => {
+    const id = normalizeShopId(document.getElementById("newShopId").value);
+    const name = document.getElementById("newShopName").value.trim();
+    const code = normalizeShopCode(document.getElementById("newShopCode").value);
+    if (!id) { alert("会場IDを入力してください。例：fukuyama"); return; }
+    const url = new URL(window.location.href);
+    url.searchParams.set("shop", id);
+    if (name) sessionStorage.setItem(`newShopName_${id}`, name);
+    if (code) sessionStorage.setItem(`newShopCode_${id}`, code);
+    window.location.href = url.toString();
+  });
+  document.getElementById("fillCurrentShopBtn").addEventListener("click", () => {
+    document.getElementById("newShopName").value = document.getElementById("shopName").value || "";
+    document.getElementById("newShopId").value = shopId;
+    document.getElementById("newShopCode").value = document.getElementById("shopCode").value || "";
+    updateNewShopPreview();
+  });
+
+  updateNewShopPreview();
+  const pendingName = sessionStorage.getItem(`newShopName_${shopId}`);
+  const pendingCode = sessionStorage.getItem(`newShopCode_${shopId}`);
+  await loadSettings();
+  if (pendingName) document.getElementById("shopName").value = pendingName;
+  if (pendingCode) document.getElementById("shopCode").value = normalizeShopCode(pendingCode);
+  if (pendingName || pendingCode) {
+    setSettingsStatus("新しい会場情報を仮入力しました。内容を確認して『設定を保存』を押してください。");
+    sessionStorage.removeItem(`newShopName_${shopId}`);
+    sessionStorage.removeItem(`newShopCode_${shopId}`);
+  }
+</script>
+</body>
+</html>

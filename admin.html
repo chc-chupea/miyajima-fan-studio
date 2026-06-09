@@ -2,18 +2,18 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>管理画面 - Miyajima Fan Studio</title>
+  <title>作業画面 - Miyajima Fan Studio</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body { font-family:'M PLUS Rounded 1c',sans-serif; background:#f3f7fb; margin:0; padding:14px; color:#333; }
     .wrap { max-width:960px; margin:0 auto; }
     h1 { text-align:center; color:#1565c0; font-size:22px; margin:12px 0 18px; }
-    .top-card, .order-card, .empty { background:#fff; border-radius:18px; padding:14px; margin-bottom:14px; box-shadow:0 3px 10px rgba(0,0,0,.08); }
+    .top-card, .order-card, .empty, .nav-card { background:#fff; border-radius:18px; padding:14px; margin-bottom:14px; box-shadow:0 3px 10px rgba(0,0,0,.08); }
     .summary { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; font-size:15px; font-weight:700; }
     .summary div { background:#e3f2fd; color:#0d47a1; border-radius:12px; padding:10px; text-align:center; }
-    .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
-    button { border:none; border-radius:20px; padding:10px 14px; font-weight:700; cursor:pointer; background:#2196f3; color:#fff; }
+    .toolbar, .nav-links { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    button, .nav-links a { border:none; border-radius:20px; padding:10px 14px; font-weight:700; cursor:pointer; background:#2196f3; color:#fff; text-decoration:none; display:inline-block; }
     .filter-btn { background:#fff; color:#1565c0; border:1px solid #90caf9; }
     .filter-btn.active { background:#1565c0; color:#fff; }
     #orders { display:grid; grid-template-columns:1fr; gap:12px; }
@@ -43,302 +43,32 @@
     .btn-download { background:#00a86b; }
     .empty { text-align:center; color:#777; padding:30px; }
     .small { font-size:12px; color:#777; margin-top:4px; }
-
-    .settings-card {
-      background:#fff;
-      border-radius:18px;
-      padding:14px;
-      margin-bottom:14px;
-      box-shadow:0 3px 10px rgba(0,0,0,.08);
-    }
-    .settings-card h2 {
-      margin:0 0 12px;
-      color:#1565c0;
-      font-size:18px;
-    }
-    .settings-grid {
-      display:grid;
-      grid-template-columns:160px 1fr;
-      gap:10px;
-      align-items:center;
-    }
-    .settings-grid label {
-      font-weight:700;
-      color:#1565c0;
-      font-size:14px;
-    }
-    .settings-grid input,
-    .settings-grid textarea {
-      width:100%;
-      box-sizing:border-box;
-      padding:10px;
-      border-radius:10px;
-      border:1px solid #ccc;
-      font-size:15px;
-      font-family:'M PLUS Rounded 1c',sans-serif;
-    }
-    .settings-grid textarea {
-      min-height:110px;
-      resize:vertical;
-      line-height:1.5;
-    }
-    .checkbox-row {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-weight:700;
-    }
-    .checkbox-row input {
-      width:auto;
-      transform:scale(1.3);
-    }
-    .settings-actions {
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-top:12px;
-    }
-    #settingsStatus {
-      font-size:13px;
-      font-weight:700;
-      margin-top:8px;
-    }
-    .shop-badge {
-      display:inline-block;
-      background:#e8f5e9;
-      color:#1b5e20;
-      padding:4px 10px;
-      border-radius:999px;
-      font-size:13px;
-      font-weight:700;
-      margin-left:6px;
-    }
-
-    .shop-create-card {
-      background:#fff;
-      border-radius:18px;
-      padding:14px;
-      margin-bottom:14px;
-      box-shadow:0 3px 10px rgba(0,0,0,.08);
-      border-left:8px solid #4caf50;
-    }
-    .shop-create-card h2 {
-      margin:0 0 10px;
-      color:#1b5e20;
-      font-size:18px;
-    }
-    .shop-create-grid {
-      display:grid;
-      grid-template-columns:160px 1fr;
-      gap:10px;
-      align-items:center;
-    }
-    .shop-create-grid label {
-      font-weight:700;
-      color:#1b5e20;
-      font-size:14px;
-    }
-    .shop-create-grid input {
-      width:100%;
-      box-sizing:border-box;
-      padding:10px;
-      border-radius:10px;
-      border:1px solid #ccc;
-      font-size:15px;
-      font-family:'M PLUS Rounded 1c',sans-serif;
-    }
-    .shop-links {
-      margin-top:10px;
-      display:grid;
-      grid-template-columns:1fr;
-      gap:6px;
-      font-size:13px;
-    }
-    .shop-links a {
-      display:block;
-      padding:8px 10px;
-      border-radius:10px;
-      background:#e3f2fd;
-      color:#0d47a1;
-      text-decoration:none;
-      word-break:break-all;
-      font-weight:700;
-    }
-    .helper-note {
-      background:#e8f5e9;
-      color:#1b5e20;
-      border-radius:12px;
-      padding:10px;
-      font-size:13px;
-      line-height:1.6;
-      margin-top:10px;
-    }
-
-    .danger-note {
-      background:#fff3e0;
-      color:#e65100;
-      border-radius:12px;
-      padding:10px;
-      font-size:13px;
-      line-height:1.5;
-      margin-top:10px;
-    }
-
-
-    .display-code-large {
-      font-size:34px;
-      font-weight:900;
-      color:#0d47a1;
-      background:#e3f2fd;
-      display:inline-block;
-      padding:8px 18px;
-      border-radius:16px;
-      letter-spacing:1px;
-      margin:4px 0 8px;
-    }
-    .internal-id {
-      font-size:12px;
-      color:#666;
-      word-break:break-all;
-      margin-bottom:6px;
-    }
-    .search-row {
-      margin-top:12px;
-      display:grid;
-      grid-template-columns:1fr auto;
-      gap:8px;
-      align-items:center;
-    }
-    .search-row input {
-      width:100%;
-      box-sizing:border-box;
-      font-size:16px;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid #ccc;
-    }
-    .btn-clear {
-      background:#777;
-      color:white;
-      white-space:nowrap;
-    }
-    .closed-mode-banner {
-      display:none;
-      margin-top:10px;
-      padding:10px;
-      border-radius:12px;
-      background:#fff3e0;
-      color:#e65100;
-      font-weight:700;
-      text-align:center;
-    }
-    .closed-mode-banner.active {
-      display:block;
-    }
-
+    .shop-badge { display:inline-block; background:#e8f5e9; color:#1b5e20; padding:4px 10px; border-radius:999px; font-size:13px; font-weight:700; margin-left:6px; }
+    .display-code-large { font-size:34px; font-weight:900; color:#0d47a1; background:#e3f2fd; display:inline-block; padding:8px 18px; border-radius:16px; letter-spacing:1px; margin:4px 0 8px; }
+    .internal-id { font-size:12px; color:#666; word-break:break-all; margin-bottom:6px; }
+    .search-row { margin-top:12px; display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; }
+    .search-row input { width:100%; box-sizing:border-box; font-size:16px; padding:10px 12px; border-radius:12px; border:1px solid #ccc; }
+    .btn-clear { background:#777; color:white; white-space:nowrap; }
     @media (max-width:640px) {
       .order-main { grid-template-columns:1fr; }
       .thumb, .no-image { width:100%; max-height:180px; }
       .summary { grid-template-columns:1fr; }
-      .settings-grid { grid-template-columns:1fr; }
-      .shop-create-grid { grid-template-columns:1fr; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>店員用 管理画面</h1>
+    <h1>店員用 作業画面 <span id="shopBadge" class="shop-badge">miyajima</span></h1>
 
-    <div class="shop-create-card">
-      <h2>新しい会場を作る</h2>
-      <div class="helper-note">
-        ① 会場名と会場IDを入力 → ②「この会場で開く」を押す → ③ ポップアップ設定を保存、の順で登録できます。<br>
-        会場IDは半角英数字がおすすめです。例：<strong>miyajima</strong> / <strong>fukuyama</strong> / <strong>kure</strong> / <strong>test02</strong>
-      </div>
-
-      <div class="shop-create-grid" style="margin-top:10px;">
-        <label for="newShopName">会場名</label>
-        <input id="newShopName" type="text" placeholder="例：福山ファンスタジオ">
-
-        <label for="newShopId">会場ID</label>
-        <input id="newShopId" type="text" placeholder="例：fukuyama">
-
-        <label for="newShopCode">受付番号の頭文字</label>
-        <input id="newShopCode" type="text" maxlength="4" placeholder="例：F">
-      </div>
-
-      <div class="settings-actions">
-        <button id="openNewShopBtn" style="background:#4caf50;">この会場で開く</button>
-        <button id="fillCurrentShopBtn" style="background:#777;">現在の会場情報をコピー</button>
-      </div>
-
-      <div id="shopPreviewLinks" class="shop-links"></div>
-    </div>
-
-
-    <div class="settings-card">
-      <h2>ポップアップ設定 <span id="shopBadge" class="shop-badge">miyajima</span></h2>
-
-      <div class="settings-grid">
-        <label for="shopName">会場名</label>
-        <input id="shopName" type="text" placeholder="例：宮島ファンスタジオ">
-
-        <label for="shopCode">受付番号の頭文字</label>
-        <input id="shopCode" type="text" maxlength="4" placeholder="例：M">
-
-        <label for="startDate">営業開始日</label>
-        <input id="startDate" type="date">
-
-        <label for="endDate">営業終了日</label>
-        <input id="endDate" type="date">
-
-        <label for="openTime">開店時間</label>
-        <input id="openTime" type="time">
-
-        <label for="closeTime">閉店時間</label>
-        <input id="closeTime" type="time">
-
-        <label for="generalPrice">一般価格</label>
-        <input id="generalPrice" type="number" min="0" step="10" placeholder="800">
-
-        <label for="studentPrice">学割価格</label>
-        <input id="studentPrice" type="number" min="0" step="10" placeholder="500">
-
-        <label for="phone">問い合わせ電話番号</label>
-        <input id="phone" type="tel" placeholder="082-245-1133">
-
-        <label for="pickupDeadlineText">受取期限表示</label>
-        <input id="pickupDeadlineText" type="text" placeholder="例：最終受取期限：6月8日（日）17:00">
-
-        <label for="popupClosed">受取終了モード</label>
-        <div class="checkbox-row">
-          <input id="popupClosed" type="checkbox">
-          <span>ONにすると status.html で受取期限終了表示に切り替えます</span>
-        </div>
-
-        <label for="expiredTitle">期限終了タイトル</label>
-        <input id="expiredTitle" type="text" placeholder="⏰ 受取期限が終了しました">
-
-        <label for="expiredBody">期限終了本文</label>
-        <textarea id="expiredBody" placeholder="ポップアップストアの営業は終了しました。"></textarea>
-      </div>
-
-      <div class="settings-actions">
-        <button id="saveSettingsBtn">設定を保存</button>
-        <button id="reloadSettingsBtn" style="background:#777;">設定を再読込</button>
-      </div>
-
-      <div id="settingsStatus"></div>
-
-      <div id="closedModeBanner" class="closed-mode-banner">受取終了モード ON</div>
-
-      <div class="danger-note">
-        現在開いている会場IDに保存されます。別会場を作る場合は、上の「新しい会場を作る」から開いて保存してください。<br>
-        注文画面：<strong>index.html?shop=<span id="currentShopIdText">miyajima</span></strong><br>
-        状況確認：<strong>status.html?shop=<span id="currentShopIdText2">miyajima</span></strong>
+    <div class="nav-card">
+      <strong>作業用画面です。</strong>
+      <div class="small">会場設定・価格変更・受付終了モードは settings.html で操作してください。</div>
+      <div class="nav-links">
+        <a id="settingsLink" href="settings.html?shop=miyajima">設定画面</a>
+        <a id="readyLink" href="ready_inquiry.html?shop=miyajima">受け渡し・問い合わせ画面</a>
+        <a id="orderLink" href="index.html?shop=miyajima" target="_blank" rel="noopener">注文画面</a>
       </div>
     </div>
-
 
     <div class="top-card">
       <div class="summary">
@@ -356,36 +86,20 @@
         <button class="filter-btn" data-filter="PICKED_UP">受渡済</button>
       </div>
 
-
       <div class="search-row">
         <input id="searchCodeInput" inputmode="text" autocapitalize="characters" placeholder="受付番号で検索（例：M060410）">
         <button id="clearSearchBtn" class="btn-clear">クリア</button>
       </div>
 
-      <div class="small">
-        ※Firestoreとリアルタイム連動します。現在の会場ID（shop）に紐づく注文のみ表示します。
-      </div>
+      <div class="small">※Firestoreとリアルタイム連動します。現在の会場ID（shop）に紐づく注文のみ表示します。</div>
     </div>
 
-    <div id="orders">
-      <div class="empty">読み込み中です…</div>
-    </div>
+    <div id="orders"><div class="empty">読み込み中です…</div></div>
   </div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-  import {
-    getFirestore,
-    collection,
-    query,
-    where,
-    onSnapshot,
-    doc,
-    getDoc,
-    setDoc,
-    updateDoc,
-    serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+  import { getFirestore, collection, query, where, onSnapshot, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBKSYZgaSVTu-HO_lS1Tp2eFjSjMuOONNI",
@@ -403,15 +117,28 @@
   let orders = [];
   let currentFilter = "ALL";
   let searchCode = "";
+  let popupSettings = null;
 
   const params = new URLSearchParams(window.location.search);
   const shopId = (params.get("shop") || "miyajima").replace(/[^a-zA-Z0-9_-]/g, "");
   const settingsRef = doc(db, "settings", shopId);
-  let popupSettings = null;
 
   document.getElementById("shopBadge").textContent = shopId;
-  document.getElementById("currentShopIdText").textContent = shopId;
-  document.getElementById("currentShopIdText2").textContent = shopId;
+  document.getElementById("settingsLink").href = `settings.html?shop=${encodeURIComponent(shopId)}`;
+  document.getElementById("readyLink").href = `ready_inquiry.html?shop=${encodeURIComponent(shopId)}`;
+  document.getElementById("orderLink").href = `index.html?shop=${encodeURIComponent(shopId)}`;
+
+  const defaultSettings = { generalPrice: 800, studentPrice: 500, shopCode: "M" };
+
+  async function loadSettings() {
+    try {
+      const snap = await getDoc(settingsRef);
+      popupSettings = snap.exists() ? { ...defaultSettings, ...snap.data() } : { ...defaultSettings };
+    } catch (error) {
+      console.error(error);
+      popupSettings = { ...defaultSettings };
+    }
+  }
 
   function getTodayKey() {
     const now = new Date();
@@ -421,52 +148,10 @@
     return `${yy}${mm}${dd}`;
   }
 
-  function yen(value) {
-    return `${Number(value || 0).toLocaleString()}円`;
-  }
-
+  function yen(value) { return `${Number(value || 0).toLocaleString()}円`; }
   function escapeHtml(value) {
-    return String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+    return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
   }
-
-
-  function normalizeShopId(value) {
-    return String(value || "")
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9_-]/g, "");
-  }
-
-  function normalizeShopCode(value) {
-    return String(value || "")
-      .trim()
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, "")
-      .slice(0, 4) || "M";
-  }
-
-  function updateNewShopPreview() {
-    const id = normalizeShopId(document.getElementById("newShopId")?.value);
-    const box = document.getElementById("shopPreviewLinks");
-    if (!box) return;
-
-    if (!id) {
-      box.innerHTML = `<div class="small">会場IDを入力すると、各画面のリンクが表示されます。</div>`;
-      return;
-    }
-
-    box.innerHTML = `
-      <a href="admin.html?shop=${encodeURIComponent(id)}">管理画面を開く：admin.html?shop=${escapeHtml(id)}</a>
-      <a href="index.html?shop=${encodeURIComponent(id)}" target="_blank" rel="noopener">注文画面：index.html?shop=${escapeHtml(id)}</a>
-      <a href="status.html?shop=${encodeURIComponent(id)}" target="_blank" rel="noopener">状況確認画面：status.html?shop=${escapeHtml(id)}</a>
-    `;
-  }
-
   function statusText(status) {
     const s = String(status || "WAIT").toUpperCase();
     if (s === "WAIT") return "受付済み";
@@ -476,253 +161,61 @@
     if (s === "CLOSED") return "終了";
     return s;
   }
-
-  function priceTypeText(priceType) {
-    return priceType === "student" ? "学割" : "一般";
-  }
-
+  function priceTypeText(priceType) { return priceType === "student" ? "学割" : "一般"; }
   function getUnitPrice(data) {
     if (data.unitPrice) return Number(data.unitPrice);
-
     const generalPrice = Number(popupSettings?.generalPrice || 800);
     const studentPrice = Number(popupSettings?.studentPrice || 500);
-
     return data.priceType === "student" ? studentPrice : generalPrice;
   }
-
   function getTotalPrice(data) {
     if (data.totalPrice) return Number(data.totalPrice);
     return getUnitPrice(data) * Number(data.copies || 1);
   }
-
-
-  const defaultSettings = {
-    shopName: "宮島ファンスタジオ",
-    shopCode: "M",
-    generalPrice: 800,
-    studentPrice: 500,
-    startDate: "",
-    endDate: "",
-    openTime: "10:00",
-    closeTime: "17:00",
-    phone: "082-245-1133",
-    pickupDeadlineText: "",
-    popupClosed: false,
-    expiredTitle: "⏰ 受取期限が終了しました",
-    expiredBody: "ポップアップストアの営業は終了しました。<br><br>未受取の商品については、<br>土日祝を除く10時～17時に<br>082-245-1133 へお問い合わせください。"
-  };
-
-  function setSettingsStatus(message, isError = false) {
-    const el = document.getElementById("settingsStatus");
-    el.textContent = message || "";
-    el.style.color = isError ? "#c62828" : "#1b5e20";
-  }
-
-  function fillSettingsForm(settings) {
-    const s = { ...defaultSettings, ...(settings || {}) };
-
-    document.getElementById("shopName").value = s.shopName || "";
-    document.getElementById("shopCode").value = s.shopCode || defaultSettings.shopCode || "M";
-    document.getElementById("startDate").value = s.startDate || "";
-    document.getElementById("endDate").value = s.endDate || "";
-    document.getElementById("openTime").value = s.openTime || "";
-    document.getElementById("closeTime").value = s.closeTime || "";
-    document.getElementById("generalPrice").value = Number(s.generalPrice || 800);
-    document.getElementById("studentPrice").value = Number(s.studentPrice || 500);
-    document.getElementById("phone").value = s.phone || "";
-    document.getElementById("pickupDeadlineText").value = s.pickupDeadlineText || "";
-    document.getElementById("popupClosed").checked = !!s.popupClosed;
-    document.getElementById("expiredTitle").value = s.expiredTitle || "";
-    document.getElementById("expiredBody").value = String(s.expiredBody || "").replace(/<br\s*\/?>/g, "\n");
-
-    updateClosedModeBanner();
-  }
-
-  function readSettingsForm() {
-    const expiredBodyRaw = document.getElementById("expiredBody").value.trim();
-
-    return {
-      shopId,
-      shopName: document.getElementById("shopName").value.trim() || defaultSettings.shopName,
-      shopCode: normalizeShopCode(document.getElementById("shopCode").value || defaultSettings.shopCode),
-
-      startDate: document.getElementById("startDate").value,
-      endDate: document.getElementById("endDate").value,
-      openTime: document.getElementById("openTime").value || "10:00",
-      closeTime: document.getElementById("closeTime").value || "17:00",
-
-      generalPrice: Number(document.getElementById("generalPrice").value || 800),
-      studentPrice: Number(document.getElementById("studentPrice").value || 500),
-
-      phone: document.getElementById("phone").value.trim() || "082-245-1133",
-      pickupDeadlineText: document.getElementById("pickupDeadlineText").value.trim(),
-
-      popupClosed: document.getElementById("popupClosed").checked,
-
-      expiredTitle: document.getElementById("expiredTitle").value.trim() || defaultSettings.expiredTitle,
-      expiredBody: expiredBodyRaw
-        ? expiredBodyRaw.replace(/\n/g, "<br>")
-        : defaultSettings.expiredBody,
-
-      updatedAt: serverTimestamp()
-    };
-  }
-
-  async function loadSettings() {
-    try {
-      setSettingsStatus("設定を読み込み中です…");
-
-      const snap = await getDoc(settingsRef);
-
-      if (snap.exists()) {
-        popupSettings = { ...defaultSettings, ...snap.data() };
-        fillSettingsForm(popupSettings);
-        setSettingsStatus("設定を読み込みました。");
-      } else {
-        popupSettings = { ...defaultSettings, shopId };
-        fillSettingsForm(popupSettings);
-        setSettingsStatus("未作成の会場設定です。必要に応じて保存してください。");
-      }
-    } catch (error) {
-      console.error(error);
-      setSettingsStatus("設定の読み込みに失敗しました。", true);
-    }
-  }
-
-  async function saveSettings() {
-    try {
-      const settings = readSettingsForm();
-
-      if (!settings.shopCode) {
-        alert("受付番号の頭文字を入力してください。例：M");
-        return;
-      }
-
-      if (!settings.generalPrice || settings.generalPrice < 0) {
-        alert("一般価格を正しく入力してください。");
-        return;
-      }
-
-      if (!settings.studentPrice || settings.studentPrice < 0) {
-        alert("学割価格を正しく入力してください。");
-        return;
-      }
-
-      await setDoc(settingsRef, settings, { merge: true });
-
-      popupSettings = { ...defaultSettings, ...settings };
-      setSettingsStatus("設定を保存しました。");
-      updateClosedModeBanner();
-      renderOrders();
-
-      alert("設定を保存しました。");
-    } catch (error) {
-      console.error(error);
-      setSettingsStatus("設定の保存に失敗しました。", true);
-      alert("設定の保存に失敗しました。通信状態を確認してください。");
-    }
-  }
-
-
-  async function updateStatus(queueId, status) {
-    if (!queueId) return;
-
-    try {
-      const orderRef = doc(db, "orders", queueId);
-      await updateDoc(orderRef, {
-        status,
-        updatedAt: serverTimestamp()
-      });
-    } catch (error) {
-      console.error(error);
-      alert("ステータス更新に失敗しました。通信状態を確認してください。");
-    }
-  }
-
-
   function getDisplayCode(data) {
     if (data.displayCode) return String(data.displayCode);
-
-    // 古い注文データの保険：dayKey 260604 + displayNo 10 → 060410
     const dayKey = String(data.dayKey || "");
     const displayNo = data.displayNo || Number(data.shortId || 0) || "";
     if (dayKey.length >= 6 && displayNo) {
       const code = data.shopCode || popupSettings?.shopCode || "";
       return `${code}${dayKey.slice(2)}${Number(displayNo)}`;
     }
-
     return displayNo ? String(displayNo) : "";
   }
 
-  function updateClosedModeBanner() {
-    const banner = document.getElementById("closedModeBanner");
-    if (!banner) return;
-
-    const isClosed = !!document.getElementById("popupClosed")?.checked;
-    banner.classList.toggle("active", isClosed);
-    banner.textContent = isClosed
-      ? "受取終了モード ON：status.html は受取期限終了表示になります"
-      : "";
+  async function updateStatus(queueId, status) {
+    if (!queueId) return;
+    try {
+      await updateDoc(doc(db, "orders", queueId), { status, updatedAt: serverTimestamp() });
+    } catch (error) {
+      console.error(error);
+      alert("ステータス更新に失敗しました。通信状態を確認してください。");
+    }
   }
 
-
   function renderSummary(list) {
-    let totalCopies = 0;
-    const totalCount = list.length;
-    let totalSales = 0;
-    let generalCount = 0;
-    let generalCopies = 0;
-    let generalSales = 0;
-    let studentCount = 0;
-    let studentCopies = 0;
-    let studentSales = 0;
-
+    let totalCopies = 0, totalSales = 0, generalCount = 0, generalCopies = 0, generalSales = 0, studentCount = 0, studentCopies = 0, studentSales = 0;
     list.forEach(item => {
       const data = item.data;
       const total = getTotalPrice(data);
-      totalSales += total;
-      
       const copies = Number(data.copies || 1);
+      totalSales += total;
       totalCopies += copies;
-
-      if (data.priceType === "student") {
-        studentCount += 1;
-        studentCopies += copies;
-        studentSales += total;
-      } else {
-        generalCount += 1;
-        generalCopies += copies;
-        generalSales += total;
-      }
+      if (data.priceType === "student") { studentCount++; studentCopies += copies; studentSales += total; }
+      else { generalCount++; generalCopies += copies; generalSales += total; }
     });
-
-    document.getElementById("summaryCount").textContent = `本日受付：${totalCount}件 / ${totalCopies}本`;
+    document.getElementById("summaryCount").textContent = `本日受付：${list.length}件 / ${totalCopies}本`;
     document.getElementById("summarySales").textContent = `売上合計：${yen(totalSales)}`;
-    document.getElementById("summaryGeneral").textContent =
-      `一般：${generalCount}件 / ${generalCopies}本 / ${yen(generalSales)}`;
-
-    document.getElementById("summaryStudent").textContent =
-      `学割：${studentCount}件 / ${studentCopies}本 / ${yen(studentSales)}`;
+    document.getElementById("summaryGeneral").textContent = `一般：${generalCount}件 / ${generalCopies}本 / ${yen(generalSales)}`;
+    document.getElementById("summaryStudent").textContent = `学割：${studentCount}件 / ${studentCopies}本 / ${yen(studentSales)}`;
   }
 
   function renderOrders() {
     renderSummary(orders);
-
     const box = document.getElementById("orders");
-
-    const statusFiltered =
-      currentFilter === "ALL"
-        ? orders
-        : orders.filter(item => String(item.data.status || "WAIT").toUpperCase() === currentFilter);
-
-    const visibleOrders = searchCode
-      ? statusFiltered.filter(item => getDisplayCode(item.data).toUpperCase().includes(searchCode))
-      : statusFiltered;
-
-    if (visibleOrders.length === 0) {
-      box.innerHTML = `<div class="empty">該当する注文はありません。</div>`;
-      return;
-    }
+    const statusFiltered = currentFilter === "ALL" ? orders : orders.filter(item => String(item.data.status || "WAIT").toUpperCase() === currentFilter);
+    const visibleOrders = searchCode ? statusFiltered.filter(item => getDisplayCode(item.data).toUpperCase().includes(searchCode)) : statusFiltered;
+    if (visibleOrders.length === 0) { box.innerHTML = `<div class="empty">該当する注文はありません。</div>`; return; }
 
     box.innerHTML = visibleOrders.map(item => {
       const data = item.data;
@@ -735,154 +228,75 @@
       const totalPrice = getTotalPrice(data);
       const queueId = data.queueId || item.id || "";
       const printLabel = data.printLabel || "";
-      const createdAt = data.createdAt?.toDate
-        ? data.createdAt.toDate().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })
-        : "";
-
-      const imageHtml = imageUrl
-        ? `<a href="${escapeHtml(imageUrl)}" target="_blank" rel="noopener">
-             <img class="thumb" src="${escapeHtml(imageUrl)}" alt="注文画像">
-           </a>`
-        : `<div class="no-image">画像なし</div>`;
-
+      const createdAt = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" }) : "";
+      const imageHtml = imageUrl ? `<a href="${escapeHtml(imageUrl)}" target="_blank" rel="noopener"><img class="thumb" src="${escapeHtml(imageUrl)}" alt="注文画像"></a>` : `<div class="no-image">画像なし</div>`;
       return `
-        <div class="order-card ${status}">
-          <div class="order-main">
-            <div>${imageHtml}</div>
-
-            <div>
-              <div class="order-number">受付番号</div>
-              <div class="display-code-large">${escapeHtml(displayCode)}</div>
-              <div class="internal-id">内部ID：${escapeHtml(queueId)}</div>
-              <div class="status-badge badge-${status}">${statusText(status)}</div>
-
-              <div class="info">
-                <div><strong>短番：</strong>${escapeHtml(displayNo)}</div>
-                <div><strong>料金区分：</strong>${priceTypeText(data.priceType)}</div>
-                <div><strong>単価：</strong>${yen(unitPrice)}</div>
-                <div><strong>注文本数：</strong>${escapeHtml(copies)}本</div>
-                <div><strong>合計金額：</strong>${yen(totalPrice)}</div>
-                <div><strong>印刷ラベル：</strong>${escapeHtml(printLabel)}</div>
-                <div><strong>注文ID：</strong>${escapeHtml(queueId)}</div>
-                <div><strong>受付時刻：</strong>${escapeHtml(createdAt)}</div>
-              </div>
-
-              <div class="actions">
-
-                <button
-                  class="btn-download"
-                  data-url="${escapeHtml(imageUrl)}"
-                  data-code="${escapeHtml(displayCode)}">
-                  印刷用PNG保存
-                </button>
-
-                <button
-                  class="btn-printing"
-                  data-id="${escapeHtml(queueId)}"
-                  data-status="PRINTING">
-                  印刷中
-                </button>
-
-                <button
-                  class="btn-ready"
-                  data-id="${escapeHtml(queueId)}"
-                  data-status="READY">
-                  完成
-                </button>
-
-                <button
-                  class="btn-picked"
-                  data-id="${escapeHtml(queueId)}"
-                  data-status="PICKED_UP">
-                  受渡済
-                </button>
-
-                <button
-                  class="btn-wait"
-                  data-id="${escapeHtml(queueId)}"
-                  data-status="WAIT">
-                  受付済みに戻す
-                </button>
-
-                <button
-                  class="btn-close"
-                  data-id="${escapeHtml(queueId)}"
-                  data-status="CLOSED">
-                  終了
-                </button>
-
-              </div>
-            </div>
+        <div class="order-card ${status}"><div class="order-main"><div>${imageHtml}</div><div>
+          <div class="order-number">受付番号</div>
+          <div class="display-code-large">${escapeHtml(displayCode)}</div>
+          <div class="internal-id">内部ID：${escapeHtml(queueId)}</div>
+          <div class="status-badge badge-${status}">${statusText(status)}</div>
+          <div class="info">
+            <div><strong>短番：</strong>${escapeHtml(displayNo)}</div>
+            <div><strong>料金区分：</strong>${priceTypeText(data.priceType)}</div>
+            <div><strong>単価：</strong>${yen(unitPrice)}</div>
+            <div><strong>注文本数：</strong>${escapeHtml(copies)}本</div>
+            <div><strong>合計金額：</strong>${yen(totalPrice)}</div>
+            <div><strong>印刷ラベル：</strong>${escapeHtml(printLabel)}</div>
+            <div><strong>注文ID：</strong>${escapeHtml(queueId)}</div>
+            <div><strong>受付時刻：</strong>${escapeHtml(createdAt)}</div>
           </div>
-        </div>
-      `;
+          <div class="actions">
+            <button class="btn-download" data-url="${escapeHtml(imageUrl)}" data-code="${escapeHtml(displayCode)}">印刷用PNG保存</button>
+            <button class="btn-printing" data-id="${escapeHtml(queueId)}" data-status="PRINTING">印刷中</button>
+            <button class="btn-ready" data-id="${escapeHtml(queueId)}" data-status="READY">完成</button>
+            <button class="btn-picked" data-id="${escapeHtml(queueId)}" data-status="PICKED_UP">受渡済</button>
+            <button class="btn-wait" data-id="${escapeHtml(queueId)}" data-status="WAIT">受付済みに戻す</button>
+            <button class="btn-close" data-id="${escapeHtml(queueId)}" data-status="CLOSED">終了</button>
+          </div>
+        </div></div></div>`;
     }).join("");
 
     document.querySelectorAll(".actions button:not(.btn-download)").forEach(btn => {
-  btn.addEventListener("click", () => {
-    updateStatus(btn.dataset.id, btn.dataset.status);
-  });
-});
-
-  document.querySelectorAll(".btn-download").forEach(btn => {
-    btn.addEventListener("click", async () => {
-
-      const url = btn.dataset.url;
-      const code = btn.dataset.code || "uchiwa";
-
-      if (!url) {
-        alert("画像がありません");
-        return;
-      }
-
-      try {
-        const response = await fetch(url);
-        const blob = await response.blob();
-
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `${code}.png`;
-
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-
-        URL.revokeObjectURL(a.href);
-
-      } catch (e) {
-        console.error(e);
-        alert("PNG保存に失敗しました");
-      }
+      btn.addEventListener("click", () => updateStatus(btn.dataset.id, btn.dataset.status));
     });
-  });
-    }
+    document.querySelectorAll(".btn-download").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const url = btn.dataset.url;
+        const code = btn.dataset.code || "uchiwa";
+        if (!url) { alert("画像がありません"); return; }
+        try {
+          const response = await fetch(url);
+          const blob = await response.blob();
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `${code}.png`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(a.href);
+        } catch (e) {
+          console.error(e);
+          alert("PNG保存に失敗しました");
+        }
+      });
+    });
+  }
 
   function startWatch() {
     const dayKey = getTodayKey();
-
-    const q = query(
-      collection(db, "orders"),
-      where("dayKey", "==", dayKey),
-      where("shopId", "==", shopId)
-    );
-
+    const q = query(collection(db, "orders"), where("dayKey", "==", dayKey), where("shopId", "==", shopId));
     onSnapshot(q, snapshot => {
-      orders = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        data: docSnap.data()
-      }));
-
+      orders = snapshot.docs.map(docSnap => ({ id: docSnap.id, data: docSnap.data() }));
       orders.sort((a, b) => {
         const aTime = a.data.createdAt?.toMillis ? a.data.createdAt.toMillis() : 0;
         const bTime = b.data.createdAt?.toMillis ? b.data.createdAt.toMillis() : 0;
         return bTime - aTime;
       });
-
       renderOrders();
     }, error => {
       console.error(error);
-      document.getElementById("orders").innerHTML =
-        `<div class="empty">注文一覧の読み込みに失敗しました。</div>`;
+      document.getElementById("orders").innerHTML = `<div class="empty">注文一覧の読み込みに失敗しました。</div>`;
     });
   }
 
@@ -894,113 +308,18 @@
       renderOrders();
     });
   });
-
-  document.getElementById("saveSettingsBtn").addEventListener("click", saveSettings);
-  document.getElementById("reloadSettingsBtn").addEventListener("click", loadSettings);
-
   document.getElementById("searchCodeInput").addEventListener("input", (e) => {
-    searchCode = String(e.target.value || "")
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, "");
+    searchCode = String(e.target.value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     e.target.value = searchCode;
     renderOrders();
   });
-
   document.getElementById("clearSearchBtn").addEventListener("click", () => {
     searchCode = "";
     document.getElementById("searchCodeInput").value = "";
     renderOrders();
   });
 
-  document.getElementById("popupClosed").addEventListener("change", updateClosedModeBanner);
-
-
-
-
-  document.getElementById("newShopId").addEventListener("input", (e) => {
-    e.target.value = normalizeShopId(e.target.value);
-    updateNewShopPreview();
-  });
-
-  document.getElementById("newShopCode").addEventListener("input", (e) => {
-    e.target.value = normalizeShopCode(e.target.value);
-  });
-
-  document.getElementById("newShopName").addEventListener("input", () => {
-    const name = document.getElementById("newShopName").value.trim();
-    const idInput = document.getElementById("newShopId");
-    const codeInput = document.getElementById("newShopCode");
-
-    if (!idInput.value && name) {
-      const known = {
-        "宮島": "miyajima",
-        "福山": "fukuyama",
-        "呉": "kure"
-      };
-
-      const hit = Object.keys(known).find(key => name.includes(key));
-      if (hit) idInput.value = known[hit];
-    }
-
-    if (!codeInput.value && name) {
-      if (name.includes("宮島")) codeInput.value = "M";
-      else if (name.includes("福山")) codeInput.value = "F";
-      else if (name.includes("呉")) codeInput.value = "K";
-      else {
-        const id = normalizeShopId(idInput.value);
-        if (id) codeInput.value = normalizeShopCode(id.slice(0, 1));
-      }
-    }
-
-    updateNewShopPreview();
-  });
-
-  document.getElementById("openNewShopBtn").addEventListener("click", () => {
-    const id = normalizeShopId(document.getElementById("newShopId").value);
-    const name = document.getElementById("newShopName").value.trim();
-    const code = normalizeShopCode(document.getElementById("newShopCode").value);
-
-    if (!id) {
-      alert("会場IDを入力してください。例：fukuyama");
-      return;
-    }
-
-    const url = new URL(window.location.href);
-    url.searchParams.set("shop", id);
-    if (name) sessionStorage.setItem(`newShopName_${id}`, name);
-    if (code) sessionStorage.setItem(`newShopCode_${id}`, code);
-
-    window.location.href = url.toString();
-  });
-
-  document.getElementById("fillCurrentShopBtn").addEventListener("click", () => {
-    document.getElementById("newShopName").value = document.getElementById("shopName").value || "";
-    document.getElementById("newShopId").value = shopId;
-    document.getElementById("newShopCode").value = document.getElementById("shopCode").value || "";
-    updateNewShopPreview();
-  });
-
-  updateNewShopPreview();
-
-  const pendingName = sessionStorage.getItem(`newShopName_${shopId}`);
-  const pendingCode = sessionStorage.getItem(`newShopCode_${shopId}`);
-
   await loadSettings();
-
-  if (pendingName) {
-    document.getElementById("shopName").value = pendingName;
-  }
-
-  if (pendingCode) {
-    document.getElementById("shopCode").value = normalizeShopCode(pendingCode);
-  }
-
-  if (pendingName || pendingCode) {
-    setSettingsStatus("新しい会場情報を仮入力しました。内容を確認して『設定を保存』を押してください。");
-    sessionStorage.removeItem(`newShopName_${shopId}`);
-    sessionStorage.removeItem(`newShopCode_${shopId}`);
-  }
-
   startWatch();
 </script>
 </body>
