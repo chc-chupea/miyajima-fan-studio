@@ -70,7 +70,7 @@
       </div>
       <div id="searchStatus" class="search-status">受付番号を入力して「検索」を押してください。</div>
       <div class="small">
-        下のREADY一覧は常に表示したまま、検索結果だけを上に表示します。<br>
+        下のREADY一覧は常に表示したまま、検索結果だけを上に表示します。<br>検索・READY一覧ともに、この会場IDの全期間が対象です。<br>
         現在の会場ID：<strong id="currentShopIdText">miyajima</strong>
       </div>
     </div>
@@ -327,11 +327,8 @@
   }
 
   function startWatch() {
-    const dayKey = getTodayKey();
-
     const q = query(
       collection(db, "orders"),
-      where("dayKey", "==", dayKey),
       where("shopId", "==", shopId)
     );
 

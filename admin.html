@@ -72,7 +72,7 @@
 
     <div class="top-card">
       <div class="summary">
-        <div id="summaryCount">本日受付：0件</div>
+        <div id="summaryCount">全期間受付：0件</div>
         <div id="summarySales">売上合計：0円</div>
         <div id="summaryGeneral">一般：0件 / 0円</div>
         <div id="summaryStudent">学割：0件 / 0円</div>
@@ -91,7 +91,7 @@
         <button id="clearSearchBtn" class="btn-clear">クリア</button>
       </div>
 
-      <div class="small">※Firestoreとリアルタイム連動します。現在の会場ID（shop）に紐づく注文のみ表示します。</div>
+      <div class="small">※Firestoreとリアルタイム連動します。現在の会場ID（shop）に紐づく全期間の注文を表示・検索します。</div>
     </div>
 
     <div id="orders"><div class="empty">読み込み中です…</div></div>
@@ -204,7 +204,7 @@
       if (data.priceType === "student") { studentCount++; studentCopies += copies; studentSales += total; }
       else { generalCount++; generalCopies += copies; generalSales += total; }
     });
-    document.getElementById("summaryCount").textContent = `本日受付：${list.length}件 / ${totalCopies}本`;
+    document.getElementById("summaryCount").textContent = `全期間受付：${list.length}件 / ${totalCopies}本`;
     document.getElementById("summarySales").textContent = `売上合計：${yen(totalSales)}`;
     document.getElementById("summaryGeneral").textContent = `一般：${generalCount}件 / ${generalCopies}本 / ${yen(generalSales)}`;
     document.getElementById("summaryStudent").textContent = `学割：${studentCount}件 / ${studentCopies}本 / ${yen(studentSales)}`;
@@ -284,8 +284,11 @@
   }
 
   function startWatch() {
-    const dayKey = getTodayKey();
-    const q = query(collection(db, "orders"), where("dayKey", "==", dayKey), where("shopId", "==", shopId));
+    const q = query(
+      collection(db, "orders"),
+      where("shopId", "==", shopId)
+    );
+
     onSnapshot(q, snapshot => {
       orders = snapshot.docs.map(docSnap => ({ id: docSnap.id, data: docSnap.data() }));
       orders.sort((a, b) => {
