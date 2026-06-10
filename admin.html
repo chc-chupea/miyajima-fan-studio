@@ -55,6 +55,22 @@
     .search-result-title { background:#c62828; color:#fff; border-radius:12px; padding:10px 12px; font-size:18px; font-weight:900; margin-bottom:12px; }
     .search-result-area .order-card { background:#ffebee; border-left:12px solid #c62828; margin-bottom:0; }
     .list-area { margin-top:6px; }
+
+    @keyframes readyPulse {
+      0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76,175,80,0.7); }
+      50% { transform: scale(1.08); box-shadow: 0 0 0 10px rgba(76,175,80,0); }
+    }
+    .search-ready-badge {
+      display:inline-block;
+      background:#4caf50;
+      color:#fff;
+      font-weight:900;
+      padding:8px 16px;
+      border-radius:999px;
+      margin-bottom:10px;
+      animation:readyPulse 1s infinite;
+    }
+
     @media (max-width:640px) {
       .order-main { grid-template-columns:1fr; }
       .thumb, .no-image { width:100%; max-height:180px; }
@@ -242,7 +258,7 @@
           <div class="order-number">受付番号</div>
           <div class="display-code-large">${escapeHtml(displayCode)}</div>
           <div class="internal-id">内部ID：${escapeHtml(queueId)}</div>
-          <div class="status-badge badge-${status}">${statusText(status)}</div>
+          ${status === "READY" ? '<div class="search-ready-badge">完成しています</div>' : ""}<div class="status-badge badge-${status}">${statusText(status)}</div>
           <div class="info">
             <div><strong>短番：</strong>${escapeHtml(displayNo)}</div>
             <div><strong>料金区分：</strong>${priceTypeText(data.priceType)}</div>
