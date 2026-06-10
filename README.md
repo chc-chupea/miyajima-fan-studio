@@ -4,7 +4,7 @@ Photo souvenir fan creation system for tourism and local events.
 
 Overview
 
-Miyajima Fan Studio is a web application that allows visitors to create personalized souvenir fans using their own photos.
+FF Fan Studio is a web application that allows visitors to create personalized souvenir fans using their own photos.
 
 Users can:
 
