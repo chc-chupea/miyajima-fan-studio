@@ -131,7 +131,7 @@
     el.style.color = isError ? "#c62828" : "#1b5e20";
   }
   function normalizeShopId(value) { return String(value || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, ""); }
-  function normalizeShopCode(value) { return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4) || "M"; }
+  function normalizeShopCode(value) { return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4) || "F"; }
 
   function updateNewShopPreview() {
     const id = normalizeShopId(document.getElementById("newShopId")?.value);
