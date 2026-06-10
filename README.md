@@ -1,4 +1,4 @@
-Miyajima Fan Studio
+FF Fan Studio
 
 Photo souvenir fan creation system for tourism and local events.
 
