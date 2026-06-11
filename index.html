@@ -701,10 +701,13 @@
     <label for="customerName">① 氏名 <span style="color:#c62828;">必須</span></label>
     <input id="customerName" type="text" autocomplete="name" placeholder="例：山田 太郎">
 
-    <label for="customerPhone">② 電話番号 <span style="color:#c62828;">必須</span></label>
+    <label for="customerKana">② ふりがな <span style="color:#c62828;">必須</span></label>
+    <input id="customerKana" type="text" autocomplete="off" placeholder="例：やまだ たろう">
+
+    <label for="customerPhone">③ 電話番号 <span style="color:#c62828;">必須</span></label>
     <input id="customerPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="例：09012345678">
 
-    <label for="customerAddress">③ 詳細住所 <span style="color:#c62828;">必須</span></label>
+    <label for="customerAddress">④ 詳細住所 <span style="color:#c62828;">必須</span></label>
     <textarea id="customerAddress" autocomplete="street-address" placeholder="例：呉市○○町1-2-3 ○○マンション101号室"></textarea>
 
     <label>アンケートにご協力お願いします</label>
@@ -926,6 +929,7 @@ Miyajima Fan Studio<br><br>
     function getCustomerInfo() {
       return {
         name: String(document.getElementById("customerName")?.value || "").trim(),
+        kana: String(document.getElementById("customerKana")?.value || "").trim(),
         phone: String(document.getElementById("customerPhone")?.value || "").trim(),
         address: String(document.getElementById("customerAddress")?.value || "").trim(),
         subscriptionStatus: getSelectedSubscriptionStatus()
@@ -1178,7 +1182,7 @@ Miyajima Fan Studio<br><br>
           <li><b>写真を選ぶ：</b> カメラで撮影、または撮影済み写真を選びます。</li>
           <li><b>うちわに合わせる：</b> 指で移動・拡大縮小・回転できます。</li>
           <li><b>完成イメージを確認：</b> 内容に問題がなければ注文へ進みます。</li>
-          <li><b>お届け先を入力：</b> 氏名・電話番号・詳細住所を入力してください。</li>
+          <li><b>お届け先を入力：</b> 氏名・ふりがな・電話番号・詳細住所を入力してください。</li>
           <li><b>アンケート：</b> アンケートにご協力をお願いします。</li>
           <li><b>注文する：</b> 送信後は内容を変更できません。</li>
           <li><b>受付番号を保存：</b> 確認用にスクリーンショットを保存してください。</li>
@@ -1195,7 +1199,7 @@ Miyajima Fan Studio<br><br>
           <li><b>Choose a photo:</b> Take a photo during the game or break, or select one already taken.</li>
           <li><b>Adjust:</b> Move, zoom, and rotate with your fingers.</li>
           <li><b>Check the final image:</b> If everything looks good, continue to order.</li>
-          <li><b>Enter delivery information:</b> Name, phone number, and full address are required.</li>
+          <li><b>Enter delivery information:</b> Name, phonetic name, phone number, and full address are required.</li>
           <li><b>Select subscription status:</b> Choose your Chugoku Shimbun subscription status.</li>
           <li><b>Place order:</b> You cannot change it after sending.</li>
           <li><b>Save your order number:</b> Please save it by taking a screenshot.</li>
@@ -1212,7 +1216,7 @@ Miyajima Fan Studio<br><br>
           <li><b>选择照片：</b> 可在比赛中、休息时间拍摄，或选择已拍摄的照片。</li>
           <li><b>调整位置：</b> 可用手指移动、放大缩小、旋转。</li>
           <li><b>确认完成图像：</b> 确认无误后进入订单。</li>
-          <li><b>输入配送信息：</b> 需要填写姓名、电话号码和详细地址。</li>
+          <li><b>输入配送信息：</b> 需要填写姓名、姓名读音、电话号码和详细地址。</li>
           <li><b>选择订阅情况：</b> 请选择中国新闻的订阅情况。</li>
           <li><b>提交订单：</b> 发送后不能更改。</li>
           <li><b>保存受理编号：</b> 请截图保存以便确认。</li>
@@ -1229,7 +1233,7 @@ Miyajima Fan Studio<br><br>
           <li><b>사진 선택:</b> 경기 중·휴식 시간에 촬영하거나 이미 찍은 사진을 선택합니다.</li>
           <li><b>조정:</b> 손가락으로 이동, 확대/축소, 회전할 수 있습니다.</li>
           <li><b>완성 이미지 확인:</b> 문제가 없다면 주문으로 진행합니다.</li>
-          <li><b>배송 정보 입력:</b> 이름, 전화번호, 상세 주소를 입력해 주세요.</li>
+          <li><b>배송 정보 입력:</b> 이름, 후리가나, 전화번호, 상세 주소를 입력해 주세요.</li>
           <li><b>구독 상태 선택:</b> 주고쿠신문 구독 상태를 선택해 주세요.</li>
           <li><b>주문하기:</b> 전송 후에는 변경할 수 없습니다.</li>
           <li><b>접수번호 저장:</b> 확인을 위해 스크린샷으로 저장해 주세요.</li>
@@ -1246,7 +1250,7 @@ Miyajima Fan Studio<br><br>
           <li><b>Chọn ảnh:</b> Chụp trong trận đấu, giờ nghỉ, hoặc chọn ảnh đã chụp.</li>
           <li><b>Chỉnh ảnh:</b> Dùng ngón tay để di chuyển, phóng to/thu nhỏ và xoay.</li>
           <li><b>Kiểm tra hình hoàn chỉnh:</b> Nếu ổn, tiếp tục đặt hàng.</li>
-          <li><b>Nhập thông tin giao hàng:</b> Cần nhập tên, số điện thoại và địa chỉ đầy đủ.</li>
+          <li><b>Nhập thông tin giao hàng:</b> Cần nhập tên, cách đọc tên, số điện thoại và địa chỉ đầy đủ.</li>
           <li><b>Chọn trạng thái đăng ký:</b> Chọn trạng thái đăng ký báo Chugoku Shimbun.</li>
           <li><b>Đặt hàng:</b> Sau khi gửi sẽ không thể chỉnh sửa.</li>
           <li><b>Lưu mã số:</b> Hãy chụp màn hình để lưu lại.</li>
@@ -2403,8 +2407,8 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       const customerInfo = getCustomerInfo();
       if (isDeliveryMode()) {
-        if (!customerInfo.name || !customerInfo.phone || !customerInfo.address) {
-          orderErrorEl.textContent = "氏名・電話番号・詳細住所を入力してください。";
+        if (!customerInfo.name || !customerInfo.kana || !customerInfo.phone || !customerInfo.address) {
+          orderErrorEl.textContent = "氏名・ふりがな・電話番号・詳細住所を入力してください。";
           orderErrorEl.style.display = "block";
           orderErrorEl.scrollIntoView({ behavior: "smooth", block: "center" });
 
@@ -2466,7 +2470,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         料金区分：${priceTypeLabel}
         単価：${unitPrice.toLocaleString()}円／本
         注文数：${copies}本
-        合計金額：${isFreeMode() ? "無料" : (totalPrice === 0 ? "無料" : totalPrice.toLocaleString() + "円")}${isDeliveryMode() ? `\n\n        氏名：${customerInfo.name}\n        電話番号：${customerInfo.phone}\n        住所：${customerInfo.address}\n        購読状況：${customerInfo.subscriptionStatus.join("、")}` : ""}
+        合計金額：${isFreeMode() ? "無料" : (totalPrice === 0 ? "無料" : totalPrice.toLocaleString() + "円")}${isDeliveryMode() ? `\n\n        氏名：${customerInfo.name}\n        ふりがな：${customerInfo.kana}\n        電話番号：${customerInfo.phone}\n        住所：${customerInfo.address}\n        購読状況：${customerInfo.subscriptionStatus.join("、")}` : ""}
 
         送信後は変更できません。
 
@@ -2656,6 +2660,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           freeCopies: isFreeMode() ? copies : (isFirstFreeMode() ? Math.min(copies, 1) : 0),
           chargedCopies: isFreeMode() ? 0 : (isFirstFreeMode() ? Math.max(copies - 1, 0) : copies),
           customerName: isDeliveryMode() ? customerInfo.name : "",
+          customerKana: isDeliveryMode() ? customerInfo.kana : "",
           customerPhone: isDeliveryMode() ? customerInfo.phone : "",
           customerAddress: isDeliveryMode() ? customerInfo.address : "",
           subscriptionStatus: isDeliveryMode() ? customerInfo.subscriptionStatus : [],

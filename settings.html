@@ -26,6 +26,30 @@
     .shop-create-card h2 { margin:0 0 10px; color:#1b5e20; font-size:18px; }
     .shop-links { margin-top:10px; display:grid; grid-template-columns:1fr; gap:6px; font-size:13px; }
     .shop-links a { display:block; padding:8px 10px; border-radius:10px; background:#e3f2fd; color:#0d47a1; text-decoration:none; word-break:break-all; font-weight:700; }
+    .shop-link-row {
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:6px;
+      align-items:center;
+    }
+    .shop-link-row a {
+      margin:0;
+    }
+    .copy-url-btn {
+      border:none;
+      border-radius:10px;
+      padding:8px 10px;
+      background:#ff9800;
+      color:#fff;
+      font-weight:700;
+      cursor:pointer;
+      white-space:nowrap;
+      box-shadow:none;
+    }
+    .copy-url-btn.copied {
+      background:#4caf50;
+    }
+
     .helper-note { background:#e8f5e9; color:#1b5e20; border-radius:12px; padding:10px; font-size:13px; line-height:1.6; margin-top:10px; }
     .danger-note { background:#fff3e0; color:#e65100; border-radius:12px; padding:10px; font-size:13px; line-height:1.5; margin-top:10px; }
     .closed-mode-banner { display:none; margin-top:10px; padding:10px; border-radius:12px; background:#fff3e0; color:#e65100; font-weight:700; text-align:center; }
@@ -202,18 +226,90 @@
   function normalizeShopId(value) { return String(value || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, ""); }
   function normalizeShopCode(value) { return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4) || "F"; }
 
+  function getBasePath() {
+    const path = window.location.pathname.replace(/[^/]*$/, "");
+    return `${window.location.origin}${path}`;
+  }
+
+  function buildShopUrl(fileName, id) {
+    return `${getBasePath()}${fileName}?shop=${encodeURIComponent(id)}`;
+  }
+
+  function renderCopyLink(label, fileName, id) {
+    const url = buildShopUrl(fileName, id);
+    return `
+      <div class="shop-link-row">
+        <a href="${url}" target="_blank" rel="noopener">${label}：${fileName}?shop=${id}</a>
+        <button type="button" class="copy-url-btn" data-copy-url="${url}">コピー</button>
+      </div>
+    `;
+  }
+
+  async function copyTextToClipboard(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      textarea.style.top = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      return ok;
+    } catch (error) {
+      console.error("コピーに失敗しました:", error);
+      return false;
+    }
+  }
+
+  function setupCopyButtons() {
+    document.querySelectorAll(".copy-url-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const url = btn.dataset.copyUrl || "";
+        const ok = await copyTextToClipboard(url);
+
+        if (ok) {
+          const originalText = btn.textContent;
+          btn.textContent = "コピー済";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove("copied");
+          }, 1400);
+        } else {
+          alert("コピーできませんでした。リンクを長押しまたは選択してコピーしてください。");
+        }
+      });
+    });
+  }
+
   function updateNewShopPreview() {
     const id = normalizeShopId(document.getElementById("newShopId")?.value);
     const box = document.getElementById("shopPreviewLinks");
     if (!box) return;
-    if (!id) { box.innerHTML = `<div class="small">会場IDを入力すると、各画面のリンクが表示されます。</div>`; return; }
-    box.innerHTML = `
-      <a href="settings.html?shop=${encodeURIComponent(id)}">設定画面を開く：settings.html?shop=${id}</a>
-      <a href="admin.html?shop=${encodeURIComponent(id)}" target="_blank" rel="noopener">作業画面：admin.html?shop=${id}</a>
-      <a href="index.html?shop=${encodeURIComponent(id)}" target="_blank" rel="noopener">注文画面：index.html?shop=${id}</a>
-      <a href="ready_inquiry.html?shop=${encodeURIComponent(id)}" target="_blank" rel="noopener">受け渡し・問い合わせ画面：ready_inquiry.html?shop=${id}</a>`;
-  }
 
+    if (!id) {
+      box.innerHTML = `<div class="small">会場IDを入力すると、各画面のリンクとコピーボタンが表示されます。</div>`;
+      return;
+    }
+
+    box.innerHTML = `
+      ${renderCopyLink("設定画面", "settings.html", id)}
+      ${renderCopyLink("注文画面", "index.html", id)}
+      ${renderCopyLink("作業画面", "admin.html", id)}
+      ${renderCopyLink("受け渡し・問い合わせ画面", "ready_inquiry.html", id)}
+      ${renderCopyLink("お客さま用注文状況確認画面", "status.html", id)}
+    `;
+
+    setupCopyButtons();
+  }
 
   function getCheckedValue(name, fallback) {
     return document.querySelector(`input[name="${name}"]:checked`)?.value || fallback;
