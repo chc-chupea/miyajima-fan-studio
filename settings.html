@@ -31,6 +31,33 @@
     .closed-mode-banner { display:none; margin-top:10px; padding:10px; border-radius:12px; background:#fff3e0; color:#e65100; font-weight:700; text-align:center; }
     .closed-mode-banner.active { display:block; }
     .small { font-size:12px; color:#666; margin-top:4px; }
+
+    .radio-group { display:flex; gap:8px; flex-wrap:wrap; }
+    .radio-card {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid #bbdefb;
+      background:#f8fbff;
+      color:#0d47a1;
+      font-weight:700;
+      line-height:1.4;
+    }
+    .radio-card input { width:auto; transform:scale(1.25); }
+    .mode-note {
+      grid-column:1 / -1;
+      background:#e3f2fd;
+      color:#0d47a1;
+      border-radius:12px;
+      padding:10px;
+      font-size:13px;
+      line-height:1.6;
+    }
+    .mode-note.delivery { background:#f1f8e9; color:#1b5e20; }
+    .mode-note.free { background:#fff8e1; color:#e65100; }
+
     @media (max-width:640px) { .settings-grid, .shop-create-grid { grid-template-columns:1fr; } }
   </style>
 </head>
@@ -68,6 +95,32 @@
       <div class="settings-grid">
         <label for="shopName">会場名</label><input id="shopName" type="text" placeholder="例：ＦＦファンスタジオ">
         <label for="shopCode">受付番号の頭文字</label><input id="shopCode" type="text" maxlength="4" placeholder="例：F">
+
+        <label>運用モード</label>
+        <div class="radio-group">
+          <label class="radio-card">
+            <input type="radio" name="operationMode" value="instant" checked>
+            即時受取（宮島）<br><span style="font-size:12px;color:#555;">受付番号方式</span>
+          </label>
+          <label class="radio-card">
+            <input type="radio" name="operationMode" value="delivery">
+            後日訪問（呉）<br><span style="font-size:12px;color:#555;">個人情報入力方式</span>
+          </label>
+        </div>
+        <div id="operationModeNote" class="mode-note"></div>
+
+        <label>販売方式</label>
+        <div class="radio-group">
+          <label class="radio-card">
+            <input type="radio" name="salesMode" value="paid" checked>
+            有料
+          </label>
+          <label class="radio-card">
+            <input type="radio" name="salesMode" value="free">
+            無料
+          </label>
+        </div>
+        <div id="salesModeNote" class="mode-note"></div>
         <label for="startDate">営業開始日</label><input id="startDate" type="date">
         <label for="endDate">営業終了日</label><input id="endDate" type="date">
         <label for="openTime">開店時間</label><input id="openTime" type="time">
@@ -119,7 +172,7 @@
   document.getElementById("orderLink").href = `index.html?shop=${encodeURIComponent(shopId)}`;
 
   const defaultSettings = {
-    shopName: "ＦＦファンスタジオ", shopCode: "F", generalPrice: 800, studentPrice: 500,
+    shopName: "ＦＦファンスタジオ", shopCode: "F", operationMode: "instant", salesMode: "paid", generalPrice: 800, studentPrice: 500,
     startDate: "", endDate: "", openTime: "10:00", closeTime: "17:00", phone: "082-245-1133", pickupDeadlineText: "",
     popupClosed: false, expiredTitle: "⏰ 受取期限が終了しました",
     expiredBody: "ポップアップストアの営業は終了しました。<br>未受取の商品については、<br>土日祝を除く10時～17時に<br>082-245-1133 へお問い合わせください。"
@@ -145,6 +198,38 @@
       <a href="ready_inquiry.html?shop=${encodeURIComponent(id)}" target="_blank" rel="noopener">受け渡し・問い合わせ画面：ready_inquiry.html?shop=${id}</a>`;
   }
 
+
+  function getCheckedValue(name, fallback) {
+    return document.querySelector(`input[name="${name}"]:checked`)?.value || fallback;
+  }
+
+  function setCheckedValue(name, value, fallback) {
+    const targetValue = value || fallback;
+    const target = document.querySelector(`input[name="${name}"][value="${targetValue}"]`);
+    if (target) target.checked = true;
+  }
+
+  function updateModeNotes() {
+    const operationMode = getCheckedValue("operationMode", "instant");
+    const salesMode = getCheckedValue("salesMode", "paid");
+
+    const opNote = document.getElementById("operationModeNote");
+    if (opNote) {
+      opNote.classList.toggle("delivery", operationMode === "delivery");
+      opNote.innerHTML = operationMode === "delivery"
+        ? "後日訪問モード：注文時に氏名・電話番号・詳細住所・購読状況を入力してもらいます。完了画面には「お近くの中国新聞販売所より完成後にお届けします」と表示されます。"
+        : "即時受取モード：注文後に受付番号を発行し、当日会場で受け渡す運用です。";
+    }
+
+    const salesNote = document.getElementById("salesModeNote");
+    if (salesNote) {
+      salesNote.classList.toggle("free", salesMode === "free");
+      salesNote.innerHTML = salesMode === "free"
+        ? "無料モード：注文画面の料金区分と合計金額は非表示・無料表示になります。"
+        : "有料モード：一般価格・学割価格を注文画面に表示します。";
+    }
+  }
+
   function updateClosedModeBanner() {
     const banner = document.getElementById("closedModeBanner");
     if (!banner) return;
@@ -157,6 +242,8 @@
     const s = { ...defaultSettings, ...(settings || {}) };
     document.getElementById("shopName").value = s.shopName || "";
     document.getElementById("shopCode").value = s.shopCode || defaultSettings.shopCode || "F";
+    setCheckedValue("operationMode", s.operationMode, defaultSettings.operationMode);
+    setCheckedValue("salesMode", s.salesMode, defaultSettings.salesMode);
     document.getElementById("startDate").value = s.startDate || "";
     document.getElementById("endDate").value = s.endDate || "";
     document.getElementById("openTime").value = s.openTime || "";
@@ -169,6 +256,7 @@
     document.getElementById("expiredTitle").value = s.expiredTitle || "";
     document.getElementById("expiredBody").value = String(s.expiredBody || "").replace(/<br\s*\/?/g, "\n");
     updateClosedModeBanner();
+    updateModeNotes();
   }
 
   function readSettingsForm() {
@@ -177,6 +265,8 @@
       shopId,
       shopName: document.getElementById("shopName").value.trim() || defaultSettings.shopName,
       shopCode: normalizeShopCode(document.getElementById("shopCode").value || defaultSettings.shopCode),
+      operationMode: getCheckedValue("operationMode", defaultSettings.operationMode),
+      salesMode: getCheckedValue("salesMode", defaultSettings.salesMode),
       startDate: document.getElementById("startDate").value,
       endDate: document.getElementById("endDate").value,
       openTime: document.getElementById("openTime").value || "10:00",
@@ -215,12 +305,13 @@
     try {
       const settings = readSettingsForm();
       if (!settings.shopCode) { alert("受付番号の頭文字を入力してください。例：F"); return; }
-      if (!settings.generalPrice || settings.generalPrice < 0) { alert("一般価格を正しく入力してください。"); return; }
-      if (!settings.studentPrice || settings.studentPrice < 0) { alert("学割価格を正しく入力してください。"); return; }
+      if (settings.salesMode === "paid" && (!settings.generalPrice || settings.generalPrice < 0)) { alert("一般価格を正しく入力してください。"); return; }
+      if (settings.salesMode === "paid" && (!settings.studentPrice || settings.studentPrice < 0)) { alert("学割価格を正しく入力してください。"); return; }
       await setDoc(settingsRef, settings, { merge: true });
       popupSettings = { ...defaultSettings, ...settings };
       setSettingsStatus("設定を保存しました。");
       updateClosedModeBanner();
+      updateModeNotes();
       alert("設定を保存しました。");
     } catch (error) {
       console.error(error);
@@ -232,6 +323,14 @@
   document.getElementById("saveSettingsBtn").addEventListener("click", saveSettings);
   document.getElementById("reloadSettingsBtn").addEventListener("click", loadSettings);
   document.getElementById("popupClosed").addEventListener("change", updateClosedModeBanner);
+
+  document.querySelectorAll('input[name="operationMode"]').forEach(el => {
+    el.addEventListener("change", updateModeNotes);
+  });
+  document.querySelectorAll('input[name="salesMode"]').forEach(el => {
+    el.addEventListener("change", updateModeNotes);
+  });
+
   document.getElementById("newShopId").addEventListener("input", (e) => { e.target.value = normalizeShopId(e.target.value); updateNewShopPreview(); });
   document.getElementById("newShopCode").addEventListener("input", (e) => { e.target.value = normalizeShopCode(e.target.value); });
   document.getElementById("newShopName").addEventListener("input", () => {
@@ -253,6 +352,7 @@
       }
     }
     updateNewShopPreview();
+  updateModeNotes();
   });
   document.getElementById("openNewShopBtn").addEventListener("click", () => {
     const id = normalizeShopId(document.getElementById("newShopId").value);
@@ -279,6 +379,11 @@
   if (pendingName) document.getElementById("shopName").value = pendingName;
   if (pendingCode) document.getElementById("shopCode").value = normalizeShopCode(pendingCode);
   if (pendingName || pendingCode) {
+    if (pendingName && pendingName.includes("呉")) {
+      setCheckedValue("operationMode", "delivery", "instant");
+      setCheckedValue("salesMode", "paid", "paid");
+      updateModeNotes();
+    }
     setSettingsStatus("新しい会場情報を仮入力しました。内容を確認して『設定を保存』を押してください。");
     sessionStorage.removeItem(`newShopName_${shopId}`);
     sessionStorage.removeItem(`newShopCode_${shopId}`);

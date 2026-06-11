@@ -363,6 +363,60 @@
   display:block;
 }
 
+  
+.customer-info-box {
+  display:none;
+  margin:14px 0;
+  padding:14px;
+  border-radius:16px;
+  background:#f1f8e9;
+  border:2px solid #81c784;
+}
+.customer-info-box.active {
+  display:block;
+}
+.customer-info-box h3 {
+  margin:0 0 10px;
+  color:#1b5e20;
+  font-size:16px;
+}
+.customer-info-box input,
+.customer-info-box textarea {
+  display:block;
+  width:100%;
+  box-sizing:border-box;
+  margin:8px 0 12px;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid #bbb;
+  font-size:16px;
+  font-family:'M PLUS Rounded 1c', sans-serif;
+}
+.customer-info-box textarea {
+  min-height:84px;
+  resize:vertical;
+}
+.subscription-options label {
+  display:block;
+  width:100%;
+  box-sizing:border-box;
+  margin:8px 0;
+  padding:10px 12px;
+  border-radius:12px;
+  background:#fff;
+  border:1px solid #c8e6c9;
+  font-size:15px;
+}
+.delivery-note-box {
+  margin:12px 0;
+  padding:12px;
+  border-radius:14px;
+  background:#e3f2fd;
+  color:#0d47a1;
+  font-weight:700;
+  line-height:1.6;
+}
+
   </style>
 </head>
 <body>
@@ -626,6 +680,31 @@
     </p>
   </div>
 
+
+  <div id="customerInfoArea" class="customer-info-box">
+    <h3>後日お届け先情報</h3>
+
+    <label for="customerName">① 氏名 <span style="color:#c62828;">必須</span></label>
+    <input id="customerName" type="text" autocomplete="name" placeholder="例：山田 太郎">
+
+    <label for="customerPhone">② 電話番号 <span style="color:#c62828;">必須</span></label>
+    <input id="customerPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="例：09012345678">
+
+    <label for="customerAddress">③ 詳細住所 <span style="color:#c62828;">必須</span></label>
+    <textarea id="customerAddress" autocomplete="street-address" placeholder="例：呉市○○町1-2-3 ○○マンション101号室"></textarea>
+
+    <label>購読状況</label>
+    <div class="subscription-options">
+      <label><input type="checkbox" name="subscriptionStatus" value="中国新聞を購読している"> 中国新聞を購読している</label>
+      <label><input type="checkbox" name="subscriptionStatus" value="中国新聞を購読していない"> 中国新聞を購読していない</label>
+      <label><input type="checkbox" name="subscriptionStatus" value="中国新聞デジタル会員"> 中国新聞デジタル会員</label>
+    </div>
+
+    <div class="delivery-note-box">
+      完成後、お近くの中国新聞販売所よりお届けします。
+    </div>
+  </div>
+
   <label for="copiesSelect"
       data-ja="注文本数を選んでください"
       data-en="Choose number of fans"
@@ -753,6 +832,8 @@ Miyajima Fan Studio<br><br>
       shopCode: "M",
       generalPrice: 800,
       studentPrice: 500,
+      operationMode: "instant",
+      salesMode: "paid",
 
     startDate: "",
       endDate: "",
@@ -794,7 +875,57 @@ Miyajima Fan Studio<br><br>
     }
 
     function getUnitPriceByType(priceType) {
+      if (isFreeMode()) return 0;
       return priceType === "student" ? getStudentPrice() : getGeneralPrice();
+    }
+
+
+    function getOperationMode() {
+      return popupSettings?.operationMode || "instant";
+    }
+
+    function isDeliveryMode() {
+      return getOperationMode() === "delivery";
+    }
+
+    function getSalesMode() {
+      return popupSettings?.salesMode || "paid";
+    }
+
+    function isFreeMode() {
+      return getSalesMode() === "free";
+    }
+
+    function getSelectedSubscriptionStatus() {
+      return Array.from(document.querySelectorAll('input[name="subscriptionStatus"]:checked'))
+        .map(el => el.value);
+    }
+
+    function getCustomerInfo() {
+      return {
+        name: String(document.getElementById("customerName")?.value || "").trim(),
+        phone: String(document.getElementById("customerPhone")?.value || "").trim(),
+        address: String(document.getElementById("customerAddress")?.value || "").trim(),
+        subscriptionStatus: getSelectedSubscriptionStatus()
+      };
+    }
+
+    function updateModeAreas() {
+      const customerInfoArea = document.getElementById("customerInfoArea");
+      const priceTypeArea = document.getElementById("priceTypeArea");
+      const totalPriceBox = document.getElementById("totalPriceBox");
+
+      if (customerInfoArea) {
+        customerInfoArea.classList.toggle("active", isDeliveryMode());
+      }
+
+      if (priceTypeArea) {
+        priceTypeArea.style.display = isFreeMode() ? "none" : "block";
+      }
+
+      if (totalPriceBox && isFreeMode()) {
+        totalPriceBox.textContent = "合計：無料";
+      }
     }
 
     function applySettingsToScreen() {
@@ -811,6 +942,7 @@ Miyajima Fan Studio<br><br>
 
       updatePriceTexts();
       updateTotalPrice();
+      updateModeAreas();
       updatePopupClosedMode();
     }
 
@@ -1505,6 +1637,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       // お客さま用の受付番号。
       // 例：宮島 shopCode=M / dayKey=260604 / 10番 → M060410
       const mmdd = String(dayKey).slice(2);
+      if (isDeliveryMode()) return `${getShopCode()}${mmdd}-${String(displayNo).padStart(4, "0")}`;
       return `${getShopCode()}${mmdd}${Number(displayNo)}`;
     }
 
@@ -1855,7 +1988,12 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       const unitPrice = getUnitPriceByType(priceType);
 
-      const totalPrice = unitPrice * copies;
+      const totalPrice = isFreeMode() ? 0 : unitPrice * copies;
+
+      if (isFreeMode()) {
+        document.getElementById("totalPriceBox").textContent = "合計：無料";
+        return;
+      }
 
       const totalPriceTexts = {
         ja: `合計：${totalPrice.toLocaleString()}円`,
@@ -1875,6 +2013,26 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const orderErrorEl = document.getElementById('orderError');
       orderErrorEl.style.display = 'none';
       orderErrorEl.textContent = '';
+
+
+      if (isDeliveryMode()) {
+        completeEl.innerHTML = `
+          ご注文を受け付けました。<br><br>
+          <div class="receipt-code-box">
+            <div class="receipt-code-label">受付番号</div>
+            <div class="receipt-code-number">${displayCode}</div>
+            <div class="receipt-code-note">※確認のためスクリーンショットを保存してください</div>
+          </div>
+          <div style="font-size:18px;line-height:1.8;color:#1b5e20;font-weight:900;">
+            お近くの中国新聞販売所より<br>
+            完成後にお届けします
+          </div>
+          <div style="font-size:13px;color:#555;margin-top:12px;line-height:1.6;">
+            ご注文内容の確認のため、販売所よりご連絡する場合があります。
+          </div>
+        `;
+        return;
+      }
 
       const completeTexts = {
         ja: () => `ご注文を受け付けました。<br><br>
@@ -2064,6 +2222,36 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       }
 
       const copies = Number(document.getElementById('copiesSelect').value || 1);
+
+      const customerInfo = getCustomerInfo();
+      if (isDeliveryMode()) {
+        if (!customerInfo.name || !customerInfo.phone || !customerInfo.address) {
+          orderErrorEl.textContent = "氏名・電話番号・詳細住所を入力してください。";
+          orderErrorEl.style.display = "block";
+          orderErrorEl.scrollIntoView({ behavior: "smooth", block: "center" });
+
+          orderBtn.disabled = false;
+          orderBtn.textContent =
+            orderBtn.dataset[currentLang] ||
+            orderBtn.dataset.ja ||
+            "注文する";
+          return;
+        }
+
+        if (customerInfo.subscriptionStatus.length === 0) {
+          orderErrorEl.textContent = "購読状況を1つ以上選択してください。";
+          orderErrorEl.style.display = "block";
+          orderErrorEl.scrollIntoView({ behavior: "smooth", block: "center" });
+
+          orderBtn.disabled = false;
+          orderBtn.textContent =
+            orderBtn.dataset[currentLang] ||
+            orderBtn.dataset.ja ||
+            "注文する";
+          return;
+        }
+      }
+
       const template = isReuseMode && reuseSourceOrder ? (reuseSourceOrder.template || templateSelector.value) : templateSelector.value;
 
       const priceType =
@@ -2072,7 +2260,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const unitPrice = getUnitPriceByType(priceType);
 
       const totalPrice =
-        unitPrice * copies;
+        isFreeMode() ? 0 : unitPrice * copies;
 
       const templateName =
         isReuseMode
@@ -2080,11 +2268,11 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           : document.querySelector('#templateSelector option:checked').textContent;
 
       const priceTypeLabelTexts = {
-        ja: priceType === 'student' ? '学割' : '一般',
-        en: priceType === 'student' ? 'Student' : 'General',
-        zh: priceType === 'student' ? '学生优惠' : '普通价格',
-        ko: priceType === 'student' ? '학생 할인' : '일반',
-        vi: priceType === 'student' ? 'Ưu đãi học sinh' : 'Thông thường'
+        ja: isFreeMode() ? '無料' : (priceType === 'student' ? '学割' : '一般'),
+        en: isFreeMode() ? 'Free' : (priceType === 'student' ? 'Student' : 'General'),
+        zh: isFreeMode() ? '免费' : (priceType === 'student' ? '学生优惠' : '普通价格'),
+        ko: isFreeMode() ? '무료' : (priceType === 'student' ? '학생 할인' : '일반'),
+        vi: isFreeMode() ? 'Miễn phí' : (priceType === 'student' ? 'Ưu đãi học sinh' : 'Thông thường')
       };
 
       const priceTypeLabel =
@@ -2098,7 +2286,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         料金区分：${priceTypeLabel}
         単価：${unitPrice.toLocaleString()}円／本
         注文数：${copies}本
-        合計金額：${totalPrice.toLocaleString()}円
+        合計金額：${isFreeMode() ? "無料" : totalPrice.toLocaleString() + "円"}${isDeliveryMode() ? `\n\n        氏名：${customerInfo.name}\n        電話番号：${customerInfo.phone}\n        住所：${customerInfo.address}\n        購読状況：${customerInfo.subscriptionStatus.join("、")}` : ""}
 
         送信後は変更できません。
 
@@ -2283,6 +2471,14 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           storagePath,
           imageStorageMode: 'new_upload',
 
+          operationMode: getOperationMode(),
+          salesMode: getSalesMode(),
+          customerName: isDeliveryMode() ? customerInfo.name : "",
+          customerPhone: isDeliveryMode() ? customerInfo.phone : "",
+          customerAddress: isDeliveryMode() ? customerInfo.address : "",
+          subscriptionStatus: isDeliveryMode() ? customerInfo.subscriptionStatus : [],
+          deliveryMessage: isDeliveryMode() ? "お近くの中国新聞販売所より完成後にお届けします" : "",
+
           isReorder: isReuseMode,
           reuseFromQueueId: isReuseMode && reuseSourceOrder ? reuseSourceOrder.queueId : null,
           reuseImageUrl: isReuseMode && reuseSourceOrder ? reuseSourceOrder.imageUrl : null,
@@ -2292,7 +2488,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           status: 'WAIT',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
-          source: 'miyajima-fan-studio'
+          source: isDeliveryMode() ? 'kure-softball-fan-studio' : 'miyajima-fan-studio'
         });
         
         document.getElementById('sendingOverlay').style.display = 'none';
@@ -2659,6 +2855,10 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       if (typeof updateTotalPrice === 'function') {
         updateTotalPrice();
+      }
+
+      if (typeof updateModeAreas === 'function') {
+        updateModeAreas();
       }
 
       if (typeof updatePopupClosedMode === 'function') {
