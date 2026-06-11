@@ -937,7 +937,7 @@ Miyajima Fan Studio<br><br>
 
       if (firstFreeNoteBox) {
         const generalPrice = getGeneralPrice();
-        firstFreeNoteBox.textContent = `1本目無料・2本目から通常料金（${generalPrice.toLocaleString()}円／本）です。`;
+        firstFreeNoteBox.textContent = `1本目無料・2本目から${generalPrice.toLocaleString()}円／本です。`;
         firstFreeNoteBox.classList.toggle("active", isFirstFreeMode());
       }
 
