@@ -106,6 +106,7 @@
         <button class="filter-btn" data-filter="PRINTING">作成中</button>
         <button class="filter-btn" data-filter="READY">完成</button>
         <button class="filter-btn" data-filter="PICKED_UP">受渡済</button>
+        <button id="csvExportBtn" style="background:#ff9800;">CSV出力</button>
       </div>
 
       <div class="search-row">
@@ -179,6 +180,80 @@
   function escapeHtml(value) {
     return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
   }
+  function formatSubscriptionStatus(value) {
+    if (Array.isArray(value)) return value.join(" / ");
+    return String(value || "");
+  }
+
+  function formatCreatedAtForCsv(value) {
+    if (value?.toDate) {
+      return value.toDate().toLocaleString("ja-JP");
+    }
+    return "";
+  }
+
+  function csvEscape(value) {
+    const str = String(value ?? "");
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+
+  function exportOrdersCsv() {
+    if (!orders || orders.length === 0) {
+      alert("出力できる注文データがありません。");
+      return;
+    }
+
+    const headers = [
+      "受付番号",
+      "注文日時",
+      "氏名",
+      "ふりがな",
+      "電話番号",
+      "住所",
+      "購読状況",
+      "本数",
+      "料金",
+      "ステータス",
+      "画像URL"
+    ];
+
+    const rows = orders.map(item => {
+      const data = item.data || {};
+      return [
+        getDisplayCode(data),
+        formatCreatedAtForCsv(data.createdAt),
+        data.customerName || "",
+        data.customerKana || "",
+        data.customerPhone || "",
+        data.customerAddress || "",
+        formatSubscriptionStatus(data.subscriptionStatus),
+        data.copies || 1,
+        getTotalPrice(data),
+        statusText(data.status),
+        data.imageUrl || ""
+      ];
+    });
+
+    const csv = [
+      headers.map(csvEscape).join(","),
+      ...rows.map(row => row.map(csvEscape).join(","))
+    ].join("\r\n");
+
+    const bom = "\ufeff";
+    const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const now = new Date();
+    const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${shopId}_orders_${ymd}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   function statusText(status) {
     const s = String(status || "WAIT").toUpperCase();
     if (s === "WAIT") return "受付済み";
@@ -268,6 +343,11 @@
             <div><strong>印刷ラベル：</strong>${escapeHtml(printLabel)}</div>
             <div><strong>注文ID：</strong>${escapeHtml(queueId)}</div>
             <div><strong>受付時刻：</strong>${escapeHtml(createdAt)}</div>
+            ${data.customerName ? `<div><strong>氏名：</strong>${escapeHtml(data.customerName)}</div>` : ""}
+            ${data.customerKana ? `<div><strong>ふりがな：</strong>${escapeHtml(data.customerKana)}</div>` : ""}
+            ${data.customerPhone ? `<div><strong>電話番号：</strong>${escapeHtml(data.customerPhone)}</div>` : ""}
+            ${data.customerAddress ? `<div><strong>住所：</strong>${escapeHtml(data.customerAddress)}</div>` : ""}
+            ${data.subscriptionStatus ? `<div><strong>購読状況：</strong>${escapeHtml(formatSubscriptionStatus(data.subscriptionStatus))}</div>` : ""}
           </div>
           <div class="actions">
             <button class="btn-download" data-url="${escapeHtml(imageUrl)}" data-code="${escapeHtml(displayCode)}">印刷用PNG保存</button>
@@ -379,6 +459,7 @@
     if (e.key === "Enter") runSearch();
   });
   document.getElementById("searchBtn").addEventListener("click", runSearch);
+  document.getElementById("csvExportBtn").addEventListener("click", exportOrdersCsv);
 
   await loadSettings();
   startWatch();
