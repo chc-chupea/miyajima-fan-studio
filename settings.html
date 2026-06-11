@@ -119,6 +119,10 @@
             <input type="radio" name="salesMode" value="free">
             無料
           </label>
+          <label class="radio-card">
+            <input type="radio" name="salesMode" value="firstFree">
+            1本目無料<br><span style="font-size:12px;color:#555;">2本目から通常料金</span>
+          </label>
         </div>
         <div id="salesModeNote" class="mode-note"></div>
         <label for="startDate">営業開始日</label><input id="startDate" type="date">
@@ -223,10 +227,14 @@
 
     const salesNote = document.getElementById("salesModeNote");
     if (salesNote) {
-      salesNote.classList.toggle("free", salesMode === "free");
-      salesNote.innerHTML = salesMode === "free"
-        ? "無料モード：注文画面の料金区分と合計金額は非表示・無料表示になります。"
-        : "有料モード：一般価格・学割価格を注文画面に表示します。";
+      salesNote.classList.toggle("free", salesMode === "free" || salesMode === "firstFree");
+      if (salesMode === "free") {
+        salesNote.innerHTML = "無料モード：注文画面の料金区分と合計金額は非表示・無料表示になります。";
+      } else if (salesMode === "firstFree") {
+        salesNote.innerHTML = "1本目無料モード：1本目は無料、2本目から一般価格で計算します。学割選択は注文画面に表示しません。";
+      } else {
+        salesNote.innerHTML = "有料モード：一般価格・学割価格を注文画面に表示します。";
+      }
     }
   }
 
@@ -305,8 +313,14 @@
     try {
       const settings = readSettingsForm();
       if (!settings.shopCode) { alert("受付番号の頭文字を入力してください。例：F"); return; }
-      if (settings.salesMode === "paid" && (!settings.generalPrice || settings.generalPrice < 0)) { alert("一般価格を正しく入力してください。"); return; }
-      if (settings.salesMode === "paid" && (!settings.studentPrice || settings.studentPrice < 0)) { alert("学割価格を正しく入力してください。"); return; }
+      if ((settings.salesMode === "paid" || settings.salesMode === "firstFree") && (!settings.generalPrice || settings.generalPrice < 0)) {
+        alert("一般価格を正しく入力してください。");
+        return;
+      }
+      if (settings.salesMode === "paid" && (!settings.studentPrice || settings.studentPrice < 0)) {
+        alert("学割価格を正しく入力してください。");
+        return;
+      }
       await setDoc(settingsRef, settings, { merge: true });
       popupSettings = { ...defaultSettings, ...settings };
       setSettingsStatus("設定を保存しました。");

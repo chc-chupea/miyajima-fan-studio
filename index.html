@@ -680,6 +680,9 @@
     </p>
   </div>
 
+  <div id="firstFreeNoteBox" class="first-free-note-box">
+    1本目無料・2本目から通常料金です。
+  </div>
 
   <div id="customerInfoArea" class="customer-info-box">
     <h3>後日お届け先情報</h3>
@@ -876,6 +879,7 @@ Miyajima Fan Studio<br><br>
 
     function getUnitPriceByType(priceType) {
       if (isFreeMode()) return 0;
+      if (isFirstFreeMode()) return getGeneralPrice();
       return priceType === "student" ? getStudentPrice() : getGeneralPrice();
     }
 
@@ -896,6 +900,10 @@ Miyajima Fan Studio<br><br>
       return getSalesMode() === "free";
     }
 
+    function isFirstFreeMode() {
+      return getSalesMode() === "firstFree";
+    }
+
     function getSelectedSubscriptionStatus() {
       return Array.from(document.querySelectorAll('input[name="subscriptionStatus"]:checked'))
         .map(el => el.value);
@@ -914,13 +922,20 @@ Miyajima Fan Studio<br><br>
       const customerInfoArea = document.getElementById("customerInfoArea");
       const priceTypeArea = document.getElementById("priceTypeArea");
       const totalPriceBox = document.getElementById("totalPriceBox");
+      const firstFreeNoteBox = document.getElementById("firstFreeNoteBox");
 
       if (customerInfoArea) {
         customerInfoArea.classList.toggle("active", isDeliveryMode());
       }
 
       if (priceTypeArea) {
-        priceTypeArea.style.display = isFreeMode() ? "none" : "block";
+        priceTypeArea.style.display = (isFreeMode() || isFirstFreeMode()) ? "none" : "block";
+      }
+
+      if (firstFreeNoteBox) {
+        const generalPrice = getGeneralPrice();
+        firstFreeNoteBox.textContent = `1本目無料・2本目から通常料金（${generalPrice.toLocaleString()}円／本）です。`;
+        firstFreeNoteBox.classList.toggle("active", isFirstFreeMode());
       }
 
       if (totalPriceBox && isFreeMode()) {
@@ -1076,7 +1091,7 @@ Miyajima Fan Studio<br><br>
           <li><b>完成イメージを確認：</b> 内容に問題がなければ本数を選びます。</li>
           <li><b>注文する：</b> 送信後は内容を変更できません。</li>
           <li><b>受付番号を保存：</b> 番号が表示されるまで画面を閉じないでください。</li>
-          <li><b>会場で受け取り：</b> READYになったら、受付番号を見せて受け取ってください。</li>
+          <li><b>会場で受け取り：</b> "受け取り可能"になったら、受付番号を見せて受け取ってください。</li>
         </ol>
       `,
       en: `
@@ -1137,14 +1152,14 @@ Miyajima Fan Studio<br><br>
       ja: `
         <div style="padding:12px;border-radius:14px;background:#f1f8e9;color:#1b5e20;font-weight:900;margin-bottom:12px;">
           この会場は後日お届け方式です。<br>
-          当日のお渡しではありません。完成後、お近くの中国新聞販売所よりお届けします。
+          完成後、お近くの中国新聞販売所よりお届けします。
         </div>
         <ol>
-          <li><b>写真を選ぶ：</b> 試合中・休憩時間に撮影、または撮影済み写真を選びます。</li>
+          <li><b>写真を選ぶ：</b> カメラで撮影、または撮影済み写真を選びます。</li>
           <li><b>うちわに合わせる：</b> 指で移動・拡大縮小・回転できます。</li>
           <li><b>完成イメージを確認：</b> 内容に問題がなければ注文へ進みます。</li>
           <li><b>お届け先を入力：</b> 氏名・電話番号・詳細住所を入力してください。</li>
-          <li><b>アンケート：</b> アンケートにご協力をお願いいたします。</li>
+          <li><b>アンケート：</b> アンケートにご協力をお願いします。</li>
           <li><b>注文する：</b> 送信後は内容を変更できません。</li>
           <li><b>受付番号を保存：</b> 確認用にスクリーンショットを保存してください。</li>
           <li><b>後日お届け：</b> 完成後、お近くの中国新聞販売所よりお届けします。</li>
@@ -2108,19 +2123,31 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     function updateTotalPrice() {
 
       const priceType =
-        document.querySelector('input[name="priceType"]:checked')?.value;
+        document.querySelector('input[name="priceType"]:checked')?.value || "general";
 
       const copies =
         Number(document.getElementById('copiesSelect').value || 1);
 
       const unitPrice = getUnitPriceByType(priceType);
 
-      const totalPrice = isFreeMode() ? 0 : unitPrice * copies;
+      let totalPrice = 0;
 
       if (isFreeMode()) {
-        document.getElementById("totalPriceBox").textContent = "合計：無料";
+        totalPrice = 0;
+        document.getElementById('totalPriceBox').textContent = '合計：無料';
         return;
       }
+
+      if (isFirstFreeMode()) {
+        totalPrice = getGeneralPrice() * Math.max(copies - 1, 0);
+        document.getElementById('totalPriceBox').textContent =
+          copies <= 1
+            ? '合計：無料（1本目無料）'
+            : `合計：${totalPrice.toLocaleString()}円（1本目無料・追加${copies - 1}本分）`;
+        return;
+      }
+
+      totalPrice = unitPrice * copies;
 
       const totalPriceTexts = {
         ja: `合計：${totalPrice.toLocaleString()}円`,
@@ -2152,7 +2179,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           </div>
           <div style="font-size:18px;line-height:1.8;color:#1b5e20;font-weight:900;">
             お近くの中国新聞販売所より<br>
-            完成後にお届けします
+            後日、完成後にお届けします
           </div>
           <div style="font-size:13px;color:#555;margin-top:12px;line-height:1.6;">
             ご注文内容の確認のため、販売所よりご連絡する場合があります。
@@ -2387,7 +2414,9 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const unitPrice = getUnitPriceByType(priceType);
 
       const totalPrice =
-        isFreeMode() ? 0 : unitPrice * copies;
+        isFreeMode()
+          ? 0
+          : (isFirstFreeMode() ? getGeneralPrice() * Math.max(copies - 1, 0) : unitPrice * copies);
 
       const templateName =
         isReuseMode
@@ -2395,11 +2424,11 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           : document.querySelector('#templateSelector option:checked').textContent;
 
       const priceTypeLabelTexts = {
-        ja: isFreeMode() ? '無料' : (priceType === 'student' ? '学割' : '一般'),
-        en: isFreeMode() ? 'Free' : (priceType === 'student' ? 'Student' : 'General'),
-        zh: isFreeMode() ? '免费' : (priceType === 'student' ? '学生优惠' : '普通价格'),
-        ko: isFreeMode() ? '무료' : (priceType === 'student' ? '학생 할인' : '일반'),
-        vi: isFreeMode() ? 'Miễn phí' : (priceType === 'student' ? 'Ưu đãi học sinh' : 'Thông thường')
+        ja: isFreeMode() ? '無料' : (isFirstFreeMode() ? '1本目無料・2本目から通常料金' : (priceType === 'student' ? '学割' : '一般')),
+        en: isFreeMode() ? 'Free' : (isFirstFreeMode() ? 'First fan free, additional fans regular price' : (priceType === 'student' ? 'Student' : 'General')),
+        zh: isFreeMode() ? '免费' : (isFirstFreeMode() ? '第一把免费，第二把起普通价格' : (priceType === 'student' ? '学生优惠' : '普通价格')),
+        ko: isFreeMode() ? '무료' : (isFirstFreeMode() ? '1개 무료, 2개째부터 일반 가격' : (priceType === 'student' ? '학생 할인' : '일반')),
+        vi: isFreeMode() ? 'Miễn phí' : (isFirstFreeMode() ? 'Miễn phí quạt đầu tiên, từ quạt thứ 2 giá thường' : (priceType === 'student' ? 'Ưu đãi học sinh' : 'Thông thường'))
       };
 
       const priceTypeLabel =
@@ -2413,7 +2442,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         料金区分：${priceTypeLabel}
         単価：${unitPrice.toLocaleString()}円／本
         注文数：${copies}本
-        合計金額：${isFreeMode() ? "無料" : totalPrice.toLocaleString() + "円"}${isDeliveryMode() ? `\n\n        氏名：${customerInfo.name}\n        電話番号：${customerInfo.phone}\n        住所：${customerInfo.address}\n        購読状況：${customerInfo.subscriptionStatus.join("、")}` : ""}
+        合計金額：${isFreeMode() ? "無料" : (totalPrice === 0 ? "無料" : totalPrice.toLocaleString() + "円")}${isDeliveryMode() ? `\n\n        氏名：${customerInfo.name}\n        電話番号：${customerInfo.phone}\n        住所：${customerInfo.address}\n        購読状況：${customerInfo.subscriptionStatus.join("、")}` : ""}
 
         送信後は変更できません。
 
@@ -2600,11 +2629,13 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
           operationMode: getOperationMode(),
           salesMode: getSalesMode(),
+          freeCopies: isFreeMode() ? copies : (isFirstFreeMode() ? Math.min(copies, 1) : 0),
+          chargedCopies: isFreeMode() ? 0 : (isFirstFreeMode() ? Math.max(copies - 1, 0) : copies),
           customerName: isDeliveryMode() ? customerInfo.name : "",
           customerPhone: isDeliveryMode() ? customerInfo.phone : "",
           customerAddress: isDeliveryMode() ? customerInfo.address : "",
           subscriptionStatus: isDeliveryMode() ? customerInfo.subscriptionStatus : [],
-          deliveryMessage: isDeliveryMode() ? "お近くの中国新聞販売所より完成後にお届けします" : "",
+          deliveryMessage: isDeliveryMode() ? "お近くの中国新聞販売所より後日、完成後にお届けします" : "",
 
           isReorder: isReuseMode,
           reuseFromQueueId: isReuseMode && reuseSourceOrder ? reuseSourceOrder.queueId : null,
