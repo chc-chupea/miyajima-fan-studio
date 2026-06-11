@@ -119,6 +119,25 @@
       <div class="settings-grid">
         <label for="shopName">会場名</label><input id="shopName" type="text" placeholder="例：ＦＦファンスタジオ">
         <label for="shopCode">受付番号の頭文字</label><input id="shopCode" type="text" maxlength="4" placeholder="例：F">
+        <label for="adminPin">管理画面PIN</label>
+    
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="adminPin"
+                 type="password"
+                 inputmode="numeric"
+                 maxlength="4"
+                 placeholder="例：5104">
+
+          <button type="button"
+                  id="togglePinBtn"
+                  style="
+                    background:#777;
+                    border-radius:10px;
+                    padding:10px 14px;
+                    white-space:nowrap;">
+            👁
+          </button>
+        </div>
 
         <label>運用モード</label>
         <div class="radio-group">
@@ -212,7 +231,7 @@
   document.getElementById("orderLink").href = `index.html?shop=${encodeURIComponent(shopId)}`;
 
   const defaultSettings = {
-    shopName: "ＦＦファンスタジオ", shopCode: "F", operationMode: "instant", salesMode: "paid", generalPrice: 800, studentPrice: 500,
+    shopName: "ＦＦファンスタジオ", shopCode: "F", adminPin: "5104", operationMode: "instant", salesMode: "paid", generalPrice: 800, studentPrice: 500,
     startDate: "", endDate: "", openTime: "10:00", closeTime: "17:00", phone: "082-245-1133", pickupDeadlineText: "",
     popupClosed: false, expiredTitle: "⏰ 受取期限が終了しました",
     expiredBody: "ポップアップストアの営業は終了しました。<br>未受取の商品については、<br>土日祝を除く10時～17時に<br>082-245-1133 へお問い合わせください。"
@@ -358,6 +377,7 @@
     const s = { ...defaultSettings, ...(settings || {}) };
     document.getElementById("shopName").value = s.shopName || "";
     document.getElementById("shopCode").value = s.shopCode || defaultSettings.shopCode || "F";
+    document.getElementById("adminPin").value = String(s.adminPin || defaultSettings.adminPin || "5104").replace(/[^0-9]/g, "").slice(0, 4);
     setCheckedValue("operationMode", s.operationMode, defaultSettings.operationMode);
     setCheckedValue("salesMode", s.salesMode, defaultSettings.salesMode);
     document.getElementById("startDate").value = s.startDate || "";
@@ -381,6 +401,7 @@
       shopId,
       shopName: document.getElementById("shopName").value.trim() || defaultSettings.shopName,
       shopCode: normalizeShopCode(document.getElementById("shopCode").value || defaultSettings.shopCode),
+      adminPin: String(document.getElementById("adminPin").value || defaultSettings.adminPin || "5104").replace(/[^0-9]/g, "").slice(0, 4),
       operationMode: getCheckedValue("operationMode", defaultSettings.operationMode),
       salesMode: getCheckedValue("salesMode", defaultSettings.salesMode),
       startDate: document.getElementById("startDate").value,
@@ -421,6 +442,7 @@
     try {
       const settings = readSettingsForm();
       if (!settings.shopCode) { alert("受付番号の頭文字を入力してください。例：F"); return; }
+      if (!/^\d{4}$/.test(settings.adminPin)) { alert("管理画面PINは数字4桁で入力してください。例：5104"); return; }
       if ((settings.salesMode === "paid" || settings.salesMode === "firstFree") && (!settings.generalPrice || settings.generalPrice < 0)) {
         alert("一般価格を正しく入力してください。");
         return;
@@ -455,6 +477,19 @@
 
   document.getElementById("newShopId").addEventListener("input", (e) => { e.target.value = normalizeShopId(e.target.value); updateNewShopPreview(); });
   document.getElementById("newShopCode").addEventListener("input", (e) => { e.target.value = normalizeShopCode(e.target.value); });
+  document.getElementById("adminPin").addEventListener("input", (e) => { e.target.value = String(e.target.value || "").replace(/[^0-9]/g, "").slice(0, 4); });
+  document.getElementById("togglePinBtn")
+    .addEventListener("click", () => {
+
+      const pinInput =
+        document.getElementById("adminPin");
+
+      pinInput.type =
+        pinInput.type === "password"
+          ? "text"
+          : "password";
+  });
+
   document.getElementById("newShopName").addEventListener("input", () => {
     const name = document.getElementById("newShopName").value.trim();
     const idInput = document.getElementById("newShopId");
