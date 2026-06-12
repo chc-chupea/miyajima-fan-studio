@@ -241,7 +241,7 @@
 
   document.getElementById("adminLink").href = `admin.html?shop=${encodeURIComponent(shopId)}`;
   document.getElementById("readyLink").href = `ready_inquiry.html?shop=${encodeURIComponent(shopId)}`;
-  document.getElementById("orderLink").href = `index.html?shop=${encodeURIComponent(shopId)}`;
+  document.getElementById("orderLink").href = `index.html?shop=${encodeURIComponent(shopId)}&v=${getVersionKey()}`;
 
   const defaultSettings = {
     shopName: "ＦＦファンスタジオ", shopCode: "F", adminPin: "4946", operationMode: "instant", templateSet: "general", salesMode: "paid", generalPrice: 800, studentPrice: 500,
@@ -263,8 +263,18 @@
     return `${window.location.origin}${path}`;
   }
 
+  function getVersionKey() {
+    const now = new Date();
+    return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+  }
+
   function buildShopUrl(fileName, id) {
-    return `${getBasePath()}${fileName}?shop=${encodeURIComponent(id)}`;
+    const versionTargetFiles = ["index.html", "status.html"];
+    const versionParam = versionTargetFiles.includes(fileName)
+      ? `&v=${getVersionKey()}`
+      : "";
+
+    return `${getBasePath()}${fileName}?shop=${encodeURIComponent(id)}${versionParam}`;
   }
 
   function renderCopyLink(label, fileName, id) {
