@@ -152,6 +152,19 @@
         </div>
         <div id="operationModeNote" class="mode-note"></div>
 
+        <label>テンプレートセット</label>
+        <div class="radio-group">
+          <label class="radio-card">
+            <input type="radio" name="templateSet" value="general" checked>
+            一般<br><span style="font-size:12px;color:#555;">無地・母の日・父の日</span>
+          </label>
+          <label class="radio-card">
+            <input type="radio" name="templateSet" value="kure_softball">
+            呉ソフトボール大会<br><span style="font-size:12px;color:#555;">無地・大会名入り</span>
+          </label>
+        </div>
+        <div id="templateSetNote" class="mode-note"></div>
+
         <label>販売方式</label>
         <div class="radio-group">
           <label class="radio-card">
@@ -231,7 +244,7 @@
   document.getElementById("orderLink").href = `index.html?shop=${encodeURIComponent(shopId)}`;
 
   const defaultSettings = {
-    shopName: "ＦＦファンスタジオ", shopCode: "F", adminPin: "4946", operationMode: "instant", salesMode: "paid", generalPrice: 800, studentPrice: 500,
+    shopName: "ＦＦファンスタジオ", shopCode: "F", adminPin: "4946", operationMode: "instant", templateSet: "general", salesMode: "paid", generalPrice: 800, studentPrice: 500,
     startDate: "", endDate: "", openTime: "10:00", closeTime: "17:00", phone: "082-245-1133", pickupDeadlineText: "",
     popupClosed: false, expiredTitle: "⏰ 受取期限が終了しました",
     expiredBody: "ポップアップストアの営業は終了しました。<br>未受取の商品については、<br>土日祝を除く10時～17時に<br>082-245-1133 へお問い合わせください。"
@@ -342,6 +355,7 @@
 
   function updateModeNotes() {
     const operationMode = getCheckedValue("operationMode", "instant");
+    const templateSet = getCheckedValue("templateSet", "general");
     const salesMode = getCheckedValue("salesMode", "paid");
 
     const opNote = document.getElementById("operationModeNote");
@@ -350,6 +364,13 @@
       opNote.innerHTML = operationMode === "delivery"
         ? "後日訪問モード：注文時に氏名・電話番号・詳細住所・購読状況を入力してもらいます。完了画面には「お近くの中国新聞販売所より完成後にお届けします」と表示されます。"
         : "即時受取モード：注文後に受付番号を発行し、当日会場で受け渡す運用です。";
+    }
+
+    const templateNote = document.getElementById("templateSetNote");
+    if (templateNote) {
+      templateNote.innerHTML = templateSet === "kure_softball"
+        ? "呉ソフトボール大会セット：注文画面には「無地」と「呉ソフトボール大会」のテンプレートだけを表示します。"
+        : "一般セット：注文画面には「無地」「母の日」「父の日」のテンプレートを表示します。";
     }
 
     const salesNote = document.getElementById("salesModeNote");
@@ -379,6 +400,7 @@
     document.getElementById("shopCode").value = s.shopCode || defaultSettings.shopCode || "F";
     document.getElementById("adminPin").value = String(s.adminPin || defaultSettings.adminPin || "4946").replace(/[^0-9]/g, "").slice(0, 4);
     setCheckedValue("operationMode", s.operationMode, defaultSettings.operationMode);
+    setCheckedValue("templateSet", s.templateSet, defaultSettings.templateSet);
     setCheckedValue("salesMode", s.salesMode, defaultSettings.salesMode);
     document.getElementById("startDate").value = s.startDate || "";
     document.getElementById("endDate").value = s.endDate || "";
@@ -403,6 +425,7 @@
       shopCode: normalizeShopCode(document.getElementById("shopCode").value || defaultSettings.shopCode),
       adminPin: String(document.getElementById("adminPin").value || defaultSettings.adminPin || "4946").replace(/[^0-9]/g, "").slice(0, 4),
       operationMode: getCheckedValue("operationMode", defaultSettings.operationMode),
+      templateSet: getCheckedValue("templateSet", defaultSettings.templateSet),
       salesMode: getCheckedValue("salesMode", defaultSettings.salesMode),
       startDate: document.getElementById("startDate").value,
       endDate: document.getElementById("endDate").value,
@@ -469,6 +492,9 @@
   document.getElementById("popupClosed").addEventListener("change", updateClosedModeBanner);
 
   document.querySelectorAll('input[name="operationMode"]').forEach(el => {
+    el.addEventListener("change", updateModeNotes);
+  });
+  document.querySelectorAll('input[name="templateSet"]').forEach(el => {
     el.addEventListener("change", updateModeNotes);
   });
   document.querySelectorAll('input[name="salesMode"]').forEach(el => {
@@ -538,6 +564,7 @@
   if (pendingName || pendingCode) {
     if (pendingName && pendingName.includes("呉")) {
       setCheckedValue("operationMode", "delivery", "instant");
+      setCheckedValue("templateSet", "kure_softball", "general");
       setCheckedValue("salesMode", "paid", "paid");
       updateModeNotes();
     }

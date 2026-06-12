@@ -499,26 +499,7 @@
 
   <label id="templateLabel" data-ja="うちわのデザインを選んでね👇" data-en="Choose a fan design👇" data-zh="请选择一个团扇设计👇" data-ko="부채 디자인을 선택하세요👇" data-vi="Chọn thiết kế quạt👇">うちわのデザインを選んでね👇</label>
   <select id="templateSelector">
-    <option value="fan1-highres.png"
-      data-ja="無地"
-      data-en="Plain"
-      data-zh="素色"
-      data-ko="무지"
-      data-vi="Trơn">無地</option>
-
-    <option value="fan2-highres.png"
-      data-ja="母の日"
-      data-en="Mother's Day"
-      data-zh="母亲节"
-      data-ko="어머니의 날"
-      data-vi="Ngày của Mẹ">母の日</option>
-
-    <option value="fan3-highres.png"
-      data-ja="父の日"
-      data-en="Father's Day"
-      data-zh="父亲节"
-      data-ko="아버지의 날"
-      data-vi="Ngày của Cha">父の日</option>
+    <option value="fan1-highres.png">無地</option>
   </select>
 
   <br />
@@ -853,6 +834,7 @@ Miyajima Fan Studio<br><br>
       generalPrice: 800,
       studentPrice: 500,
       operationMode: "instant",
+      templateSet: "general",
       salesMode: "paid",
 
     startDate: "",
@@ -973,6 +955,7 @@ Miyajima Fan Studio<br><br>
         });
       }
 
+      updateTemplateSelector();
       updatePriceTexts();
       updateTotalPrice();
       updateModeAreas();
@@ -1303,6 +1286,58 @@ Miyajima Fan Studio<br><br>
     let currentFacingMode = 'environment';
     let imgX = 100, imgY = 100, scale = 1, rotation = 0;
     let isDragging = false, lastX, lastY;
+
+    const templateSets = {
+      general: [
+        { file: "fan1-highres.png", name: "無地", en: "Plain", zh: "素色", ko: "무지", vi: "Trơn" },
+        { file: "fan2-highres.png", name: "母の日", en: "Mother's Day", zh: "母亲节", ko: "어머니의 날", vi: "Ngày của Mẹ" },
+        { file: "fan3-highres.png", name: "父の日", en: "Father's Day", zh: "父亲节", ko: "아버지의 날", vi: "Ngày của Cha" }
+      ],
+      kure_softball: [
+        { file: "fan1-highres.png", name: "無地", en: "Plain", zh: "素色", ko: "무지", vi: "Trơn" },
+        { file: "kure-softball.png", name: "呉ソフトボール大会", en: "Kure Softball Tournament", zh: "吴市垒球大会", ko: "구레 소프트볼 대회", vi: "Giải bóng mềm Kure" }
+      ]
+    };
+
+    function getTemplateSet() {
+      return popupSettings?.templateSet || "general";
+    }
+
+    function getTemplateDisplayName(template) {
+      const langKey = currentLang === "ja" ? "name" : currentLang;
+      return template[langKey] || template.name || template.file;
+    }
+
+    function updateTemplateSelector() {
+      const selector = document.getElementById("templateSelector");
+      if (!selector) return;
+
+      const selectedBefore = selector.value;
+      const templates = templateSets[getTemplateSet()] || templateSets.general;
+
+      selector.innerHTML = "";
+
+      templates.forEach(template => {
+        const option = document.createElement("option");
+        option.value = template.file;
+        option.textContent = getTemplateDisplayName(template);
+        option.dataset.ja = template.name || template.file;
+        option.dataset.en = template.en || template.name || template.file;
+        option.dataset.zh = template.zh || template.name || template.file;
+        option.dataset.ko = template.ko || template.name || template.file;
+        option.dataset.vi = template.vi || template.name || template.file;
+        selector.appendChild(option);
+      });
+
+      if (templates.some(template => template.file === selectedBefore)) {
+        selector.value = selectedBefore;
+      }
+
+      if (typeof templateImg !== "undefined") {
+        templateImg.src = selector.value;
+        draw();
+      }
+    }
 
     const templateSelector = document.getElementById('templateSelector');
     let templateImg = new Image();
@@ -3046,6 +3081,10 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       if (typeof updateModeAreas === 'function') {
         updateModeAreas();
+      }
+
+      if (typeof updateTemplateSelector === 'function') {
+        updateTemplateSelector();
       }
 
       if (typeof updateHowToModalTitle === 'function') {
