@@ -168,7 +168,10 @@
           </label>
           <label class="radio-card">
             <input type="radio" name="templateSet" value="ecommerce_fan">
-            通販用うちわ<br><span style="font-size:12px;color:#555;">無地・母の日・父の日</span>
+            通販用うちわ<br>
+            <span style="font-size:12px;color:#555;">
+              無地・母の日・父の日・誕生日・敬老の日
+            </span>
           </label>
         </div>
         <div id="templateSetNote" class="mode-note"></div>
@@ -177,7 +180,11 @@
         <div class="radio-group">
           <label class="radio-card">
             <input type="radio" name="salesMode" value="paid" checked>
-            有料
+            有料（一般＋学割）<br><span style="font-size:12px;color:#555;">一般価格・学割価格の2本立て</span>
+          </label>
+          <label class="radio-card">
+            <input type="radio" name="salesMode" value="paidGeneralOnly">
+            有料（一般価格のみ）<br><span style="font-size:12px;color:#555;">学割を表示しない1本価格</span>
           </label>
           <label class="radio-card">
             <input type="radio" name="salesMode" value="free">
@@ -407,8 +414,10 @@
         salesNote.innerHTML = "無料モード：注文画面の料金区分と合計金額は非表示・無料表示になります。";
       } else if (salesMode === "firstFree") {
         salesNote.innerHTML = "1本目無料モード：1本目は無料、2本目から一般価格で計算します。学割選択は注文画面に表示しません。";
+      } else if (salesMode === "paidGeneralOnly") {
+        salesNote.innerHTML = "有料（一般価格のみ）モード：注文画面には一般価格だけを表示します。学割選択は表示しません。";
       } else {
-        salesNote.innerHTML = "有料モード：一般価格・学割価格を注文画面に表示します。";
+        salesNote.innerHTML = "有料（一般＋学割）モード：一般価格・学割価格を注文画面に表示します。";
       }
     }
   }
@@ -495,7 +504,7 @@
       const settings = readSettingsForm();
       if (!settings.shopCode) { alert("受付番号の頭文字を入力してください。例：F"); return; }
       if (!/^\d{4}$/.test(settings.adminPin)) { alert("管理画面PINは数字4桁で入力してください。例：4946"); return; }
-      if ((settings.salesMode === "paid" || settings.salesMode === "firstFree") && (!settings.generalPrice || settings.generalPrice < 0)) {
+      if ((settings.salesMode === "paid" || settings.salesMode === "paidGeneralOnly" || settings.salesMode === "firstFree") && (!settings.generalPrice || settings.generalPrice < 0)) {
         alert("一般価格を正しく入力してください。");
         return;
       }
