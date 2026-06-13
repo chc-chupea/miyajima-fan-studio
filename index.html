@@ -931,6 +931,15 @@ Miyajima Fan Studio<br><br>
       return getSalesMode() === "firstFree";
     }
 
+    function isPaidGeneralOnlyMode() {
+      return getSalesMode() === "paidGeneralOnly";
+    }
+
+    function getCurrentPriceType() {
+      if (isFreeMode() || isFirstFreeMode() || isPaidGeneralOnlyMode()) return "general";
+      return document.querySelector('input[name="priceType"]:checked')?.value || "general";
+    }
+
     function getSelectedSubscriptionStatus() {
       return Array.from(document.querySelectorAll('input[name="subscriptionStatus"]:checked'))
         .map(el => el.value);
@@ -1006,7 +1015,7 @@ Miyajima Fan Studio<br><br>
       updateCustomerInfoFields();
 
       if (priceTypeArea) {
-        priceTypeArea.style.display = (isFreeMode() || isFirstFreeMode()) ? "none" : "block";
+        priceTypeArea.style.display = (isFreeMode() || isFirstFreeMode() || isPaidGeneralOnlyMode()) ? "none" : "block";
       }
 
       if (firstFreeNoteBox) {
@@ -2310,8 +2319,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     function updateTotalPrice() {
 
-      const priceType =
-        document.querySelector('input[name="priceType"]:checked')?.value || "general";
+      const priceType = getCurrentPriceType();
 
       const copies =
         Number(document.getElementById('copiesSelect').value || 1);
@@ -2596,8 +2604,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       const template = isReuseMode && reuseSourceOrder ? (reuseSourceOrder.template || templateSelector.value) : templateSelector.value;
 
-      const priceType =
-        document.querySelector('input[name="priceType"]:checked')?.value || 'general';
+      const priceType = getCurrentPriceType();
 
       const unitPrice = getUnitPriceByType(priceType);
 
@@ -2612,11 +2619,11 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           : document.querySelector('#templateSelector option:checked').textContent;
 
       const priceTypeLabelTexts = {
-        ja: isFreeMode() ? '無料' : (isFirstFreeMode() ? '1本目無料・2本目から通常料金' : (priceType === 'student' ? '学割' : '一般')),
-        en: isFreeMode() ? 'Free' : (isFirstFreeMode() ? 'First fan free, additional fans regular price' : (priceType === 'student' ? 'Student' : 'General')),
-        zh: isFreeMode() ? '免费' : (isFirstFreeMode() ? '第一把免费，第二把起普通价格' : (priceType === 'student' ? '学生优惠' : '普通价格')),
-        ko: isFreeMode() ? '무료' : (isFirstFreeMode() ? '1개 무료, 2개째부터 일반 가격' : (priceType === 'student' ? '학생 할인' : '일반')),
-        vi: isFreeMode() ? 'Miễn phí' : (isFirstFreeMode() ? 'Miễn phí quạt đầu tiên, từ quạt thứ 2 giá thường' : (priceType === 'student' ? 'Ưu đãi học sinh' : 'Thông thường'))
+        ja: isFreeMode() ? '無料' : (isFirstFreeMode() ? '1本目無料・2本目から通常料金' : (isPaidGeneralOnlyMode() ? '一般価格のみ' : (priceType === 'student' ? '学割' : '一般'))),
+        en: isFreeMode() ? 'Free' : (isFirstFreeMode() ? 'First fan free, additional fans regular price' : (isPaidGeneralOnlyMode() ? 'General only' : (priceType === 'student' ? 'Student' : 'General'))),
+        zh: isFreeMode() ? '免费' : (isFirstFreeMode() ? '第一把免费，第二把起普通价格' : (isPaidGeneralOnlyMode() ? '仅普通价格' : (priceType === 'student' ? '学生优惠' : '普通价格'))),
+        ko: isFreeMode() ? '무료' : (isFirstFreeMode() ? '1개 무료, 2개째부터 일반 가격' : (isPaidGeneralOnlyMode() ? '일반 가격만' : (priceType === 'student' ? '학생 할인' : '일반'))),
+        vi: isFreeMode() ? 'Miễn phí' : (isFirstFreeMode() ? 'Miễn phí quạt đầu tiên, từ quạt thứ 2 giá thường' : (isPaidGeneralOnlyMode() ? 'Chỉ giá thường' : (priceType === 'student' ? 'Ưu đãi học sinh' : 'Thông thường')))
       };
 
       const priceTypeLabel =
