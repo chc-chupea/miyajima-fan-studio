@@ -911,6 +911,14 @@ Miyajima Fan Studio<br><br>
       return getOperationMode() === "delivery";
     }
 
+    function isEcommerceMode() {
+      return getOperationMode() === "ecommerce";
+    }
+
+    function needsCustomerInfo() {
+      return isDeliveryMode() || isEcommerceMode();
+    }
+
     function getSalesMode() {
       return popupSettings?.salesMode || "paid";
     }
@@ -928,6 +936,16 @@ Miyajima Fan Studio<br><br>
         .map(el => el.value);
     }
 
+    function validateCustomerInfo(customerInfo) {
+      if (!needsCustomerInfo()) return true;
+
+      if (isEcommerceMode()) {
+        return Boolean(customerInfo.name && customerInfo.phone);
+      }
+
+      return Boolean(customerInfo.name && customerInfo.kana && customerInfo.phone && customerInfo.address);
+    }
+
     function getCustomerInfo() {
       return {
         name: String(document.getElementById("customerName")?.value || "").trim(),
@@ -939,6 +957,43 @@ Miyajima Fan Studio<br><br>
       };
     }
 
+    function setFieldBlockVisible(fieldId, visible) {
+      const field = document.getElementById(fieldId);
+      if (!field) return;
+      const label = document.querySelector(`label[for="${fieldId}"]`);
+      field.style.display = visible ? "" : "none";
+      if (label) label.style.display = visible ? "" : "none";
+    }
+
+    function updateCustomerInfoFields() {
+      const title = document.querySelector("#customerInfoArea h3");
+      const subscriptionLabel = document.querySelector("#customerInfoArea .subscription-options")?.previousElementSibling;
+      const subscriptionOptions = document.querySelector("#customerInfoArea .subscription-options");
+      const deliveryNote = document.querySelector("#customerInfoArea .delivery-note-box");
+
+      if (isEcommerceMode()) {
+        if (title) title.textContent = "写真登録情報";
+        setFieldBlockVisible("customerName", true);
+        setFieldBlockVisible("customerKana", false);
+        setFieldBlockVisible("customerPhone", true);
+        setFieldBlockVisible("customerAddress", false);
+        setFieldBlockVisible("customerMemo", true);
+        if (subscriptionLabel) subscriptionLabel.style.display = "none";
+        if (subscriptionOptions) subscriptionOptions.style.display = "none";
+        if (deliveryNote) deliveryNote.textContent = "配送ネットでご購入済みの商品を制作します。完成後、中国新聞販売センターより発送いたします。";
+      } else {
+        if (title) title.textContent = "お届け先情報";
+        setFieldBlockVisible("customerName", true);
+        setFieldBlockVisible("customerKana", true);
+        setFieldBlockVisible("customerPhone", true);
+        setFieldBlockVisible("customerAddress", true);
+        setFieldBlockVisible("customerMemo", true);
+        if (subscriptionLabel) subscriptionLabel.style.display = "";
+        if (subscriptionOptions) subscriptionOptions.style.display = "";
+        if (deliveryNote) deliveryNote.textContent = "完成後、後日お近くの中国新聞販売所よりお届けします。";
+      }
+    }
+
     function updateModeAreas() {
       const customerInfoArea = document.getElementById("customerInfoArea");
       const priceTypeArea = document.getElementById("priceTypeArea");
@@ -946,8 +1001,9 @@ Miyajima Fan Studio<br><br>
       const firstFreeNoteBox = document.getElementById("firstFreeNoteBox");
 
       if (customerInfoArea) {
-        customerInfoArea.classList.toggle("active", isDeliveryMode());
+        customerInfoArea.classList.toggle("active", needsCustomerInfo());
       }
+      updateCustomerInfoFields();
 
       if (priceTypeArea) {
         priceTypeArea.style.display = (isFreeMode() || isFirstFreeMode()) ? "none" : "block";
@@ -1332,6 +1388,11 @@ Miyajima Fan Studio<br><br>
       kure_softball: [
         { file: "fan1-highres.png", name: "無地", en: "Plain", zh: "素色", ko: "무지", vi: "Trơn" },
         { file: "kure-softball.png", name: "呉ソフトボール大会", en: "Kure Softball Tournament", zh: "吴市垒球大会", ko: "구레 소프트볼 대회", vi: "Giải bóng mềm Kure" }
+      ],
+      ecommerce_fan: [
+        { file: "fan1-highres.png", name: "無地", en: "Plain", zh: "素色", ko: "무지", vi: "Trơn" },
+        { file: "fan2-highres.png", name: "母の日", en: "Mother's Day", zh: "母亲节", ko: "어머니의 날", vi: "Ngày của Mẹ" },
+        { file: "fan3-highres.png", name: "父の日", en: "Father's Day", zh: "父亲节", ko: "아버지의 날", vi: "Ngày của Cha" }
       ]
     };
 
@@ -1852,6 +1913,33 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     }
 
 
+
+    function getCompleteNoteHtml(displayCode) {
+      if (isEcommerceMode()) {
+        return `
+          <div class="receipt-code-note">
+            ご注文ありがとうございました。<br>
+            受付番号 ${displayCode} を保存してください。<br>
+            制作後、中国新聞販売センターより発送いたします。
+          </div>
+        `;
+      }
+
+      if (isDeliveryMode()) {
+        return `
+          <div class="receipt-code-note">
+            お近くの中国新聞販売所より<br>
+            完成後にお届けします。
+          </div>
+        `;
+      }
+
+      return `
+        <div class="receipt-code-note">
+          受付番号を保存し、完成後に会場でお受け取りください。
+        </div>
+      `;
+    }
 
     function getTodayKey() {
       const now = new Date();

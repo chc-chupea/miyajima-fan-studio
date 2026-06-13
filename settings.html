@@ -149,6 +149,10 @@
             <input type="radio" name="operationMode" value="delivery">
             後日訪問（営業用）<br><span style="font-size:12px;color:#555;">個人情報入力方式</span>
           </label>
+          <label class="radio-card">
+            <input type="radio" name="operationMode" value="ecommerce">
+            通販（配送ネット）<br><span style="font-size:12px;color:#555;">氏名・電話番号のみ</span>
+          </label>
         </div>
         <div id="operationModeNote" class="mode-note"></div>
 
@@ -161,6 +165,10 @@
           <label class="radio-card">
             <input type="radio" name="templateSet" value="kure_softball">
             呉ソフトボール大会<br><span style="font-size:12px;color:#555;">無地・大会名入り</span>
+          </label>
+          <label class="radio-card">
+            <input type="radio" name="templateSet" value="ecommerce_fan">
+            通販用うちわ<br><span style="font-size:12px;color:#555;">無地・母の日・父の日</span>
           </label>
         </div>
         <div id="templateSetNote" class="mode-note"></div>
@@ -371,17 +379,25 @@
 
     const opNote = document.getElementById("operationModeNote");
     if (opNote) {
-      opNote.classList.toggle("delivery", operationMode === "delivery");
-      opNote.innerHTML = operationMode === "delivery"
-        ? "後日訪問モード：注文時に氏名・電話番号・詳細住所・購読状況を入力してもらいます。完了画面には「お近くの中国新聞販売所より完成後にお届けします」と表示されます。"
-        : "即時受取モード：注文後に受付番号を発行し、当日会場で受け渡す運用です。";
+      opNote.classList.toggle("delivery", operationMode === "delivery" || operationMode === "ecommerce");
+      if (operationMode === "delivery") {
+        opNote.innerHTML = "後日訪問モード：注文時に氏名・電話番号・詳細住所・購読状況を入力してもらいます。完了画面には「お近くの中国新聞販売所より完成後にお届けします」と表示されます。";
+      } else if (operationMode === "ecommerce") {
+        opNote.innerHTML = "通販モード：配送ネットで購入済みのお客さま向けです。うちわ側では氏名・電話番号・メモだけを入力してもらいます。";
+      } else {
+        opNote.innerHTML = "即時受取モード：注文後に受付番号を発行し、当日会場で受け渡す運用です。";
+      }
     }
 
     const templateNote = document.getElementById("templateSetNote");
     if (templateNote) {
-      templateNote.innerHTML = templateSet === "kure_softball"
-        ? "呉ソフトボール大会セット：注文画面には「無地」と「呉ソフトボール大会」のテンプレートだけを表示します。"
-        : "一般セット：注文画面には「無地」「母の日」「父の日」のテンプレートを表示します。";
+      if (templateSet === "kure_softball") {
+        templateNote.innerHTML = "呉ソフトボール大会セット：注文画面には「無地」と「呉ソフトボール大会」のテンプレートだけを表示します。";
+      } else if (templateSet === "ecommerce_fan") {
+        templateNote.innerHTML = "通販用うちわセット：常時販売向けに「無地」「母の日」「父の日」のテンプレートを表示します。";
+      } else {
+        templateNote.innerHTML = "一般セット：注文画面には「無地」「母の日」「父の日」のテンプレートを表示します。";
+      }
     }
 
     const salesNote = document.getElementById("salesModeNote");
