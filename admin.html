@@ -571,6 +571,10 @@
     });
   }
 
+  function normalizeCodeForCompare(value) {
+  return String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
   function renderSearchResults() {
     const searchBox = document.getElementById("searchResults");
     if (!searchCode) {
@@ -579,7 +583,13 @@
       return;
     }
 
-    const foundOrders = orders.filter(item => getDisplayCode(item.data).toUpperCase().includes(searchCode));
+    const normalizedSearch = normalizeCodeForCompare(searchCode);
+
+    const foundOrders = orders.filter(item => {
+      const displayCode = getDisplayCode(item.data);
+      return normalizeCodeForCompare(displayCode).includes(normalizedSearch);
+    });
+
     searchBox.classList.add("active");
     searchBox.innerHTML = `
       <div class="search-result-title">検索結果（${foundOrders.length}件）</div>
@@ -624,8 +634,9 @@
       renderOrders();
     });
   });
+
   function normalizeSearchCode(value) {
-    return String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    return String(value || "").toUpperCase().replace(/[^A-Z0-9-]/g, "");
   }
 
   function runSearch() {
