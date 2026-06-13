@@ -691,15 +691,10 @@
     <label for="customerAddress">④ 詳細住所 <span style="color:#c62828;">必須</span></label>
     <textarea id="customerAddress" autocomplete="street-address" placeholder="例：広島市○区○○町1-2-3 ○○マンション101号室"></textarea>
 
-    <label for="customerMemo">
-    ⑤ ご要望・連絡事項（任意）
-    </label>
-
+    <label for="customerMemo">⑤ ご要望・連絡事項（任意）</label>
     <textarea
       id="customerMemo"
-      placeholder="例：祖父母にも渡したい
-    例：7/20以降なら在宅
-    ></textarea>
+      placeholder="例：祖父母にも渡したい&#10;例：7/20以降なら在宅&#10;例：○○小学校6年"></textarea>
 
     <label>アンケートにご協力お願いします</label>
     <div class="subscription-options">
@@ -924,9 +919,7 @@ Miyajima Fan Studio<br><br>
         kana: String(document.getElementById("customerKana")?.value || "").trim(),
         phone: String(document.getElementById("customerPhone")?.value || "").trim(),
         address: String(document.getElementById("customerAddress")?.value || "").trim(),
-
         memo: String(document.getElementById("customerMemo")?.value || "").trim(),
-
         subscriptionStatus: getSelectedSubscriptionStatus()
       };
     }
