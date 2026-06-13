@@ -185,6 +185,7 @@
         <label for="endDate">営業終了日</label><input id="endDate" type="date">
         <label for="openTime">開店時間</label><input id="openTime" type="time">
         <label for="closeTime">閉店時間</label><input id="closeTime" type="time">
+        <label for="orderDeadline">受付締切日時</label><input id="orderDeadline" type="datetime-local">
         <label for="generalPrice">一般価格</label><input id="generalPrice" type="number" min="0" step="10" placeholder="800">
         <label for="studentPrice">学割価格</label><input id="studentPrice" type="number" min="0" step="10" placeholder="500">
         <label for="phone">問い合わせ電話番号</label><input id="phone" type="tel" placeholder="082-245-1133">
@@ -245,7 +246,7 @@
 
   const defaultSettings = {
     shopName: "ＦＦファンスタジオ", shopCode: "F", adminPin: "4946", operationMode: "instant", templateSet: "general", salesMode: "paid", generalPrice: 800, studentPrice: 500,
-    startDate: "", endDate: "", openTime: "10:00", closeTime: "17:00", phone: "082-245-1133", pickupDeadlineText: "",
+    startDate: "", endDate: "", openTime: "10:00", closeTime: "17:00", orderDeadline: "", phone: "082-245-1133", pickupDeadlineText: "",
     popupClosed: false, expiredTitle: "⏰ 受取期限が終了しました",
     expiredBody: "ポップアップストアの営業は終了しました。<br>未受取の商品については、<br>土日祝を除く10時～17時に<br>082-245-1133 へお問い合わせください。"
   };
@@ -416,6 +417,7 @@
     document.getElementById("endDate").value = s.endDate || "";
     document.getElementById("openTime").value = s.openTime || "";
     document.getElementById("closeTime").value = s.closeTime || "";
+    document.getElementById("orderDeadline").value = s.orderDeadline || "";
     document.getElementById("generalPrice").value = Number(s.generalPrice || 800);
     document.getElementById("studentPrice").value = Number(s.studentPrice || 500);
     document.getElementById("phone").value = s.phone || "";
@@ -441,6 +443,7 @@
       endDate: document.getElementById("endDate").value,
       openTime: document.getElementById("openTime").value || "10:00",
       closeTime: document.getElementById("closeTime").value || "17:00",
+      orderDeadline: document.getElementById("orderDeadline").value || "",
       generalPrice: Number(document.getElementById("generalPrice").value || 800),
       studentPrice: Number(document.getElementById("studentPrice").value || 500),
       phone: document.getElementById("phone").value.trim() || "082-245-1133",

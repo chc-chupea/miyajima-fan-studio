@@ -846,6 +846,7 @@ Miyajima Fan Studio<br><br>
       endDate: "",
       openTime: "10:00",
       closeTime: "17:00",
+      orderDeadline: "",
 
       pickupDeadlineText: "",
       popupClosed: false,
@@ -1003,6 +1004,16 @@ Miyajima Fan Studio<br><br>
       }
     }
 
+    function isOrderDeadlinePassed() {
+      const orderDeadline = popupSettings?.orderDeadline;
+      if (!orderDeadline) return false;
+
+      const deadline = new Date(orderDeadline);
+      if (Number.isNaN(deadline.getTime())) return false;
+
+      return new Date() > deadline;
+    }
+
     function isWithinBusinessHours() {
       const now = new Date();
 
@@ -1018,6 +1029,7 @@ Miyajima Fan Studio<br><br>
       if (endDate && today > endDate) return false;
       if (openTime && currentTime < openTime) return false;
       if (closeTime && currentTime > closeTime) return false;
+      if (isOrderDeadlinePassed()) return false;
 
       return true;
     }
@@ -1037,7 +1049,11 @@ Miyajima Fan Studio<br><br>
             const body = popupSettings?.expiredBody || defaultSettings.expiredBody;
             notice.innerHTML = `${title}<br><br>${nl2br(body)}`;
           } else {
-            notice.innerHTML = `⏰ 現在は受付時間外です<br><br>受付時間：${popupSettings?.openTime || "10:00"}〜${popupSettings?.closeTime || "17:00"}`;
+            if (isOrderDeadlinePassed()) {
+              notice.innerHTML = "⏰ 本日の受付は終了しました";
+            } else {
+              notice.innerHTML = `⏰ 現在は受付時間外です<br><br>受付時間：${popupSettings?.openTime || "10:00"}〜${popupSettings?.closeTime || "17:00"}`;
+            }
           }
           notice.classList.add("active");
         } else {
@@ -1050,7 +1066,7 @@ Miyajima Fan Studio<br><br>
       if (orderBtn) {
         orderBtn.disabled = isClosed;
         if (isClosed) {
-          orderBtn.textContent = closed ? "受付終了" : "受付時間外";
+          orderBtn.textContent = closed ? "受付終了" : (isOrderDeadlinePassed() ? "本日の受付は終了しました" : "受付時間外");
           orderBtn.style.background = "#777";
         } else {
           orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || "注文する";
