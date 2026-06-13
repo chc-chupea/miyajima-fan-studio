@@ -41,6 +41,8 @@
     .btn-wait { background:#f9a825; color:#333; }
     .btn-close { background:#777; }
     .btn-download { background:#00a86b; }
+    .btn-label-single { background:#795548; }
+    .ecommerce-alert { background:#fff8e1; color:#e65100; font-weight:900; border-radius:10px; padding:8px 10px; margin:6px 0; }
     .empty { text-align:center; color:#777; padding:30px; }
     .small { font-size:12px; color:#777; margin-top:4px; }
     .shop-badge { display:inline-block; background:#e8f5e9; color:#1b5e20; padding:4px 10px; border-radius:999px; font-size:13px; font-weight:700; margin-left:6px; }
@@ -336,6 +338,22 @@
     return value || "";
   }
 
+  function isEcommerceOrder(data) {
+    return data?.operationMode === "ecommerce" || data?.source === "ecommerce-fan-studio";
+  }
+
+  function templateText(value) {
+    const map = {
+      "fan1-highres.png": "無地",
+      "fan2-highres.png": "母の日",
+      "fan3-highres.png": "父の日",
+      "fan-birthday.png": "誕生日",
+      "fan-keiro.png": "敬老の日",
+      "kure-softball.png": "呉ソフトボール大会"
+    };
+    return map[value] || value || "";
+  }
+
   function formatSubscriptionStatus(value) {
     if (Array.isArray(value)) return value.join(" / ");
     return String(value || "");
@@ -417,30 +435,34 @@
   }
 
 
-  function printDeliveryLabels() {
-    const deliveryOrders = orders.filter(item => {
-      const data = item.data || {};
-      return data.customerName || data.customerPhone || data.customerAddress;
-    });
-
-    if (deliveryOrders.length === 0) {
-      alert("ラベル印刷できるお届け先データがありません。");
+  function printLabelsForOrders(labelOrders) {
+    if (!labelOrders || labelOrders.length === 0) {
+      alert("ラベル印刷できるデータがありません。");
       return;
     }
 
     const labelArea = document.getElementById("labelPrintArea");
     if (!labelArea) return;
 
-    labelArea.innerHTML = deliveryOrders.map(item => {
+    labelArea.innerHTML = labelOrders.map(item => {
       const data = item.data || {};
       const code = getDisplayCode(data);
+      const isEc = isEcommerceOrder(data);
+      const codeLabel = isEc ? "写真登録番号" : "受付番号";
+      const quantityLine = isEc
+        ? "本数：配送ネット注文と照合"
+        : `本数：${escapeHtml(data.copies || 1)}本`;
 
       return `
         <div class="print-label-card">
-          <div class="print-label-code">受付番号：${escapeHtml(code)}</div>
+          <div class="print-label-code">${codeLabel}：${escapeHtml(code)}</div>
+          ${isEc ? `<div class="print-label-subscription">通販／配送ネット支払い済み</div>` : ""}
           <div class="print-label-name">${escapeHtml(data.customerName || "")} 様</div>
           ${data.customerKana ? `<div class="print-label-kana">ふりがな：${escapeHtml(data.customerKana)}</div>` : ""}
           ${data.customerPhone ? `<div class="print-label-phone">TEL：${escapeHtml(data.customerPhone)}</div>` : ""}
+          <div class="print-label-phone">テンプレート：${escapeHtml(templateText(data.template))}</div>
+          <div class="print-label-phone">${quantityLine}</div>
+          ${data.customerMemo ? `<div class="print-label-phone">メモ：${escapeHtml(data.customerMemo)}</div>` : ""}
           ${data.subscriptionStatus ? `<div class="print-label-subscription">購読状況：${escapeHtml(formatSubscriptionStatus(data.subscriptionStatus))}</div>` : ""}
           <div class="print-label-address">${escapeHtml(data.customerAddress || "")}</div>
         </div>
@@ -448,6 +470,15 @@
     }).join("");
 
     window.print();
+  }
+
+  function printDeliveryLabels() {
+    const labelOrders = orders.filter(item => {
+      const data = item.data || {};
+      return data.customerName || data.customerPhone || data.customerAddress || isEcommerceOrder(data);
+    });
+
+    printLabelsForOrders(labelOrders);
   }
 
   function statusText(status) {
@@ -459,14 +490,22 @@
     if (s === "CLOSED") return "終了";
     return s;
   }
-  function priceTypeText(priceType) { return priceType === "student" ? "学割" : "一般"; }
+  function priceTypeText(priceType, data = {}) {
+    if (isEcommerceOrder(data)) return "配送ネット支払い済み";
+    if (data.salesMode === "free") return "無料";
+    if (data.salesMode === "firstFree") return "1本目無料";
+    if (data.salesMode === "paidGeneralOnly") return "一般のみ";
+    return priceType === "student" ? "学割" : "一般";
+  }
   function getUnitPrice(data) {
+    if (isEcommerceOrder(data)) return 0;
     if (data.unitPrice) return Number(data.unitPrice);
     const generalPrice = Number(popupSettings?.generalPrice || 800);
     const studentPrice = Number(popupSettings?.studentPrice || 500);
     return data.priceType === "student" ? studentPrice : generalPrice;
   }
   function getTotalPrice(data) {
+    if (isEcommerceOrder(data)) return 0;
     if (data.totalPrice) return Number(data.totalPrice);
     return getUnitPrice(data) * Number(data.copies || 1);
   }
@@ -518,6 +557,7 @@
       const displayCode = getDisplayCode(data);
       const imageUrl = data.imageUrl || "";
       const copies = Number(data.copies || 1);
+      const isEc = isEcommerceOrder(data);
       const unitPrice = getUnitPrice(data);
       const totalPrice = getTotalPrice(data);
       const queueId = data.queueId || item.id || "";
@@ -526,20 +566,21 @@
       const imageHtml = imageUrl ? `<a href="${escapeHtml(imageUrl)}" target="_blank" rel="noopener"><img class="thumb" src="${escapeHtml(imageUrl)}" alt="注文画像"></a>` : `<div class="no-image">画像なし</div>`;
       return `
         <div class="order-card ${status}"><div class="order-main"><div>${imageHtml}</div><div>
-          <div class="order-number">受付番号</div>
+          <div class="order-number">${isEc ? "写真登録番号" : "受付番号"}</div>
           <div class="display-code-large">${escapeHtml(displayCode)}</div>
           <div class="internal-id">内部ID：${escapeHtml(queueId)}</div>
           ${status === "READY" ? '<div class="search-ready-badge">完成しています</div>' : ""}<div class="status-badge badge-${status}">${statusText(status)}</div>
           <div class="info">
             <div><strong>短番：</strong>${escapeHtml(displayNo)}</div>
-            <div><strong>料金区分：</strong>${priceTypeText(data.priceType)}</div>
-            <div><strong>単価：</strong>${yen(unitPrice)}</div>
-            <div><strong>注文本数：</strong>${escapeHtml(copies)}本</div>
-            <div><strong>合計金額：</strong>${yen(totalPrice)}</div>
+            <div><strong>料金区分：</strong>${priceTypeText(data.priceType, data)}</div>
+            ${isEc ? `<div class="ecommerce-alert">通販：料金・本数は配送ネット注文と照合</div>` : `<div><strong>単価：</strong>${yen(unitPrice)}</div>`}
+            <div><strong>${isEc ? "画像登録" : "注文本数"}：</strong>${isEc ? "1件（購入本数は配送ネット照合）" : `${escapeHtml(copies)}本`}</div>
+            ${isEc ? `<div><strong>決済：</strong>配送ネット支払い済み</div>` : `<div><strong>合計金額：</strong>${yen(totalPrice)}</div>`}
             <div><strong>印刷ラベル：</strong>${escapeHtml(printLabel)}</div>
             <div><strong>注文ID：</strong>${escapeHtml(queueId)}</div>
             <div><strong>受付時刻：</strong>${escapeHtml(createdAt)}</div>
             ${data.operationMode ? `<div><strong>運用モード：</strong>${escapeHtml(operationModeText(data.operationMode))}</div>` : ""}
+            ${data.template ? `<div><strong>テンプレート：</strong>${escapeHtml(templateText(data.template))}</div>` : ""}
             ${data.customerName ? `<div><strong>氏名：</strong>${escapeHtml(data.customerName)}</div>` : ""}
             ${data.customerKana ? `<div><strong>ふりがな：</strong>${escapeHtml(data.customerKana)}</div>` : ""}
             ${data.customerPhone ? `<div><strong>電話番号：</strong>${escapeHtml(data.customerPhone)}</div>` : ""}
@@ -549,6 +590,7 @@
           </div>
           <div class="actions">
             <button class="btn-download" data-url="${escapeHtml(imageUrl)}" data-code="${escapeHtml(displayCode)}">印刷用PNG保存</button>
+            <button class="btn-label-single" data-id="${escapeHtml(queueId)}">ラベル印刷</button>
             <button class="btn-printing" data-id="${escapeHtml(queueId)}" data-status="PRINTING">印刷中</button>
             <button class="btn-ready" data-id="${escapeHtml(queueId)}" data-status="READY">完成</button>
             <button class="btn-picked" data-id="${escapeHtml(queueId)}" data-status="PICKED_UP">受渡済</button>
@@ -560,9 +602,16 @@
   }
 
   function bindOrderButtons() {
-    document.querySelectorAll(".actions button:not(.btn-download)").forEach(btn => {
+    document.querySelectorAll(".actions button:not(.btn-download):not(.btn-label-single)").forEach(btn => {
       btn.addEventListener("click", () => updateStatus(btn.dataset.id, btn.dataset.status));
     });
+    document.querySelectorAll(".btn-label-single").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const item = orders.find(order => (order.data?.queueId || order.id) === btn.dataset.id);
+        if (item) printLabelsForOrders([item]);
+      });
+    });
+
     document.querySelectorAll(".btn-download").forEach(btn => {
       btn.addEventListener("click", async () => {
         const url = btn.dataset.url;

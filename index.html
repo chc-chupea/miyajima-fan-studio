@@ -915,6 +915,13 @@ Miyajima Fan Studio<br><br>
       return getOperationMode() === "ecommerce";
     }
 
+    function getOrderCopies() {
+      // 通販モードは配送ネット側の購入本数と照合するため、
+      // うちわ登録画面では本数を選ばせず、写真登録1件として保存します。
+      if (isEcommerceMode()) return 1;
+      return Number(document.getElementById('copiesSelect')?.value || 1);
+    }
+
     function needsCustomerInfo() {
       return isDeliveryMode() || isEcommerceMode();
     }
@@ -1008,6 +1015,9 @@ Miyajima Fan Studio<br><br>
       const priceTypeArea = document.getElementById("priceTypeArea");
       const totalPriceBox = document.getElementById("totalPriceBox");
       const firstFreeNoteBox = document.getElementById("firstFreeNoteBox");
+      const copiesLabel = document.querySelector('label[for="copiesSelect"]');
+      const copiesHint = document.getElementById("copiesHint");
+      const copiesSelect = document.getElementById("copiesSelect");
 
       if (customerInfoArea) {
         customerInfoArea.classList.toggle("active", needsCustomerInfo());
@@ -1016,6 +1026,22 @@ Miyajima Fan Studio<br><br>
 
       if (priceTypeArea) {
         priceTypeArea.style.display = (isEcommerceMode() || isFreeMode() || isFirstFreeMode() || isPaidGeneralOnlyMode()) ? "none" : "block";
+      }
+
+      if (copiesSelect) {
+        if (isEcommerceMode()) {
+          copiesSelect.value = "1";
+          copiesSelect.style.display = "none";
+          if (copiesLabel) copiesLabel.style.display = "none";
+          if (copiesHint) {
+            copiesHint.style.display = "block";
+            copiesHint.textContent = "購入本数は配送ネットの注文内容と照合します。この画面では写真登録のみ行います。";
+          }
+        } else {
+          copiesSelect.style.display = "block";
+          if (copiesLabel) copiesLabel.style.display = "block";
+          if (copiesHint) copiesHint.style.display = "";
+        }
       }
 
       if (firstFreeNoteBox) {
@@ -2420,8 +2446,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       const priceType = getCurrentPriceType();
 
-      const copies =
-        Number(document.getElementById('copiesSelect').value || 1);
+      const copies = getOrderCopies();
 
       const unitPrice = getUnitPriceByType(priceType);
 
@@ -2475,9 +2500,9 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         completeEl.innerHTML = `
           写真登録を受け付けました。<br><br>
           <div class="receipt-code-box">
-            <div class="receipt-code-label">受付番号</div>
+            <div class="receipt-code-label">写真登録番号</div>
             <div class="receipt-code-number">${displayCode}</div>
-            <div class="receipt-code-note">※確認のためスクリーンショットを保存してください</div>
+            <div class="receipt-code-note">※配送ネットの注文と照合するため、スクリーンショットを保存してください</div>
           </div>
           <div style="font-size:18px;line-height:1.8;color:#1b5e20;font-weight:900;">
             制作後、中国新聞販売センターより<br>
@@ -2485,6 +2510,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           </div>
           <div style="font-size:13px;color:#555;margin-top:12px;line-height:1.6;">
             配送ネットでご購入済みの商品として制作します。<br>
+            購入本数は配送ネットの注文内容と照合します。<br>
             この画面での追加料金はありません。
           </div>
         `;
@@ -2697,7 +2723,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         return;
       }
 
-      const copies = Number(document.getElementById('copiesSelect').value || 1);
+      const copies = getOrderCopies();
 
       const customerInfo = getCustomerInfo();
       if (isDeliveryMode()) {
@@ -2762,7 +2788,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           ja: `写真登録内容をご確認ください
 
         デザイン：${templateName}
-        注文数：${copies}本
+        購入本数：配送ネットの注文内容と照合
         お支払い：配送ネットで支払い済み
 
         氏名：${customerInfo.name}
@@ -2774,7 +2800,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           en: `Please confirm your registration
 
         Design: ${templateName}
-        Quantity: ${copies}
+        Quantity: matched with your online order
         Payment: Already paid online
 
         Name: ${customerInfo.name}
@@ -2786,7 +2812,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           zh: `请确认登记内容
 
         设计：${templateName}
-        数量：${copies}
+        数量：与网上订单核对
         支付：已在线支付
 
         姓名：${customerInfo.name}
@@ -2798,7 +2824,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           ko: `등록 내용을 확인해 주세요
 
         디자인：${templateName}
-        수량：${copies}
+        수량：온라인 주문 내용과 대조
         결제：온라인 결제 완료
 
         이름：${customerInfo.name}
@@ -2810,7 +2836,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           vi: `Vui lòng xác nhận nội dung đăng ký
 
         Mẫu: ${templateName}
-        Số lượng: ${copies}
+        Số lượng: đối chiếu với đơn hàng online
         Thanh toán: Đã thanh toán online
 
         Tên: ${customerInfo.name}
@@ -3027,7 +3053,9 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           operationMode: getOperationMode(),
           salesMode: getSalesMode(),
           freeCopies: isFreeMode() ? copies : (isFirstFreeMode() ? Math.min(copies, 1) : 0),
-          chargedCopies: isFreeMode() ? 0 : (isFirstFreeMode() ? Math.max(copies - 1, 0) : copies),
+          chargedCopies: (isEcommerceMode() || isFreeMode()) ? 0 : (isFirstFreeMode() ? Math.max(copies - 1, 0) : copies),
+          ecommerceQuantitySource: isEcommerceMode() ? 'delivery-net-order' : '',
+          ecommerceQuantityNote: isEcommerceMode() ? '購入本数は配送ネットの注文内容と照合' : '',
           customerName: needsCustomerInfo() ? customerInfo.name : "",
           customerKana: isDeliveryMode() ? customerInfo.kana : "",
           customerPhone: needsCustomerInfo() ? customerInfo.phone : "",
@@ -3045,7 +3073,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           status: 'WAIT',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
-          source: isDeliveryMode() ? 'kure-softball-fan-studio' : 'miyajima-fan-studio'
+          source: isEcommerceMode() ? 'ecommerce-fan-studio' : (isDeliveryMode() ? 'kure-softball-fan-studio' : 'miyajima-fan-studio')
         });
         
         document.getElementById('sendingOverlay').style.display = 'none';
