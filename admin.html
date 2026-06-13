@@ -359,6 +359,7 @@
       "ふりがな",
       "電話番号",
       "住所",
+      "メモ",
       "購読状況",
       "本数",
       "料金",
@@ -375,6 +376,9 @@
         data.customerKana || "",
         data.customerPhone || "",
         data.customerAddress || "",
+
+        data.customerMemo || "",
+
         formatSubscriptionStatus(data.subscriptionStatus),
         data.copies || 1,
         getTotalPrice(data),
@@ -530,6 +534,7 @@
             ${data.customerKana ? `<div><strong>ふりがな：</strong>${escapeHtml(data.customerKana)}</div>` : ""}
             ${data.customerPhone ? `<div><strong>電話番号：</strong>${escapeHtml(data.customerPhone)}</div>` : ""}
             ${data.customerAddress ? `<div><strong>住所：</strong>${escapeHtml(data.customerAddress)}</div>` : ""}
+            ${data.customerMemo ? `<div><strong>メモ：</strong>${escapeHtml(data.customerMemo)}</div>` : ""}
             ${data.subscriptionStatus ? `<div><strong>購読状況：</strong>${escapeHtml(formatSubscriptionStatus(data.subscriptionStatus))}</div>` : ""}
           </div>
           <div class="actions">
