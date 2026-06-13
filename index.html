@@ -1015,7 +1015,7 @@ Miyajima Fan Studio<br><br>
       updateCustomerInfoFields();
 
       if (priceTypeArea) {
-        priceTypeArea.style.display = (isFreeMode() || isFirstFreeMode() || isPaidGeneralOnlyMode()) ? "none" : "block";
+        priceTypeArea.style.display = (isEcommerceMode() || isFreeMode() || isFirstFreeMode() || isPaidGeneralOnlyMode()) ? "none" : "block";
       }
 
       if (firstFreeNoteBox) {
@@ -1024,8 +1024,13 @@ Miyajima Fan Studio<br><br>
         firstFreeNoteBox.classList.toggle("active", isFirstFreeMode());
       }
 
-      if (totalPriceBox && isFreeMode()) {
-        totalPriceBox.textContent = "特別企画（無料）";
+      if (totalPriceBox) {
+        if (isEcommerceMode()) {
+          totalPriceBox.style.display = "none";
+        } else {
+          totalPriceBox.style.display = "block";
+          if (isFreeMode()) totalPriceBox.textContent = "特別企画（無料）";
+        }
       }
     }
 
@@ -1343,7 +1348,92 @@ Miyajima Fan Studio<br><br>
       `
     };
 
+    const howToTextsEcommerce = {
+      ja: `
+        <div style="padding:12px;border-radius:14px;background:#f1f8e9;color:#1b5e20;font-weight:900;margin-bottom:12px;">
+          配送ネットで購入済みのお客さま専用です。<br>
+          この画面では、うちわに入れる写真・デザインだけを登録します。<br>
+          追加の料金は発生しません。
+        </div>
+        <ol>
+          <li><b>うちわのデザインを選ぶ：</b> ご購入内容に合わせてデザインを選びます。</li>
+          <li><b>写真を選ぶ：</b> カメラで撮影、またはスマホ内の写真を選びます。</li>
+          <li><b>うちわに合わせる：</b> 指で移動・拡大縮小・回転できます。</li>
+          <li><b>完成イメージを確認：</b> 内容に問題がなければ登録へ進みます。</li>
+          <li><b>写真登録情報を入力：</b> 氏名・電話番号を入力してください。</li>
+          <li><b>登録する：</b> 送信後は内容を変更できません。</li>
+          <li><b>受付番号を保存：</b> 確認用にスクリーンショットを保存してください。</li>
+          <li><b>発送：</b> 制作後、中国新聞販売センターより発送します。</li>
+        </ol>
+      `,
+      en: `
+        <div style="padding:12px;border-radius:14px;background:#f1f8e9;color:#1b5e20;font-weight:900;margin-bottom:12px;">
+          This page is for customers who have already purchased through the delivery shop.<br>
+          Please register only the photo and design for your fan. No additional payment is required here.
+        </div>
+        <ol>
+          <li><b>Choose a fan design:</b> Select the design matching your purchase.</li>
+          <li><b>Choose a photo:</b> Take a photo or select one from your phone.</li>
+          <li><b>Adjust:</b> Move, zoom, and rotate with your fingers.</li>
+          <li><b>Check the final image:</b> If everything looks good, continue to registration.</li>
+          <li><b>Enter your information:</b> Please enter your name and phone number.</li>
+          <li><b>Register:</b> You cannot change it after sending.</li>
+          <li><b>Save your order number:</b> Please save it by taking a screenshot.</li>
+          <li><b>Shipping:</b> Your fan will be shipped after production.</li>
+        </ol>
+      `,
+      zh: `
+        <div style="padding:12px;border-radius:14px;background:#f1f8e9;color:#1b5e20;font-weight:900;margin-bottom:12px;">
+          本页面适用于已在配送网店完成购买的顾客。<br>
+          此处仅登记团扇使用的照片和设计，不会产生追加费用。
+        </div>
+        <ol>
+          <li><b>选择团扇设计：</b> 请选择与购买内容相符的设计。</li>
+          <li><b>选择照片：</b> 拍照或从手机中选择照片。</li>
+          <li><b>调整位置：</b> 可用手指移动、放大缩小、旋转。</li>
+          <li><b>确认完成图像：</b> 确认无误后继续登记。</li>
+          <li><b>输入信息：</b> 请填写姓名和电话号码。</li>
+          <li><b>登记：</b> 发送后不能更改。</li>
+          <li><b>保存受理编号：</b> 请截图保存以便确认。</li>
+          <li><b>发货：</b> 制作后将由中国新闻销售中心发货。</li>
+        </ol>
+      `,
+      ko: `
+        <div style="padding:12px;border-radius:14px;background:#f1f8e9;color:#1b5e20;font-weight:900;margin-bottom:12px;">
+          배송 네트워크에서 이미 구매하신 고객 전용 페이지입니다.<br>
+          이 화면에서는 부채에 넣을 사진과 디자인만 등록합니다. 추가 결제는 없습니다.
+        </div>
+        <ol>
+          <li><b>부채 디자인 선택:</b> 구매 내용에 맞는 디자인을 선택하세요.</li>
+          <li><b>사진 선택:</b> 촬영하거나 휴대폰의 사진을 선택합니다.</li>
+          <li><b>조정:</b> 손가락으로 이동, 확대/축소, 회전할 수 있습니다.</li>
+          <li><b>완성 이미지 확인:</b> 문제가 없다면 등록으로 진행합니다.</li>
+          <li><b>정보 입력:</b> 이름과 전화번호를 입력해 주세요.</li>
+          <li><b>등록:</b> 전송 후에는 변경할 수 없습니다.</li>
+          <li><b>접수번호 저장:</b> 확인을 위해 스크린샷으로 저장해 주세요.</li>
+          <li><b>발송:</b> 제작 후 중국신문판매센터에서 발송합니다.</li>
+        </ol>
+      `,
+      vi: `
+        <div style="padding:12px;border-radius:14px;background:#f1f8e9;color:#1b5e20;font-weight:900;margin-bottom:12px;">
+          Trang này dành cho khách đã mua qua cửa hàng giao hàng.<br>
+          Tại đây chỉ đăng ký ảnh và mẫu quạt. Không cần thanh toán thêm.
+        </div>
+        <ol>
+          <li><b>Chọn mẫu quạt:</b> Chọn mẫu phù hợp với đơn đã mua.</li>
+          <li><b>Chọn ảnh:</b> Chụp ảnh hoặc chọn ảnh trong điện thoại.</li>
+          <li><b>Chỉnh ảnh:</b> Di chuyển, phóng to/thu nhỏ và xoay bằng ngón tay.</li>
+          <li><b>Kiểm tra hình hoàn chỉnh:</b> Nếu ổn, tiếp tục đăng ký.</li>
+          <li><b>Nhập thông tin:</b> Vui lòng nhập tên và số điện thoại.</li>
+          <li><b>Đăng ký:</b> Sau khi gửi sẽ không thể chỉnh sửa.</li>
+          <li><b>Lưu mã số:</b> Hãy chụp màn hình để lưu lại.</li>
+          <li><b>Gửi hàng:</b> Quạt sẽ được gửi sau khi hoàn thành.</li>
+        </ol>
+      `
+    };
+
     function getHowToTexts() {
+      if (isEcommerceMode()) return howToTextsEcommerce;
       return isDeliveryMode() ? howToTextsDelivery : howToTextsInstant;
     }
 
@@ -1367,7 +1457,15 @@ Miyajima Fan Studio<br><br>
         vi: "📖 Cách đặt quạt riêng"
       };
 
-      const titles = isDeliveryMode() ? deliveryTitles : instantTitles;
+      const ecommerceTitles = {
+        ja: "📖 写真登録方法",
+        en: "📖 How to Register Your Photo",
+        zh: "📖 照片登记方法",
+        ko: "📖 사진 등록 방법",
+        vi: "📖 Cách đăng ký ảnh"
+      };
+
+      const titles = isEcommerceMode() ? ecommerceTitles : (isDeliveryMode() ? deliveryTitles : instantTitles);
       title.textContent = titles[currentLang] || titles.ja;
     }
 
@@ -2329,6 +2427,13 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       let totalPrice = 0;
 
+      if (isEcommerceMode()) {
+        totalPrice = 0;
+        const box = document.getElementById('totalPriceBox');
+        if (box) box.style.display = 'none';
+        return;
+      }
+
       if (isFreeMode()) {
         totalPrice = 0;
         document.getElementById('totalPriceBox').textContent = '合計：無料';
@@ -2365,6 +2470,26 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       orderErrorEl.style.display = 'none';
       orderErrorEl.textContent = '';
 
+
+      if (isEcommerceMode()) {
+        completeEl.innerHTML = `
+          写真登録を受け付けました。<br><br>
+          <div class="receipt-code-box">
+            <div class="receipt-code-label">受付番号</div>
+            <div class="receipt-code-number">${displayCode}</div>
+            <div class="receipt-code-note">※確認のためスクリーンショットを保存してください</div>
+          </div>
+          <div style="font-size:18px;line-height:1.8;color:#1b5e20;font-weight:900;">
+            制作後、中国新聞販売センターより<br>
+            発送いたします
+          </div>
+          <div style="font-size:13px;color:#555;margin-top:12px;line-height:1.6;">
+            配送ネットでご購入済みの商品として制作します。<br>
+            この画面での追加料金はありません。
+          </div>
+        `;
+        return;
+      }
 
       if (isDeliveryMode()) {
         completeEl.innerHTML = `
@@ -2610,9 +2735,11 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const unitPrice = getUnitPriceByType(priceType);
 
       const totalPrice =
-        isFreeMode()
+        isEcommerceMode()
           ? 0
-          : (isFirstFreeMode() ? getGeneralPrice() * Math.max(copies - 1, 0) : unitPrice * copies);
+          : (isFreeMode()
+            ? 0
+            : (isFirstFreeMode() ? getGeneralPrice() * Math.max(copies - 1, 0) : unitPrice * copies));
 
       const templateName =
         isReuseMode
@@ -2620,15 +2747,86 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           : document.querySelector('#templateSelector option:checked').textContent;
 
       const priceTypeLabelTexts = {
-        ja: isFreeMode() ? '無料' : (isFirstFreeMode() ? '1本目無料・2本目から通常料金' : (isPaidGeneralOnlyMode() ? '一般価格のみ' : (priceType === 'student' ? '学割' : '一般'))),
-        en: isFreeMode() ? 'Free' : (isFirstFreeMode() ? 'First fan free, additional fans regular price' : (isPaidGeneralOnlyMode() ? 'General only' : (priceType === 'student' ? 'Student' : 'General'))),
-        zh: isFreeMode() ? '免费' : (isFirstFreeMode() ? '第一把免费，第二把起普通价格' : (isPaidGeneralOnlyMode() ? '仅普通价格' : (priceType === 'student' ? '学生优惠' : '普通价格'))),
-        ko: isFreeMode() ? '무료' : (isFirstFreeMode() ? '1개 무료, 2개째부터 일반 가격' : (isPaidGeneralOnlyMode() ? '일반 가격만' : (priceType === 'student' ? '학생 할인' : '일반'))),
-        vi: isFreeMode() ? 'Miễn phí' : (isFirstFreeMode() ? 'Miễn phí quạt đầu tiên, từ quạt thứ 2 giá thường' : (isPaidGeneralOnlyMode() ? 'Chỉ giá thường' : (priceType === 'student' ? 'Ưu đãi học sinh' : 'Thông thường')))
+        ja: isEcommerceMode() ? '配送ネットで支払い済み' : (isFreeMode() ? '無料' : (isFirstFreeMode() ? '1本目無料・2本目から通常料金' : (isPaidGeneralOnlyMode() ? '一般価格のみ' : (priceType === 'student' ? '学割' : '一般')))),
+        en: isEcommerceMode() ? 'Already paid online' : (isFreeMode() ? 'Free' : (isFirstFreeMode() ? 'First fan free, additional fans regular price' : (isPaidGeneralOnlyMode() ? 'General only' : (priceType === 'student' ? 'Student' : 'General')))),
+        zh: isEcommerceMode() ? '已在线支付' : (isFreeMode() ? '免费' : (isFirstFreeMode() ? '第一把免费，第二把起普通价格' : (isPaidGeneralOnlyMode() ? '仅普通价格' : (priceType === 'student' ? '学生优惠' : '普通价格')))),
+        ko: isEcommerceMode() ? '온라인 결제 완료' : (isFreeMode() ? '무료' : (isFirstFreeMode() ? '1개 무료, 2개째부터 일반 가격' : (isPaidGeneralOnlyMode() ? '일반 가격만' : (priceType === 'student' ? '학생 할인' : '일반')))),
+        vi: isEcommerceMode() ? 'Đã thanh toán online' : (isFreeMode() ? 'Miễn phí' : (isFirstFreeMode() ? 'Miễn phí quạt đầu tiên, từ quạt thứ 2 giá thường' : (isPaidGeneralOnlyMode() ? 'Chỉ giá thường' : (priceType === 'student' ? 'Ưu đãi học sinh' : 'Thông thường'))))
       };
 
       const priceTypeLabel =
         priceTypeLabelTexts[currentLang] || priceTypeLabelTexts.ja;
+
+      if (isEcommerceMode()) {
+        const ecommerceConfirmText = {
+          ja: `写真登録内容をご確認ください
+
+        デザイン：${templateName}
+        注文数：${copies}本
+        お支払い：配送ネットで支払い済み
+
+        氏名：${customerInfo.name}
+        電話番号：${customerInfo.phone}
+
+        送信後は変更できません。
+
+        登録しますか？`,
+          en: `Please confirm your registration
+
+        Design: ${templateName}
+        Quantity: ${copies}
+        Payment: Already paid online
+
+        Name: ${customerInfo.name}
+        Phone: ${customerInfo.phone}
+
+        This cannot be changed after submission.
+
+        Register?`,
+          zh: `请确认登记内容
+
+        设计：${templateName}
+        数量：${copies}
+        支付：已在线支付
+
+        姓名：${customerInfo.name}
+        电话：${customerInfo.phone}
+
+        发送后无法修改。
+
+        是否登记？`,
+          ko: `등록 내용을 확인해 주세요
+
+        디자인：${templateName}
+        수량：${copies}
+        결제：온라인 결제 완료
+
+        이름：${customerInfo.name}
+        전화번호：${customerInfo.phone}
+
+        전송 후에는 변경할 수 없습니다.
+
+        등록하시겠습니까？`,
+          vi: `Vui lòng xác nhận nội dung đăng ký
+
+        Mẫu: ${templateName}
+        Số lượng: ${copies}
+        Thanh toán: Đã thanh toán online
+
+        Tên: ${customerInfo.name}
+        Điện thoại: ${customerInfo.phone}
+
+        Sau khi gửi sẽ không thể thay đổi.
+
+        Đăng ký?`
+        };
+
+        if (!confirm(ecommerceConfirmText[currentLang] || ecommerceConfirmText.ja)) {
+          orderBtn.disabled = false;
+          orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || "注文する";
+          return;
+        }
+      } else {
 
       const confirmText = {
         ja:
@@ -2698,7 +2896,10 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       };
 
       if (!confirm(confirmText[currentLang] || confirmText.ja)) {
+        orderBtn.disabled = false;
+        orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || "注文する";
         return;
+      }
       }
 
       const submittingTexts = {
@@ -2827,9 +3028,9 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           salesMode: getSalesMode(),
           freeCopies: isFreeMode() ? copies : (isFirstFreeMode() ? Math.min(copies, 1) : 0),
           chargedCopies: isFreeMode() ? 0 : (isFirstFreeMode() ? Math.max(copies - 1, 0) : copies),
-          customerName: isDeliveryMode() ? customerInfo.name : "",
+          customerName: needsCustomerInfo() ? customerInfo.name : "",
           customerKana: isDeliveryMode() ? customerInfo.kana : "",
-          customerPhone: isDeliveryMode() ? customerInfo.phone : "",
+          customerPhone: needsCustomerInfo() ? customerInfo.phone : "",
           customerAddress: isDeliveryMode() ? customerInfo.address : "",
           customerMemo: customerInfo.memo,
           subscriptionStatus: isDeliveryMode() ? customerInfo.subscriptionStatus : [],
