@@ -59,7 +59,7 @@
 
     <div class="card">
       <label id="numberLabel" for="numberInput">受付番号を入力してください</label>
-      <input id="numberInput" inputmode="text" autocapitalize="characters" placeholder="例：A060410" />
+      <input id="numberInput" inputmode="text" autocapitalize="characters" placeholder="例：T0613-0002" />
       <button id="checkBtn" class="primary">状況を確認する</button>
       <div id="hint" class="sub">受付番号は、注文完了画面に表示された番号です。</div>
     </div>
@@ -114,9 +114,9 @@
   const texts = {
     ja: {
       title: "注文状況確認", label: "受付番号を入力してください", button: "状況を確認する",
-      hint: "受付番号は、注文完了画面に表示された番号です。例：A060410", placeholder: "例：A060410",
+      hint: "受付番号は、注文完了画面に表示された番号です。例：T0613-0002", placeholder: "例：T0613-0002",
       initial: "受付番号を入力して、状況を確認してください。", checking: "確認中です…",
-      invalid: "受付番号を入力してください。例：A060410", notFound: "注文が見つかりませんでした。受付番号をご確認ください。",
+      invalid: "受付番号を入力してください。例：T0613-0002", notFound: "注文が見つかりませんでした。受付番号をご確認ください。",
       receptionNo: "受付番号",
       statusWaitTitle: "⏳ 受付済み", statusWaitBody: "完成まで、しばらくお待ちください。<br>作成状況は、このページで確認できます。",
       statusPrintingTitle: "🖨 作成中", statusPrintingBody: "ただいまうちわを作成しています。<br>完成まで、しばらくお待ちください。<br>作成状況は、このページで確認できます。",
@@ -148,9 +148,9 @@
     },
     zh: {
       title: "订单状态确认", label: "请输入受理编号", button: "查看状态",
-      hint: "受理编号是下单完成画面中显示的号码。例：A060410", placeholder: "例：A060410",
+      hint: "受理编号是下单完成画面中显示的号码。例：T0613-0002", placeholder: "例：T0613-0002",
       initial: "请输入受理编号以查看状态。", checking: "正在确认…",
-      invalid: "请输入受理编号。例：A060410", notFound: "未找到订单。请确认受理编号。",
+      invalid: "请输入受理编号。例：T0613-0002", notFound: "未找到订单。请确认受理编号。",
       receptionNo: "受理编号",
       statusWaitTitle: "⏳ 已受理", statusWaitBody: "请稍候，团扇正在准备中。<br>您可以在此页面确认制作状态。",
       statusPrintingTitle: "🖨 制作中", statusPrintingBody: "我们正在制作您的团扇。<br>请稍候。<br>您可以在此页面确认制作状态。",
@@ -232,6 +232,12 @@
   function normalizeCode(value) {
     return String(value || "")
       .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9-]/g, "");
+  }
+
+  function normalizeCodeForCompare(value) {
+    return String(value || "")
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, "");
   }
@@ -481,14 +487,19 @@
 
     const q = query(
       collection(db, "orders"),
-      where("displayCode", "==", normalized),
       where("shopId", "==", shopId),
-      limit(1)
+      limit(200)
     );
 
     unsubscribe = onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) { showNotFound(normalized); return; }
-      showStatus(snapshot.docs[0].data());
+      const target = normalizeCodeForCompare(normalized);
+      const matchedDoc = snapshot.docs.find(docSnap => {
+        const data = docSnap.data();
+        return normalizeCodeForCompare(data.displayCode).includes(target);
+      });
+
+      if (!matchedDoc) { showNotFound(normalized); return; }
+      showStatus(matchedDoc.data());
     }, (error) => {
       console.error(error);
       document.getElementById("statusBox").innerHTML = `<div class="error">${t("unknown")}</div>`;

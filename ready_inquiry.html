@@ -65,7 +65,7 @@
     <div class="top-card">
       <div id="summaryCount" class="summary">READY：0件 / 0本</div>
       <div class="search-row">
-        <input id="searchCodeInput" inputmode="text" autocapitalize="characters" placeholder="受付番号を入力（例：M060410）">
+        <input id="searchCodeInput" inputmode="text" autocapitalize="characters" placeholder="受付番号を入力（例：T0613-0002）">
         <button id="searchBtn" class="btn-search">検索</button>
       </div>
       <div id="searchStatus" class="search-status">受付番号を入力して「検索」を押してください。</div>
@@ -306,9 +306,12 @@
       return;
     }
 
-    const matchedOrders = orders.filter(item =>
-      getDisplayCode(item.data).toUpperCase().includes(searchCode)
-    );
+    const normalizedSearch = normalizeCodeForCompare(searchCode);
+
+    const matchedOrders = orders.filter(item => {
+      const displayCode = getDisplayCode(item.data);
+      return normalizeCodeForCompare(displayCode).includes(normalizedSearch);
+    });
 
     searchStatusEl.textContent = `検索中の受付番号：${searchCode} ／ 該当：${matchedOrders.length}件`;
 
@@ -356,11 +359,17 @@
     });
   }
 
+  function normalizeCodeForCompare(value) {
+    return String(value || "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
+  }
+
   function normalizeSearchInput() {
     const input = document.getElementById("searchCodeInput");
     const value = String(input.value || "")
       .toUpperCase()
-      .replace(/[^A-Z0-9]/g, "");
+      .replace(/[^A-Z0-9-]/g, "");
     input.value = value;
     return value;
   }
