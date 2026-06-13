@@ -71,6 +71,40 @@
       animation:readyPulse 1s infinite;
     }
 
+    .pin-lock-card {
+      max-width:420px;
+      margin:60px auto;
+      background:#fff;
+      border-radius:20px;
+      padding:22px;
+      box-shadow:0 4px 14px rgba(0,0,0,.12);
+      text-align:center;
+    }
+    .pin-lock-card h1 {
+      margin:0 0 12px;
+      color:#1565c0;
+    }
+    .pin-lock-card input {
+      width:100%;
+      box-sizing:border-box;
+      padding:14px;
+      font-size:24px;
+      letter-spacing:8px;
+      text-align:center;
+      border-radius:14px;
+      border:1px solid #ccc;
+      margin:12px 0;
+    }
+    .pin-error {
+      color:#c62828;
+      font-weight:700;
+      margin-top:10px;
+      min-height:1.5em;
+    }
+    .hidden-until-auth {
+      display:none;
+    }
+
 
     .label-print-sheet { display:none; }
 
@@ -101,12 +135,28 @@
         color:#000;
         background:#fff;
       }
-      .print-label-code { font-size:12pt; font-weight:700; margin-bottom:2mm; }
-      .print-label-name { font-size:18pt; font-weight:700; margin-bottom:2mm; }
+      .print-label-code {
+        font-size:12pt;
+        font-weight:700;
+        margin-bottom:2mm;
+      }
+      .print-label-name {
+        font-size:18pt;
+        font-weight:700;
+        margin-bottom:2mm;
+      }
       .print-label-kana,
       .print-label-phone,
-      .print-label-subscription { font-size:10pt; margin-bottom:1mm; }
-      .print-label-address { font-size:12pt; line-height:1.5; margin-top:2mm; white-space:pre-wrap; }
+      .print-label-subscription {
+        font-size:10pt;
+        margin-bottom:1mm;
+      }
+      .print-label-address {
+        font-size:12pt;
+        line-height:1.5;
+        margin-top:2mm;
+        white-space:pre-wrap;
+      }
     }
 
     @media (max-width:640px) {
@@ -117,7 +167,15 @@
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <div id="pinLock" class="pin-lock-card">
+    <h1>管理画面PIN</h1>
+    <div class="small">4桁のPINを入力してください。</div>
+    <input id="adminPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="••••">
+    <button id="adminPinBtn">開く</button>
+    <div id="pinError" class="pin-error"></div>
+  </div>
+
+  <div class="wrap hidden-until-auth" id="adminMain">
     <h1>店員用 作業画面 <span id="shopBadge" class="shop-badge">miyajima</span></h1>
 
     <div class="nav-card">
@@ -197,7 +255,7 @@
   document.getElementById("readyLink").href = `ready_inquiry.html?shop=${encodeURIComponent(shopId)}`;
   document.getElementById("orderLink").href = `index.html?shop=${encodeURIComponent(shopId)}`;
 
-  const defaultSettings = { generalPrice: 800, studentPrice: 500, shopCode: "M" };
+  const defaultSettings = { generalPrice: 800, studentPrice: 500, shopCode: "M", adminPin: "2468" };
 
   async function loadSettings() {
     try {
@@ -206,6 +264,56 @@
     } catch (error) {
       console.error(error);
       popupSettings = { ...defaultSettings };
+    }
+  }
+
+  function getAdminPin() {
+    return String(popupSettings?.adminPin || defaultSettings.adminPin || "2468")
+      .replace(/[^0-9]/g, "")
+      .slice(0, 4);
+  }
+
+  function showAdminMain() {
+    document.getElementById("pinLock").style.display = "none";
+    document.getElementById("adminMain").classList.remove("hidden-until-auth");
+  }
+
+  function checkAdminPin() {
+    const input = document.getElementById("adminPinInput");
+    const error = document.getElementById("pinError");
+    const value = String(input.value || "").replace(/[^0-9]/g, "").slice(0, 4);
+    input.value = value;
+
+    if (value === getAdminPin()) {
+      sessionStorage.setItem(`adminPinOk_${shopId}`, "1");
+      showAdminMain();
+      startWatch();
+    } else {
+      error.textContent = "PINが違います。";
+      input.value = "";
+      input.focus();
+    }
+  }
+
+  function setupPinGate() {
+    const input = document.getElementById("adminPinInput");
+    const button = document.getElementById("adminPinBtn");
+
+    input.addEventListener("input", (e) => {
+      e.target.value = String(e.target.value || "").replace(/[^0-9]/g, "").slice(0, 4);
+    });
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") checkAdminPin();
+    });
+
+    button.addEventListener("click", checkAdminPin);
+
+    if (sessionStorage.getItem(`adminPinOk_${shopId}`) === "1") {
+      showAdminMain();
+      startWatch();
+    } else {
+      input.focus();
     }
   }
 
@@ -293,6 +401,40 @@
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+  }
+
+
+  function printDeliveryLabels() {
+    const deliveryOrders = orders.filter(item => {
+      const data = item.data || {};
+      return data.customerName || data.customerPhone || data.customerAddress;
+    });
+
+    if (deliveryOrders.length === 0) {
+      alert("ラベル印刷できるお届け先データがありません。");
+      return;
+    }
+
+    const labelArea = document.getElementById("labelPrintArea");
+    if (!labelArea) return;
+
+    labelArea.innerHTML = deliveryOrders.map(item => {
+      const data = item.data || {};
+      const code = getDisplayCode(data);
+
+      return `
+        <div class="print-label-card">
+          <div class="print-label-code">受付番号：${escapeHtml(code)}</div>
+          <div class="print-label-name">${escapeHtml(data.customerName || "")} 様</div>
+          ${data.customerKana ? `<div class="print-label-kana">ふりがな：${escapeHtml(data.customerKana)}</div>` : ""}
+          ${data.customerPhone ? `<div class="print-label-phone">TEL：${escapeHtml(data.customerPhone)}</div>` : ""}
+          ${data.subscriptionStatus ? `<div class="print-label-subscription">購読状況：${escapeHtml(formatSubscriptionStatus(data.subscriptionStatus))}</div>` : ""}
+          <div class="print-label-address">${escapeHtml(data.customerAddress || "")}</div>
+        </div>
+      `;
+    }).join("");
+
+    window.print();
   }
 
   function statusText(status) {
@@ -504,7 +646,7 @@
   document.getElementById("labelPrintBtn").addEventListener("click", printDeliveryLabels);
 
   await loadSettings();
-  startWatch();
+  setupPinGate();
 </script>
 </body>
 </html>
