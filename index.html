@@ -937,6 +937,7 @@ Miyajima Fan Studio<br><br>
       shopCode: "M",
       generalPrice: 800,
       studentPrice: 500,
+      cartFixedFee: 1000,
       operationMode: "instant",
       templateSet: "general",
       salesMode: "paid",
@@ -1136,7 +1137,7 @@ Miyajima Fan Studio<br><br>
         setFieldBlockVisible("customerMemo", true);
         if (subscriptionLabel) subscriptionLabel.style.display = "none";
         if (subscriptionOptions) subscriptionOptions.style.display = "none";
-        if (deliveryNote) deliveryNote.textContent = "商品到着後のお支払いです。請求書を同封してレターパックライトで発送します。";
+        if (deliveryNote) deliveryNote.textContent = "商品は代金引換でお届けします。送料・代引手数料は1注文につき一律1,000円です。商品到着時に配達員へお支払いください。";
       } else {
         if (title) title.textContent = "お届け先情報";
         setFieldBlockVisible("customerName", true);
@@ -1319,7 +1320,7 @@ Miyajima Fan Studio<br><br>
           orderBtn.textContent = closed ? "受付終了" : (isOrderDeadlinePassed() ? "本日の受付は終了しました" : "受付時間外");
           orderBtn.style.background = "#777";
         } else {
-          orderBtn.textContent = orderBtn.dataset[currentLang] || orderBtn.dataset.ja || "注文する";
+          orderBtn.textContent = isEcommerceMode() ? "このデザインをカートに入れる" : (orderBtn.dataset[currentLang] || orderBtn.dataset.ja || "注文する");
           orderBtn.style.background = "";
         }
       }
@@ -2649,14 +2650,6 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
 
       if (isEcommerceMode()) {
-        const s = shippingSummary || {};
-        const groupCopies = Number(s.groupCopies || 0);
-        const groupShippingUnits = Number(s.groupShippingUnits || getShippingUnits(groupCopies));
-        const groupShippingFee = Number(s.groupShippingFee || getShippingFee(groupCopies));
-        const groupPaymentTotal = Number(s.groupPaymentTotal || 0);
-        const currentProductTotal = Number(s.currentProductTotal || 0);
-        const isAdditionalOrder = s.isAdditionalOrder === true;
-
         completeEl.innerHTML = `
           ご注文を受け付けました。<br><br>
           <div class="receipt-code-box">
@@ -2665,34 +2658,13 @@ document.getElementById('saveBtn').addEventListener('click', () => {
             <div class="receipt-code-note">※確認のためスクリーンショットを保存してください</div>
           </div>
           <div class="shippingNotice success">
-            <h3>${isAdditionalOrder ? "📦 同梱対象の追加注文として受付しました" : "📦 同じ電話番号のご注文をまとめて計算しています"}</h3>
+            <h3>🚚 代金引換でお届けします</h3>
             <div class="shippingBreakdown">
-              <div>今回の商品代：${getGeneralPrice().toLocaleString()}円 × ${Number(s.currentCopies || 0).toLocaleString()}本 = ${currentProductTotal.toLocaleString()}円</div>
-              <div><strong>現在の同梱予定合計：${groupCopies.toLocaleString()}本</strong></div>
-              <div>送料目安：${groupShippingFee.toLocaleString()}円（レターパックライト${groupShippingUnits.toLocaleString()}通分／10本ごとに430円）</div>
-              ${groupPaymentTotal ? `<div><strong>お支払い目安：${groupPaymentTotal.toLocaleString()}円</strong>（商品到着後／請求書同封）</div>` : ""}
+              <div>送料・代引手数料：${getCartFixedFee().toLocaleString()}円</div>
+              <div>お支払いは商品到着時に配達員へお願いいたします。</div>
             </div>
-            <p>本日中に同じ発送先電話番号で登録されたご注文は、自動的に同梱発送されます。</p>
           </div>
-          <div style="font-size:13px;color:#555;margin-top:12px;line-height:1.6;">
-            お支払いは商品到着後です。請求書を同封して発送します。
-          </div>
-          <div style="font-size:14px;color:#333;font-weight:700;margin-top:18px;margin-bottom:6px;">
-            写真を追加する場合はこちら
-          </div>
-          <button id="sameDesignBtn" style="margin-top:4px;background:#4caf50;color:white;">
-            同じデザインで追加注文する
-          </button>
-          <button id="anotherOrderBtn" style="margin-top:8px;background:#ff9800;color:white;">
-            別のデザインでも作る
-          </button>
         `;
-
-        document.getElementById('sameDesignBtn')
-          ?.addEventListener('click', resetForSameDesignOrder);
-
-        document.getElementById('anotherOrderBtn')
-          ?.addEventListener('click', resetForNewDesignOrder);
         return;
       }
 
@@ -2836,7 +2808,10 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     }
 
 
-    const CART_FIXED_FEE = 1000;
+    const CART_FIXED_FEE_DEFAULT = 1000;
+    function getCartFixedFee() {
+      return Number(popupSettings?.cartFixedFee || CART_FIXED_FEE_DEFAULT);
+    }
     let cartItems = [];
 
     function cartProductTotal() {
@@ -2848,7 +2823,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     }
 
     function cartPaymentTotal() {
-      return cartItems.length > 0 ? cartProductTotal() + CART_FIXED_FEE : 0;
+      return cartItems.length > 0 ? cartProductTotal() + getCartFixedFee() : 0;
     }
 
     function renderCart() {
@@ -2875,7 +2850,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       cartTotalsEl.innerHTML = `
         <div>商品合計：${cartProductTotal().toLocaleString()}円（合計${cartCopiesTotal().toLocaleString()}本）</div>
-        <div>送料・代引手数料：${CART_FIXED_FEE.toLocaleString()}円</div>
+        <div>送料・代引手数料：${getCartFixedFee().toLocaleString()}円</div>
         <div>お支払い合計：${cartPaymentTotal().toLocaleString()}円</div>
         <div style="font-size:13px;color:#555;margin-top:4px;">商品は代金引換でお届けします。商品到着時に配達員へお支払いください。</div>
       `;
@@ -2899,12 +2874,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         const imageDataUrl = canvas.toDataURL('image/png');
         const copies = getOrderCopies();
         const unitPrice = getGeneralPrice();
-        if (isEcommerceMode()) {
-        addCurrentDesignToCart();
-        return;
-      }
-
-      const template = isReuseMode && reuseSourceOrder ? (reuseSourceOrder.template || templateSelector.value) : templateSelector.value;
+        const template = isReuseMode && reuseSourceOrder ? (reuseSourceOrder.template || templateSelector.value) : templateSelector.value;
         const templateName = isReuseMode ? '同じ完成画像' : document.querySelector('#templateSelector option:checked').textContent;
         const productTotal = getProductTotal(copies, unitPrice);
 
@@ -2972,7 +2942,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         return;
       }
 
-      const confirmText = `ご注文内容をご確認ください\n\n商品合計：${cartProductTotal().toLocaleString()}円（${cartCopiesTotal().toLocaleString()}本）\n送料・代引手数料：${CART_FIXED_FEE.toLocaleString()}円\nお支払い合計：${cartPaymentTotal().toLocaleString()}円\n\nお届け方法：代金引換\nお支払い：商品到着時に配達員へお支払い\n\n氏名：${customerInfo.name}\n発送先電話番号：${customerInfo.phone}\n住所：${customerInfo.address}\n\n送信後は変更できません。\n注文しますか？`;
+      const confirmText = `ご注文内容をご確認ください\n\n商品合計：${cartProductTotal().toLocaleString()}円（${cartCopiesTotal().toLocaleString()}本）\n送料・代引手数料：${getCartFixedFee().toLocaleString()}円\nお支払い合計：${cartPaymentTotal().toLocaleString()}円\n\nお届け方法：代金引換\nお支払い：商品到着時に配達員へお支払い\n\n氏名：${customerInfo.name}\n発送先電話番号：${customerInfo.phone}\n住所：${customerInfo.address}\n\n送信後は変更できません。\n注文しますか？`;
       if (!confirm(confirmText)) return;
 
       try {
@@ -3030,7 +3000,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           priceType: 'cod_cart',
           unitPrice: getGeneralPrice(),
           productTotal: cartProductTotal(),
-          shippingFee: CART_FIXED_FEE,
+          shippingFee: getCartFixedFee(),
           totalPrice: cartPaymentTotal(),
           copies: totalCopies,
           template: uploadedItems.length === 1 ? uploadedItems[0].template : 'cart-multiple',
@@ -3053,7 +3023,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           shippingUnitLimit: 0,
           shippingUnitFee: 0,
           codFee: 330,
-          fixedShippingAndCodFee: CART_FIXED_FEE,
+          fixedShippingAndCodFee: getCartFixedFee(),
           paymentMethod: '代金引換',
           paymentTiming: '商品到着時に代金引換でお支払い',
           customerName: customerInfo.name,
@@ -3083,7 +3053,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
             <h3>🛒 カート注文として受付しました</h3>
             <div class="shippingBreakdown">
               <div>商品合計：${cartProductTotal().toLocaleString()}円（${totalCopies.toLocaleString()}本・${uploadedItems.length.toLocaleString()}デザイン）</div>
-              <div>送料・代引手数料：${CART_FIXED_FEE.toLocaleString()}円</div>
+              <div>送料・代引手数料：${getCartFixedFee().toLocaleString()}円</div>
               <div><strong>お支払い合計：${cartPaymentTotal().toLocaleString()}円</strong></div>
             </div>
             <p>商品は代金引換でお届けします。商品到着時に配達員へお支払いください。</p>
@@ -3177,23 +3147,14 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         return;
       }
 
+      if (isEcommerceMode()) {
+        addCurrentDesignToCart();
+        return;
+      }
+
       const copies = getOrderCopies();
 
       const customerInfo = getCustomerInfo();
-      if (isEcommerceMode()) {
-        if (!customerInfo.name || !customerInfo.phone || !customerInfo.address) {
-          orderErrorEl.textContent = "氏名・発送先電話番号・詳細住所を入力してください。";
-          orderErrorEl.style.display = "block";
-          orderErrorEl.scrollIntoView({ behavior: "smooth", block: "center" });
-
-          orderBtn.disabled = false;
-          orderBtn.textContent =
-            orderBtn.dataset[currentLang] ||
-            orderBtn.dataset.ja ||
-            "注文する";
-          return;
-        }
-      }
 
       if (isDeliveryMode()) {
         if (!customerInfo.name || !customerInfo.kana || !customerInfo.phone || !customerInfo.address) {
@@ -3230,7 +3191,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const unitPrice = getUnitPriceByType(priceType);
 
       const productTotal = getProductTotal(copies, unitPrice);
-      const shippingFee = isEcommerceMode() ? getShippingFee(copies) : 0;
+      const shippingFee = isEcommerceMode() ? getCartFixedFee() : 0;
       let shippingSummary = null;
       const totalPrice =
         isEcommerceMode()
@@ -3245,11 +3206,11 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           : document.querySelector('#templateSelector option:checked').textContent;
 
       const priceTypeLabelTexts = {
-        ja: isEcommerceMode() ? '商品到着後（請求書同封）' : (isFreeMode() ? '無料' : (isFirstFreeMode() ? '1本目無料・2本目から通常料金' : (isPaidGeneralOnlyMode() ? '一般価格のみ' : (priceType === 'student' ? '学割' : '一般')))),
-        en: isEcommerceMode() ? 'Pay after delivery' : (isFreeMode() ? 'Free' : (isFirstFreeMode() ? 'First fan free, additional fans regular price' : (isPaidGeneralOnlyMode() ? 'General only' : (priceType === 'student' ? 'Student' : 'General')))),
-        zh: isEcommerceMode() ? '货到后付款' : (isFreeMode() ? '免费' : (isFirstFreeMode() ? '第一把免费，第二把起普通价格' : (isPaidGeneralOnlyMode() ? '仅普通价格' : (priceType === 'student' ? '学生优惠' : '普通价格')))),
-        ko: isEcommerceMode() ? '상품 도착 후 결제' : (isFreeMode() ? '무료' : (isFirstFreeMode() ? '1개 무료, 2개째부터 일반 가격' : (isPaidGeneralOnlyMode() ? '일반 가격만' : (priceType === 'student' ? '학생 할인' : '일반')))),
-        vi: isEcommerceMode() ? 'Thanh toán sau khi nhận hàng' : (isFreeMode() ? 'Miễn phí' : (isFirstFreeMode() ? 'Miễn phí quạt đầu tiên, từ quạt thứ 2 giá thường' : (isPaidGeneralOnlyMode() ? 'Chỉ giá thường' : (priceType === 'student' ? 'Ưu đãi học sinh' : 'Thông thường'))))
+        ja: isEcommerceMode() ? '代金引換' : (isFreeMode() ? '無料' : (isFirstFreeMode() ? '1本目無料・2本目から通常料金' : (isPaidGeneralOnlyMode() ? '一般価格のみ' : (priceType === 'student' ? '学割' : '一般')))),
+        en: isEcommerceMode() ? 'Cash on delivery' : (isFreeMode() ? 'Free' : (isFirstFreeMode() ? 'First fan free, additional fans regular price' : (isPaidGeneralOnlyMode() ? 'General only' : (priceType === 'student' ? 'Student' : 'General')))),
+        zh: isEcommerceMode() ? '货到付款' : (isFreeMode() ? '免费' : (isFirstFreeMode() ? '第一把免费，第二把起普通价格' : (isPaidGeneralOnlyMode() ? '仅普通价格' : (priceType === 'student' ? '学生优惠' : '普通价格')))),
+        ko: isEcommerceMode() ? '대금 상환' : (isFreeMode() ? '무료' : (isFirstFreeMode() ? '1개 무료, 2개째부터 일반 가격' : (isPaidGeneralOnlyMode() ? '일반 가격만' : (priceType === 'student' ? '학생 할인' : '일반')))),
+        vi: isEcommerceMode() ? 'Thanh toán khi nhận hàng' : (isFreeMode() ? 'Miễn phí' : (isFirstFreeMode() ? 'Miễn phí quạt đầu tiên, từ quạt thứ 2 giá thường' : (isPaidGeneralOnlyMode() ? 'Chỉ giá thường' : (priceType === 'student' ? 'Ưu đãi học sinh' : 'Thông thường'))))
       };
 
       const priceTypeLabel =
@@ -3261,15 +3222,15 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
         デザイン：${templateName}
         商品代：${unitPrice.toLocaleString()}円 × ${copies}本 = ${productTotal.toLocaleString()}円
-        送料目安：${shippingFee.toLocaleString()}円（10本ごとに430円）
+        送料・代引手数料：${shippingFee.toLocaleString()}円
         お支払い目安：${totalPrice.toLocaleString()}円
-        お支払い：商品到着後（請求書同封）
+        お支払い：商品到着時に代金引換でお支払い
 
         氏名：${customerInfo.name}
         発送先電話番号：${customerInfo.phone}
         住所：${customerInfo.address}
 
-        同じ日の同じ発送先電話番号のご注文は自動同梱します。
+        商品は代金引換でお届けします。
         送信後は変更できません。
 
         注文しますか？`,
@@ -3547,20 +3508,20 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           ecommerceQuantityNote: isEcommerceMode() ? 'うちわサイト内で本数・発送先を受付' : '',
           normalizedPhone,
           shippingGroupId,
-          shippingGroupRule: isEcommerceMode() ? 'same-day-and-normalized-phone' : '',
-          shippingMethod: isEcommerceMode() ? 'レターパックライト' : '',
-          shippingUnitLimit: isEcommerceMode() ? 10 : 0,
-          shippingUnitFee: isEcommerceMode() ? 430 : 0,
+          shippingGroupRule: isEcommerceMode() ? 'none_cart_order_fixed_fee' : '',
+          shippingMethod: isEcommerceMode() ? '代金引換' : '',
+          shippingUnitLimit: isEcommerceMode() ? 0 : 0,
+          shippingUnitFee: isEcommerceMode() ? 0 : 0,
           shippingGroupTotalCopies,
           shippingGroupShippingFee,
-          paymentTiming: isEcommerceMode() ? '商品到着後（請求書同封）' : '',
+          paymentTiming: isEcommerceMode() ? '商品到着時に代金引換でお支払い' : '',
           customerName: needsCustomerInfo() ? customerInfo.name : "",
           customerKana: isDeliveryMode() ? customerInfo.kana : "",
           customerPhone: needsCustomerInfo() ? customerInfo.phone : "",
           customerAddress: (isDeliveryMode() || isEcommerceMode()) ? customerInfo.address : "",
           customerMemo: customerInfo.memo,
           subscriptionStatus: isDeliveryMode() ? customerInfo.subscriptionStatus : [],
-          deliveryMessage: isEcommerceMode() ? "レターパックライトで発送します。お支払いは商品到着後（請求書同封）です" : (isDeliveryMode() ? "お近くの中国新聞販売所より後日、完成後にお届けします" : ""),
+          deliveryMessage: isEcommerceMode() ? "送料・代引手数料込み一律1,000円。商品は代金引換でお届けします。" : (isDeliveryMode() ? "お近くの中国新聞販売所より後日、完成後にお届けします" : ""),
 
           isReorder: isReuseMode,
           reuseFromQueueId: isReuseMode && reuseSourceOrder ? reuseSourceOrder.queueId : null,

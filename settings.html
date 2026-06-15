@@ -151,7 +151,7 @@
           </label>
           <label class="radio-card">
             <input type="radio" name="operationMode" value="ecommerce">
-            通販発送（後払い）<br><span style="font-size:12px;color:#555;">住所・電話番号で同梱</span>
+            通販発送（代引）<br><span style="font-size:12px;color:#555;">カート方式・送料代引込み</span>
           </label>
         </div>
         <div id="operationModeNote" class="mode-note"></div>
@@ -203,6 +203,7 @@
         <label for="orderDeadline">受付締切日時</label><input id="orderDeadline" type="datetime-local">
         <label for="generalPrice">一般価格</label><input id="generalPrice" type="number" min="0" step="10" placeholder="800">
         <label for="studentPrice">学割価格</label><input id="studentPrice" type="number" min="0" step="10" placeholder="500">
+        <label for="cartFixedFee">送料・代引手数料</label><input id="cartFixedFee" type="number" min="0" step="10" placeholder="1000">
         <label for="phone">問い合わせ電話番号</label><input id="phone" type="tel" placeholder="082-245-1133">
         <label for="pickupDeadlineText">受取期限表示</label><input id="pickupDeadlineText" type="text" placeholder="例：最終受取期限：5月5日（日）17:00">
         <label for="popupClosed">受取終了モード</label><div class="checkbox-row"><input id="popupClosed" type="checkbox"><span>ONにすると status.html で受取期限終了表示に切り替えます</span></div>
@@ -260,7 +261,7 @@
   document.getElementById("orderLink").href = `index.html?shop=${encodeURIComponent(shopId)}&v=${getVersionKey()}`;
 
   const defaultSettings = {
-    shopName: "ＦＦファンスタジオ", shopCode: "F", adminPin: "4946", operationMode: "instant", templateSet: "general", salesMode: "paid", generalPrice: 800, studentPrice: 500,
+    shopName: "ＦＦファンスタジオ", shopCode: "F", adminPin: "4946", operationMode: "instant", templateSet: "general", salesMode: "paid", generalPrice: 800, studentPrice: 500, cartFixedFee: 1000,
     startDate: "", endDate: "", openTime: "10:00", closeTime: "17:00", orderDeadline: "", phone: "082-245-1133", pickupDeadlineText: "",
     popupClosed: false, expiredTitle: "⏰ 受取期限が終了しました",
     expiredBody: "ポップアップストアの営業は終了しました。<br>未受取の商品については、<br>土日祝を除く10時～17時に<br>082-245-1133 へお問い合わせください。"
@@ -390,7 +391,7 @@
       if (operationMode === "delivery") {
         opNote.innerHTML = "後日訪問モード：注文時に氏名・電話番号・詳細住所・購読状況を入力してもらいます。完了画面には「お近くの中国新聞販売所より完成後にお届けします」と表示されます。";
       } else if (operationMode === "ecommerce") {
-        opNote.innerHTML = "通販発送モード：うちわサイト内で本数・発送先を受け付けます。発送先電話番号を正規化し、同日＋同じ電話番号で自動同梱します。送料は10本ごとにレターパックライト430円、支払いは商品到着後（請求書同封）です。";
+        opNote.innerHTML = "通販発送モード：複数デザインを1回の注文でまとめて購入できます。送料・代引手数料込みで1注文につき一律1,000円です。商品は代金引換でお届けし、商品到着時に配送業者へお支払いいただきます。";
       } else {
         opNote.innerHTML = "即時受取モード：注文後に受付番号を発行し、当日会場で受け渡す運用です。";
       }
@@ -401,7 +402,7 @@
       if (templateSet === "kure_softball") {
         templateNote.innerHTML = "呉ソフトボール大会セット：注文画面には「無地」と「呉ソフトボール大会」のテンプレートだけを表示します。";
       } else if (templateSet === "ecommerce_fan") {
-        templateNote.innerHTML = "通販用うちわセット：常時販売向けに「無地」「母の日」「父の日」のテンプレートを表示します。";
+        templateNote.innerHTML = "通販用うちわセット：常時販売向けに「無地」「母の日」「父の日」「誕生日」「敬老の日」のテンプレートを表示します。";
       } else {
         templateNote.innerHTML = "一般セット：注文画面には「無地」「母の日」「父の日」のテンプレートを表示します。";
       }
@@ -445,6 +446,7 @@
     document.getElementById("orderDeadline").value = s.orderDeadline || "";
     document.getElementById("generalPrice").value = Number(s.generalPrice || 800);
     document.getElementById("studentPrice").value = Number(s.studentPrice || 500);
+    document.getElementById("cartFixedFee").value = Number(s.cartFixedFee || 1000);
     document.getElementById("phone").value = s.phone || "";
     document.getElementById("pickupDeadlineText").value = s.pickupDeadlineText || "";
     document.getElementById("popupClosed").checked = !!s.popupClosed;
@@ -471,6 +473,7 @@
       orderDeadline: document.getElementById("orderDeadline").value || "",
       generalPrice: Number(document.getElementById("generalPrice").value || 800),
       studentPrice: Number(document.getElementById("studentPrice").value || 500),
+      cartFixedFee: Number(document.getElementById("cartFixedFee")?.value || 1000),
       phone: document.getElementById("phone").value.trim() || "082-245-1133",
       pickupDeadlineText: document.getElementById("pickupDeadlineText").value.trim(),
       popupClosed: document.getElementById("popupClosed").checked,
