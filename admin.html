@@ -416,6 +416,26 @@
     return value || "";
   }
 
+  function isCartCodOrder(data) {
+    return data?.source === "fan-site-cart-cod-order" || data?.paymentMethod === "代金引換" || data?.priceType === "cod_cart";
+  }
+
+  function renderCartItems(data) {
+    if (!Array.isArray(data?.items) || data.items.length === 0) return "";
+    return `
+      <div class="shipping-group-detail">
+        <div class="group-total">カート内訳：${escapeHtml(data.items.length)}デザイン</div>
+        ${data.items.map((item, index) => `
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid #ffcc80;">
+            <strong>${index + 1}. ${escapeHtml(item.templateName || templateText(item.template))}</strong><br>
+            ${escapeHtml(item.copies || 1)}本 ／ ${yen(item.productTotal || 0)}
+            ${item.imageUrl ? `<br><a href="${escapeHtml(item.imageUrl)}" target="_blank" rel="noopener">画像を開く</a>` : ""}
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
   function getShippingUnits(copies) {
     return Math.max(0, Math.ceil(Number(copies || 0) / 10));
   }
@@ -426,6 +446,7 @@
 
   function getShippingGroupKey(data) {
     if (!data) return "";
+    if (isCartCodOrder(data)) return `cart_${data.queueId || data.displayCode || data.shortId || Math.random()}`;
     if (data.shippingGroupId) return String(data.shippingGroupId);
     if (data.dayKey && data.normalizedPhone) return `${shopId}_${data.dayKey}_${data.normalizedPhone}`;
     return "";
@@ -464,8 +485,14 @@
     });
 
     map.forEach(stat => {
-      stat.shippingUnits = getShippingUnits(stat.copies);
-      stat.shippingFee = getShippingFeeByCopies(stat.copies);
+      const firstOrder = list.find(item => getShippingGroupKey(item.data || {}) === stat.key)?.data || {};
+      if (isCartCodOrder(firstOrder)) {
+        stat.shippingUnits = 1;
+        stat.shippingFee = Number(firstOrder.shippingFee || firstOrder.fixedShippingAndCodFee || 1000);
+      } else {
+        stat.shippingUnits = getShippingUnits(stat.copies);
+        stat.shippingFee = getShippingFeeByCopies(stat.copies);
+      }
       stat.paymentTotal = stat.productTotal + stat.shippingFee;
     });
 
@@ -480,7 +507,7 @@
 
     const copies = Number(data?.shippingGroupTotalCopies || data?.copies || 1);
     const productTotal = Number(data?.shippingGroupProductTotal || data?.productTotal || (Number(data?.unitPrice || popupSettings?.generalPrice || 800) * copies));
-    const shippingFee = Number(data?.shippingGroupShippingFee || getShippingFeeByCopies(copies));
+    const shippingFee = isCartCodOrder(data) ? Number(data?.shippingFee || data?.fixedShippingAndCodFee || 1000) : Number(data?.shippingGroupShippingFee || getShippingFeeByCopies(copies));
     return {
       key,
       orderCount: key ? 1 : 0,
@@ -500,6 +527,19 @@
     if (!isEcommerceOrder(data)) return "";
     const groupId = data.shippingGroupId || getShippingGroupKey(data);
     const stat = getShippingGroupStats(data);
+    if (isCartCodOrder(data)) {
+      return `
+        <div class="ecommerce-alert">通販発送：カート注文／代金引換</div>
+        <div class="shipping-group-detail">
+          <div class="group-total">合計：${escapeHtml(stat.copies)}本 ／ ${escapeHtml(data.cartItemCount || data.items?.length || 1)}デザイン</div>
+          <div><strong>商品代：</strong>${yen(stat.productTotal)}</div>
+          <div><strong>送料・代引手数料：</strong>${yen(stat.shippingFee)}</div>
+          <div><strong>お支払い合計：</strong>${yen(stat.paymentTotal)}</div>
+          <div><strong>支払い方法：</strong>代金引換（商品到着時支払い）</div>
+        </div>
+        ${renderCartItems(data)}
+      `;
+    }
     return `
       <div class="ecommerce-alert">通販発送：同日＋正規化電話番号で自動同梱</div>
       <div class="shipping-group-detail">
@@ -568,7 +608,8 @@
       "本数",
       "料金",
       "ステータス",
-      "画像URL"
+      "画像URL",
+      "カート内訳"
     ];
 
     const rows = orders.map(item => {
@@ -594,7 +635,8 @@
         data.copies || 1,
         getTotalPrice(data),
         statusText(data.status),
-        data.imageUrl || ""
+        data.imageUrl || "",
+        Array.isArray(data.items) ? data.items.map(item => `${item.templateName || item.template || ""}:${item.copies || 1}本`).join(" / ") : ""
       ];
     });
 
@@ -922,7 +964,8 @@
                   <div><strong>写真登録番号：</strong><span class="display-code-large" style="font-size:24px;padding:5px 12px;margin:0 0 6px;">${escapeHtml(displayCode)}</span></div>
                   <div><span class="status-badge badge-${status}">${statusText(status)}</span></div>
                   <div><strong>本数：</strong>${escapeHtml(data.copies || 1)}本 ／ <strong>商品代：</strong>${yen(getTotalPrice(data))}</div>
-                  <div><strong>テンプレート：</strong>${escapeHtml(templateText(data.template))}</div>
+                  <div><strong>テンプレート：</strong>${escapeHtml(data.templateName || templateText(data.template))}</div>
+                  ${renderCartItems(data)}
                   ${data.customerMemo ? `<div><strong>メモ：</strong>${escapeHtml(data.customerMemo)}</div>` : ""}
                   <div><strong>内部ID：</strong>${escapeHtml(queueId)}</div>
                   <div class="actions">
@@ -948,8 +991,8 @@
                 <div><strong>発送グループID：</strong>${escapeHtml(group.key)}</div>
                 <div class="shipping-group-totals">
                   <div>合計 ${escapeHtml(stat.copies)}本</div>
-                  <div>レターパック ${escapeHtml(stat.shippingUnits)}通</div>
-                  <div>送料 ${yen(stat.shippingFee)}</div>
+                  <div>${isCartCodOrder(group.orders[0]?.data || {}) ? "代引き" : `レターパック ${escapeHtml(stat.shippingUnits)}通`}</div>
+                  <div>${isCartCodOrder(group.orders[0]?.data || {}) ? "送料・代引手数料" : "送料"} ${yen(stat.shippingFee)}</div>
                   <div>支払目安 ${yen(stat.paymentTotal)}</div>
                 </div>
                 <div><strong>商品代合計：</strong>${yen(stat.productTotal)} ／ <strong>注文数：</strong>${escapeHtml(stat.orderCount)}件</div>

@@ -480,6 +480,33 @@
   font-size:15px;
 }
 
+.cartBox {
+  margin:14px 0;
+  padding:14px;
+  border-radius:16px;
+  background:#f8fbff;
+  border:2px solid #90caf9;
+  color:#0d47a1;
+  font-weight:700;
+  line-height:1.7;
+}
+.cartBox h3 { margin:0 0 8px; color:#1565c0; font-size:18px; }
+.cartItem {
+  background:#fff;
+  border:1px solid #bbdefb;
+  border-radius:12px;
+  padding:10px;
+  margin:8px 0;
+}
+.cartTotalBox {
+  margin-top:10px;
+  padding:12px;
+  border-radius:14px;
+  background:#fff3e0;
+  color:#e65100;
+  font-weight:900;
+}
+
   </style>
 </head>
 <body>
@@ -806,10 +833,10 @@
 
 
     <div id="shippingNoticeInput" class="shippingNotice" style="display:none;">
-      <h3>📦 送料はまとめるほどお得！</h3>
-      <p>本日中に同じ発送先電話番号で登録されたご注文は、自動的に同梱発送いたします。</p>
-      <p>レターパックライト送料は <strong>10本ごとに430円</strong> です。</p>
-      <p>写真を分けて登録しても、本日中なら送料はまとめて計算されます。</p>
+      <h3>🛒 複数デザインをまとめて注文できます</h3>
+      <p>写真・デザインごとに本数を選び、カートに入れてください。</p>
+      <p>送料・代引手数料はまとめて <strong>1注文につき1,000円</strong> です。</p>
+      <p>商品は代金引換でお届けします。商品到着時にお支払いください。</p>
     </div>
 
     <button id="orderBtn"
@@ -820,6 +847,18 @@
       data-vi="Đặt hàng">
       注文する
     </button>
+
+    <div id="cartArea" class="cartBox" style="display:none;">
+      <h3>🛒 現在のカート</h3>
+      <div id="cartItems"></div>
+      <div id="cartTotals" class="cartTotalBox"></div>
+      <button id="checkoutBtn" type="button" style="background:#e65100;color:white;margin-top:10px;">
+        この内容で注文する（代引き）
+      </button>
+      <button id="clearCartBtn" type="button" style="background:#777;color:white;margin-top:8px;">
+        カートを空にする
+      </button>
+    </div>
   </div>
 
   <div id="orderError"
@@ -1136,13 +1175,17 @@ Miyajima Fan Studio<br><br>
         if (copiesHint) {
           copiesHint.style.display = "";
           if (isEcommerceMode()) {
-            copiesHint.textContent = "送料は本日中の同じ発送先電話番号ごとに、10本まで430円でまとめて計算します。";
+            copiesHint.textContent = "写真・デザインごとに本数を選び、カートに追加してください。送料・代引手数料は1注文につき一律1,000円です。";
           }
         }
       }
 
       if (shippingNoticeInput) {
         shippingNoticeInput.style.display = isEcommerceMode() ? "block" : "none";
+      }
+      const orderBtn = document.getElementById("orderBtn");
+      if (orderBtn && isEcommerceMode()) {
+        orderBtn.textContent = "このデザインをカートに入れる";
       }
 
       if (firstFreeNoteBox) {
@@ -2555,15 +2598,14 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       if (isEcommerceMode()) {
         const productTotal = getProductTotal(copies, getGeneralPrice());
-        const shippingFee = getShippingFee(copies);
-        totalPrice = productTotal + shippingFee;
+        totalPrice = productTotal;
         const box = document.getElementById('totalPriceBox');
         if (box) {
           box.style.display = 'block';
           box.innerHTML = `
-            今回の商品代：${getGeneralPrice().toLocaleString()}円 × ${copies}本 = ${productTotal.toLocaleString()}円<br>
-            送料は本日中の同じ発送先電話番号分とまとめて計算されます。<br>
-            <span style="font-size:14px;color:#666;">※今回分だけの場合の目安：送料${shippingFee.toLocaleString()}円／合計${totalPrice.toLocaleString()}円</span>
+            このデザインの商品代：${getGeneralPrice().toLocaleString()}円 × ${copies}本 = ${productTotal.toLocaleString()}円<br>
+            <span style="font-size:14px;color:#666;">複数デザインをカートに入れて、最後に1回で注文できます。</span><br>
+            <span style="font-size:14px;color:#e65100;font-weight:900;">送料・代引手数料：1注文につき一律1,000円</span>
           `;
         }
         return;
@@ -2791,6 +2833,281 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       document.getElementById('anotherOrderBtn')
         ?.addEventListener('click', resetForNewDesignOrder);
+    }
+
+
+    const CART_FIXED_FEE = 1000;
+    let cartItems = [];
+
+    function cartProductTotal() {
+      return cartItems.reduce((sum, item) => sum + Number(item.productTotal || 0), 0);
+    }
+
+    function cartCopiesTotal() {
+      return cartItems.reduce((sum, item) => sum + Number(item.copies || 0), 0);
+    }
+
+    function cartPaymentTotal() {
+      return cartItems.length > 0 ? cartProductTotal() + CART_FIXED_FEE : 0;
+    }
+
+    function renderCart() {
+      const cartArea = document.getElementById("cartArea");
+      const cartItemsEl = document.getElementById("cartItems");
+      const cartTotalsEl = document.getElementById("cartTotals");
+      if (!cartArea || !cartItemsEl || !cartTotalsEl) return;
+
+      if (!isEcommerceMode() || cartItems.length === 0) {
+        cartArea.style.display = "none";
+        cartItemsEl.innerHTML = "";
+        cartTotalsEl.innerHTML = "";
+        return;
+      }
+
+      cartArea.style.display = "block";
+      cartItemsEl.innerHTML = cartItems.map((item, index) => `
+        <div class="cartItem">
+          <div><strong>${index + 1}. ${item.templateName}</strong></div>
+          <div>${Number(item.unitPrice).toLocaleString()}円 × ${Number(item.copies).toLocaleString()}本 = ${Number(item.productTotal).toLocaleString()}円</div>
+          <button type="button" class="removeCartItemBtn" data-index="${index}" style="background:#b71c1c;color:white;margin-top:6px;padding:8px 12px;font-size:14px;">このデザインを削除</button>
+        </div>
+      `).join("");
+
+      cartTotalsEl.innerHTML = `
+        <div>商品合計：${cartProductTotal().toLocaleString()}円（合計${cartCopiesTotal().toLocaleString()}本）</div>
+        <div>送料・代引手数料：${CART_FIXED_FEE.toLocaleString()}円</div>
+        <div>お支払い合計：${cartPaymentTotal().toLocaleString()}円</div>
+        <div style="font-size:13px;color:#555;margin-top:4px;">商品は代金引換でお届けします。商品到着時に配達員へお支払いください。</div>
+      `;
+
+      document.querySelectorAll(".removeCartItemBtn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const i = Number(btn.dataset.index);
+          cartItems.splice(i, 1);
+          renderCart();
+        });
+      });
+    }
+
+    function addCurrentDesignToCart() {
+      const orderBtn = document.getElementById('orderBtn');
+      const completeEl = document.getElementById('orderComplete');
+      const orderErrorEl = document.getElementById('orderError');
+
+      try {
+        draw();
+        const imageDataUrl = canvas.toDataURL('image/png');
+        const copies = getOrderCopies();
+        const unitPrice = getGeneralPrice();
+        if (isEcommerceMode()) {
+        addCurrentDesignToCart();
+        return;
+      }
+
+      const template = isReuseMode && reuseSourceOrder ? (reuseSourceOrder.template || templateSelector.value) : templateSelector.value;
+        const templateName = isReuseMode ? '同じ完成画像' : document.querySelector('#templateSelector option:checked').textContent;
+        const productTotal = getProductTotal(copies, unitPrice);
+
+        cartItems.push({
+          template,
+          templateName,
+          copies,
+          unitPrice,
+          productTotal,
+          imageDataUrl
+        });
+
+        renderCart();
+
+        completeEl.style.display = 'block';
+        completeEl.innerHTML = `
+          <div style="font-size:18px;font-weight:900;color:#1b5e20;">カートに追加しました。</div>
+          <div style="font-size:14px;color:#555;margin-top:8px;line-height:1.6;">
+            別の写真・デザインも追加できます。すべて追加したら、下の「この内容で注文する（代引き）」を押してください。
+          </div>
+          <button id="anotherOrderBtn" style="margin-top:12px;background:#ff9800;color:white;">別のデザインを追加する</button>
+        `;
+        document.getElementById('anotherOrderBtn')?.addEventListener('click', resetForNewDesignOrder);
+        document.getElementById('orderArea').style.display = 'block';
+        completeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch (err) {
+        console.error(err);
+        orderErrorEl.textContent = 'カートへの追加に失敗しました。もう一度お試しください。';
+        orderErrorEl.style.display = 'block';
+      } finally {
+        orderBtn.disabled = false;
+        orderBtn.textContent = 'このデザインをカートに入れる';
+      }
+    }
+
+    function loadImageFromDataUrl(dataUrl) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+    }
+
+    async function submitCartOrder() {
+      const orderBtn = document.getElementById('orderBtn');
+      const checkoutBtn = document.getElementById('checkoutBtn');
+      const completeEl = document.getElementById('orderComplete');
+      const orderErrorEl = document.getElementById('orderError');
+      const customerInfo = getCustomerInfo();
+
+      orderErrorEl.style.display = 'none';
+      orderErrorEl.textContent = '';
+
+      if (cartItems.length === 0) {
+        orderErrorEl.textContent = '先に写真・デザインをカートに追加してください。';
+        orderErrorEl.style.display = 'block';
+        return;
+      }
+
+      if (!customerInfo.name || !customerInfo.phone || !customerInfo.address) {
+        orderErrorEl.textContent = '氏名・発送先電話番号・詳細住所を入力してください。';
+        orderErrorEl.style.display = 'block';
+        orderErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
+      const confirmText = `ご注文内容をご確認ください\n\n商品合計：${cartProductTotal().toLocaleString()}円（${cartCopiesTotal().toLocaleString()}本）\n送料・代引手数料：${CART_FIXED_FEE.toLocaleString()}円\nお支払い合計：${cartPaymentTotal().toLocaleString()}円\n\nお届け方法：代金引換\nお支払い：商品到着時に配達員へお支払い\n\n氏名：${customerInfo.name}\n発送先電話番号：${customerInfo.phone}\n住所：${customerInfo.address}\n\n送信後は変更できません。\n注文しますか？`;
+      if (!confirm(confirmText)) return;
+
+      try {
+        if (checkoutBtn) {
+          checkoutBtn.disabled = true;
+          checkoutBtn.textContent = '注文送信中...';
+        }
+        if (orderBtn) orderBtn.disabled = true;
+        document.getElementById('sendingOverlay').innerHTML = '送信中です…<br>画面を閉じないでください';
+        document.getElementById('sendingOverlay').style.display = 'block';
+
+        const issued = await issueQueueId();
+        const displayNo = Number(issued.shortId);
+        const displayCode = createDisplayCode(issued.dayKey, displayNo);
+        const totalCopies = cartCopiesTotal();
+        const printLabel = createPrintLabel(issued, displayNo, totalCopies);
+        const normalizedPhone = normalizePhone(customerInfo.phone);
+
+        const uploadedItems = [];
+        for (let i = 0; i < cartItems.length; i++) {
+          const item = cartItems[i];
+          const img = await loadImageFromDataUrl(item.imageDataUrl);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          drawPrintLabel(printLabel);
+          const storagePath = `orders/${shopId}/${issued.dayKey}/${issued.queueId}_${String(i + 1).padStart(2, '0')}.png`;
+          const storageRef = ref(storage, storagePath);
+          const pngBlob = await withTimeout(canvasToPngBlob(canvas), 20000, `PNG作成${i + 1}`);
+          await withTimeout(uploadBytes(storageRef, pngBlob, { contentType: 'image/png' }), 30000, `画像アップロード${i + 1}`);
+          const imageUrl = await withTimeout(getDownloadURL(storageRef), 10000, `画像URL取得${i + 1}`);
+          uploadedItems.push({
+            template: item.template,
+            templateName: item.templateName,
+            copies: item.copies,
+            unitPrice: item.unitPrice,
+            productTotal: item.productTotal,
+            imageUrl,
+            storagePath
+          });
+        }
+
+        const imageUrl = uploadedItems[0]?.imageUrl || '';
+        const storagePath = uploadedItems[0]?.storagePath || '';
+        const orderRef = doc(db, 'orders', issued.queueId);
+        await setDoc(orderRef, {
+          queueId: issued.queueId,
+          shortId: issued.shortId,
+          displayNo,
+          displayCode,
+          printLabel,
+          dayKey: issued.dayKey,
+          shopId,
+          shopName: popupSettings?.shopName || defaultSettings.shopName,
+          shopCode: getShopCode(),
+          priceType: 'cod_cart',
+          unitPrice: getGeneralPrice(),
+          productTotal: cartProductTotal(),
+          shippingFee: CART_FIXED_FEE,
+          totalPrice: cartPaymentTotal(),
+          copies: totalCopies,
+          template: uploadedItems.length === 1 ? uploadedItems[0].template : 'cart-multiple',
+          templateName: uploadedItems.length === 1 ? uploadedItems[0].templateName : '複数デザイン',
+          imageUrl,
+          storagePath,
+          imageUrls: uploadedItems.map(item => item.imageUrl),
+          items: uploadedItems,
+          cartItemCount: uploadedItems.length,
+          imageStorageMode: 'cart_multi_upload',
+          operationMode: getOperationMode(),
+          salesMode: getSalesMode(),
+          chargedCopies: totalCopies,
+          ecommerceQuantitySource: 'fan-site-cart-order',
+          ecommerceQuantityNote: '複数デザインを1回のカート注文として受付',
+          normalizedPhone,
+          shippingGroupId: '',
+          shippingGroupRule: 'none_cart_order_fixed_fee',
+          shippingMethod: '代金引換',
+          shippingUnitLimit: 0,
+          shippingUnitFee: 0,
+          codFee: 330,
+          fixedShippingAndCodFee: CART_FIXED_FEE,
+          paymentMethod: '代金引換',
+          paymentTiming: '商品到着時に代金引換でお支払い',
+          customerName: customerInfo.name,
+          customerKana: '',
+          customerPhone: customerInfo.phone,
+          customerAddress: customerInfo.address,
+          customerMemo: customerInfo.memo,
+          subscriptionStatus: [],
+          deliveryMessage: '送料・代引手数料込み一律1,000円。商品は代金引換でお届けします。',
+          status: 'WAIT',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          source: 'fan-site-cart-cod-order'
+        });
+
+        document.getElementById('sendingOverlay').style.display = 'none';
+        lastCompleteDisplayNo = displayCode;
+        lastCompleteQueueId = issued.queueId;
+        completeEl.innerHTML = `
+          ご注文を受け付けました。<br><br>
+          <div class="receipt-code-box">
+            <div class="receipt-code-label">受付番号</div>
+            <div class="receipt-code-number">${displayCode}</div>
+            <div class="receipt-code-note">※確認のためスクリーンショットを保存してください</div>
+          </div>
+          <div class="shippingNotice success">
+            <h3>🛒 カート注文として受付しました</h3>
+            <div class="shippingBreakdown">
+              <div>商品合計：${cartProductTotal().toLocaleString()}円（${totalCopies.toLocaleString()}本・${uploadedItems.length.toLocaleString()}デザイン）</div>
+              <div>送料・代引手数料：${CART_FIXED_FEE.toLocaleString()}円</div>
+              <div><strong>お支払い合計：${cartPaymentTotal().toLocaleString()}円</strong></div>
+            </div>
+            <p>商品は代金引換でお届けします。商品到着時に配達員へお支払いください。</p>
+          </div>
+        `;
+        completeEl.style.display = 'block';
+        document.getElementById('orderArea').style.display = 'none';
+        cartItems = [];
+        renderCart();
+        completeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch (err) {
+        console.error(err);
+        document.getElementById('sendingOverlay').style.display = 'none';
+        orderErrorEl.textContent = '注文の送信に失敗しました。通信状態を確認して、もう一度お試しください。';
+        orderErrorEl.style.display = 'block';
+        if (checkoutBtn) {
+          checkoutBtn.disabled = false;
+          checkoutBtn.textContent = 'この内容で注文する（代引き）';
+        }
+        if (orderBtn) {
+          orderBtn.disabled = false;
+          orderBtn.textContent = 'このデザインをカートに入れる';
+        }
+      }
     }
 
     async function submitOrder() {
@@ -3291,6 +3608,8 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     }
 
     document.getElementById('orderBtn').addEventListener('click', submitOrder);
+    document.getElementById('checkoutBtn')?.addEventListener('click', submitCartOrder);
+    document.getElementById('clearCartBtn')?.addEventListener('click', () => { cartItems = []; renderCart(); });
 
     function getCurrentGuideClass() {
       const template = templateSelector.value;
