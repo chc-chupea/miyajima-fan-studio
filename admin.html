@@ -384,14 +384,15 @@
       "氏名",
       "ふりがな",
       "電話番号",
+      "正規化電話番号",
+      "発送グループ",
       "住所",
       "メモ",
       "購読状況",
       "本数",
-      "商品合計",
-      "送料",
       "料金",
-      "同日同電話番号グループ",
+      "送料単位",
+      "支払い方法",
       "ステータス",
       "画像URL"
     ];
@@ -405,16 +406,17 @@
         data.customerName || "",
         data.customerKana || "",
         data.customerPhone || "",
+        data.normalizedPhone || "",
+        data.shippingGroupId || "",
         data.customerAddress || "",
 
         data.customerMemo || "",
 
         formatSubscriptionStatus(data.subscriptionStatus),
         data.copies || 1,
-        getProductSubtotal(data),
-        getShippingFee(data),
         getTotalPrice(data),
-        data.ecommerceGroupId || "",
+        data.shippingUnit ? `10本ごと${data.shippingUnitFee || 430}円` : "",
+        data.paymentNote || "",
         statusText(data.status),
         data.imageUrl || ""
       ];
@@ -455,12 +457,14 @@
       const code = getDisplayCode(data);
       const isEc = isEcommerceOrder(data);
       const codeLabel = isEc ? "写真登録番号" : "受付番号";
-      const quantityLine = `本数：${escapeHtml(data.copies || 1)}本`;
+      const quantityLine = isEc
+        ? "本数：配送ネット注文と照合"
+        : `本数：${escapeHtml(data.copies || 1)}本`;
 
       return `
         <div class="print-label-card">
           <div class="print-label-code">${codeLabel}：${escapeHtml(code)}</div>
-          ${isEc ? `<div class="print-label-subscription">通販／サイト内注文　送料：${escapeHtml(getShippingFee(data))}円</div>` : ""}
+          ${isEc ? `<div class="print-label-subscription">通販／配送ネット支払い済み</div>` : ""}
           <div class="print-label-name">${escapeHtml(data.customerName || "")} 様</div>
           ${data.customerKana ? `<div class="print-label-kana">ふりがな：${escapeHtml(data.customerKana)}</div>` : ""}
           ${data.customerPhone ? `<div class="print-label-phone">TEL：${escapeHtml(data.customerPhone)}</div>` : ""}
@@ -495,28 +499,23 @@
     return s;
   }
   function priceTypeText(priceType, data = {}) {
-    if (isEcommerceOrder(data)) return priceType === "student" ? "通販・学割" : "通販・一般";
+    if (isEcommerceOrder(data)) return "配送ネット支払い済み";
     if (data.salesMode === "free") return "無料";
     if (data.salesMode === "firstFree") return "1本目無料";
     if (data.salesMode === "paidGeneralOnly") return "一般のみ";
     return priceType === "student" ? "学割" : "一般";
   }
   function getUnitPrice(data) {
+    if (isEcommerceOrder(data)) return 0;
     if (data.unitPrice) return Number(data.unitPrice);
     const generalPrice = Number(popupSettings?.generalPrice || 800);
     const studentPrice = Number(popupSettings?.studentPrice || 500);
     return data.priceType === "student" ? studentPrice : generalPrice;
   }
-  function getProductSubtotal(data) {
-    if (data.productSubtotal !== undefined) return Number(data.productSubtotal || 0);
-    return getUnitPrice(data) * Number(data.copies || 1);
-  }
-  function getShippingFee(data) {
-    return Number(data.shippingFee || 0);
-  }
   function getTotalPrice(data) {
-    if (data.totalPrice !== undefined) return Number(data.totalPrice || 0);
-    return getProductSubtotal(data) + getShippingFee(data);
+    if (isEcommerceOrder(data)) return 0;
+    if (data.totalPrice) return Number(data.totalPrice);
+    return getUnitPrice(data) * Number(data.copies || 1);
   }
   function getDisplayCode(data) {
     if (data.displayCode) return String(data.displayCode);
@@ -582,11 +581,9 @@
           <div class="info">
             <div><strong>短番：</strong>${escapeHtml(displayNo)}</div>
             <div><strong>料金区分：</strong>${priceTypeText(data.priceType, data)}</div>
-            ${isEc ? `<div class="ecommerce-alert">通販：サイト内で価格・送料を計算済み</div>` : ""}
-            <div><strong>単価：</strong>${yen(unitPrice)}</div>
-            <div><strong>注文本数：</strong>${escapeHtml(copies)}本</div>
-            ${isEc ? `<div><strong>商品合計：</strong>${yen(getProductSubtotal(data))}</div><div><strong>送料：</strong>${yen(getShippingFee(data))}</div><div><strong>同日同電話番号グループ：</strong>${escapeHtml(data.ecommerceGroupId || "")}${data.ecommerceGroupOrderNo ? `（${escapeHtml(data.ecommerceGroupOrderNo)}件目）` : ""}</div>` : ""}
-            <div><strong>合計金額：</strong>${yen(totalPrice)}</div>
+            ${isEc ? `<div class="ecommerce-alert">通販：料金・本数は配送ネット注文と照合</div>` : `<div><strong>単価：</strong>${yen(unitPrice)}</div>`}
+            <div><strong>${isEc ? "画像登録" : "注文本数"}：</strong>${isEc ? "1件（購入本数は配送ネット照合）" : `${escapeHtml(copies)}本`}</div>
+            ${isEc ? `<div><strong>決済：</strong>配送ネット支払い済み</div>` : `<div><strong>合計金額：</strong>${yen(totalPrice)}</div>`}
             <div><strong>印刷ラベル：</strong>${escapeHtml(printLabel)}</div>
             <div><strong>注文ID：</strong>${escapeHtml(queueId)}</div>
             <div><strong>受付時刻：</strong>${escapeHtml(createdAt)}</div>
@@ -595,6 +592,9 @@
             ${data.customerName ? `<div><strong>氏名：</strong>${escapeHtml(data.customerName)}</div>` : ""}
             ${data.customerKana ? `<div><strong>ふりがな：</strong>${escapeHtml(data.customerKana)}</div>` : ""}
             ${data.customerPhone ? `<div><strong>電話番号：</strong>${escapeHtml(data.customerPhone)}</div>` : ""}
+            ${data.shippingGroupId ? `<div><strong>発送グループ：</strong>${escapeHtml(data.shippingGroupId)}</div>` : ""}
+            ${data.paymentNote ? `<div><strong>お支払い：</strong>${escapeHtml(data.paymentNote)}</div>` : ""}
+            ${data.shippingUnit ? `<div><strong>送料：</strong>10本ごと${escapeHtml(data.shippingUnitFee || 430)}円</div>` : ""}
             ${data.customerAddress ? `<div><strong>住所：</strong>${escapeHtml(data.customerAddress)}</div>` : ""}
             ${data.customerMemo ? `<div><strong>メモ：</strong>${escapeHtml(data.customerMemo)}</div>` : ""}
             ${data.subscriptionStatus ? `<div><strong>購読状況：</strong>${escapeHtml(formatSubscriptionStatus(data.subscriptionStatus))}</div>` : ""}
