@@ -339,7 +339,23 @@
   }
 
   function isEcommerceOrder(data) {
-    return data?.operationMode === "ecommerce" || data?.source === "ecommerce-fan-studio";
+    return data?.operationMode === "ecommerce" || data?.source === "ecommerce-fan-studio" || data?.source === "fan-site-mail-order";
+  }
+
+  function shippingGroupSummary(data) {
+    if (!isEcommerceOrder(data)) return "";
+    const groupId = data.shippingGroupId || "";
+    const groupCopies = Number(data.shippingGroupTotalCopies || data.copies || 1);
+    const groupFee = Number(data.shippingGroupShippingFee || data.shippingFee || 0);
+    return `
+      <div class="ecommerce-alert">通販発送：同日＋正規化電話番号で自動同梱</div>
+      ${groupId ? `<div><strong>発送グループID：</strong>${escapeHtml(groupId)}</div>` : ""}
+      ${data.normalizedPhone ? `<div><strong>正規化電話番号：</strong>${escapeHtml(data.normalizedPhone)}</div>` : ""}
+      <div><strong>この登録の送料目安：</strong>${yen(Number(data.shippingFee || 0))}</div>
+      <div><strong>同梱後の本数目安：</strong>${escapeHtml(groupCopies)}本</div>
+      <div><strong>同梱後の送料目安：</strong>${yen(groupFee)}</div>
+      <div><strong>支払い：</strong>${escapeHtml(data.paymentTiming || "商品到着後（請求書同封）")}</div>
+    `;
   }
 
   function templateText(value) {
@@ -385,14 +401,15 @@
       "ふりがな",
       "電話番号",
       "正規化電話番号",
-      "発送グループ",
+      "発送グループID",
+      "送料",
+      "同梱後本数目安",
+      "同梱後送料目安",
       "住所",
       "メモ",
       "購読状況",
       "本数",
       "料金",
-      "送料単位",
-      "支払い方法",
       "ステータス",
       "画像URL"
     ];
@@ -408,6 +425,9 @@
         data.customerPhone || "",
         data.normalizedPhone || "",
         data.shippingGroupId || "",
+        data.shippingFee || "",
+        data.shippingGroupTotalCopies || "",
+        data.shippingGroupShippingFee || "",
         data.customerAddress || "",
 
         data.customerMemo || "",
@@ -415,8 +435,6 @@
         formatSubscriptionStatus(data.subscriptionStatus),
         data.copies || 1,
         getTotalPrice(data),
-        data.shippingUnit ? `10本ごと${data.shippingUnitFee || 430}円` : "",
-        data.paymentNote || "",
         statusText(data.status),
         data.imageUrl || ""
       ];
@@ -457,19 +475,21 @@
       const code = getDisplayCode(data);
       const isEc = isEcommerceOrder(data);
       const codeLabel = isEc ? "写真登録番号" : "受付番号";
-      const quantityLine = isEc
-        ? "本数：配送ネット注文と照合"
-        : `本数：${escapeHtml(data.copies || 1)}本`;
+      const quantityLine = `本数：${escapeHtml(data.copies || 1)}本`;
+      const shippingLine = isEc && data.shippingGroupId
+        ? `発送G：${escapeHtml(data.shippingGroupId)}／送料目安：${escapeHtml(data.shippingGroupShippingFee || data.shippingFee || 0)}円`
+        : "";
 
       return `
         <div class="print-label-card">
           <div class="print-label-code">${codeLabel}：${escapeHtml(code)}</div>
-          ${isEc ? `<div class="print-label-subscription">通販／配送ネット支払い済み</div>` : ""}
+          ${isEc ? `<div class="print-label-subscription">通販発送／商品到着後支払い（請求書同封）</div>` : ""}
           <div class="print-label-name">${escapeHtml(data.customerName || "")} 様</div>
           ${data.customerKana ? `<div class="print-label-kana">ふりがな：${escapeHtml(data.customerKana)}</div>` : ""}
           ${data.customerPhone ? `<div class="print-label-phone">TEL：${escapeHtml(data.customerPhone)}</div>` : ""}
           <div class="print-label-phone">テンプレート：${escapeHtml(templateText(data.template))}</div>
           <div class="print-label-phone">${quantityLine}</div>
+          ${shippingLine ? `<div class="print-label-phone">${shippingLine}</div>` : ""}
           ${data.customerMemo ? `<div class="print-label-phone">メモ：${escapeHtml(data.customerMemo)}</div>` : ""}
           ${data.subscriptionStatus ? `<div class="print-label-subscription">購読状況：${escapeHtml(formatSubscriptionStatus(data.subscriptionStatus))}</div>` : ""}
           <div class="print-label-address">${escapeHtml(data.customerAddress || "")}</div>
@@ -513,7 +533,6 @@
     return data.priceType === "student" ? studentPrice : generalPrice;
   }
   function getTotalPrice(data) {
-    if (isEcommerceOrder(data)) return 0;
     if (data.totalPrice) return Number(data.totalPrice);
     return getUnitPrice(data) * Number(data.copies || 1);
   }
@@ -581,9 +600,10 @@
           <div class="info">
             <div><strong>短番：</strong>${escapeHtml(displayNo)}</div>
             <div><strong>料金区分：</strong>${priceTypeText(data.priceType, data)}</div>
-            ${isEc ? `<div class="ecommerce-alert">通販：料金・本数は配送ネット注文と照合</div>` : `<div><strong>単価：</strong>${yen(unitPrice)}</div>`}
-            <div><strong>${isEc ? "画像登録" : "注文本数"}：</strong>${isEc ? "1件（購入本数は配送ネット照合）" : `${escapeHtml(copies)}本`}</div>
-            ${isEc ? `<div><strong>決済：</strong>配送ネット支払い済み</div>` : `<div><strong>合計金額：</strong>${yen(totalPrice)}</div>`}
+            <div><strong>単価：</strong>${yen(unitPrice)}</div>
+            <div><strong>注文本数：</strong>${escapeHtml(copies)}本</div>
+            ${isEc ? shippingGroupSummary(data) : ""}
+            <div><strong>合計金額：</strong>${yen(totalPrice)}</div>
             <div><strong>印刷ラベル：</strong>${escapeHtml(printLabel)}</div>
             <div><strong>注文ID：</strong>${escapeHtml(queueId)}</div>
             <div><strong>受付時刻：</strong>${escapeHtml(createdAt)}</div>
@@ -592,9 +612,6 @@
             ${data.customerName ? `<div><strong>氏名：</strong>${escapeHtml(data.customerName)}</div>` : ""}
             ${data.customerKana ? `<div><strong>ふりがな：</strong>${escapeHtml(data.customerKana)}</div>` : ""}
             ${data.customerPhone ? `<div><strong>電話番号：</strong>${escapeHtml(data.customerPhone)}</div>` : ""}
-            ${data.shippingGroupId ? `<div><strong>発送グループ：</strong>${escapeHtml(data.shippingGroupId)}</div>` : ""}
-            ${data.paymentNote ? `<div><strong>お支払い：</strong>${escapeHtml(data.paymentNote)}</div>` : ""}
-            ${data.shippingUnit ? `<div><strong>送料：</strong>10本ごと${escapeHtml(data.shippingUnitFee || 430)}円</div>` : ""}
             ${data.customerAddress ? `<div><strong>住所：</strong>${escapeHtml(data.customerAddress)}</div>` : ""}
             ${data.customerMemo ? `<div><strong>メモ：</strong>${escapeHtml(data.customerMemo)}</div>` : ""}
             ${data.subscriptionStatus ? `<div><strong>購読状況：</strong>${escapeHtml(formatSubscriptionStatus(data.subscriptionStatus))}</div>` : ""}

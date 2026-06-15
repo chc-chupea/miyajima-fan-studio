@@ -442,70 +442,42 @@
   display:block;
 }
 
-.shipping-price-notice {
-  display:none;
+
+
+.shippingNotice {
   margin:14px 0;
-  padding:16px;
+  padding:14px;
   border-radius:16px;
-  background:#fff8e1;
-  border:3px solid #ffb300;
-  color:#e65100;
-  font-weight:900;
+  background:linear-gradient(135deg,#fff3e0,#ffe0b2);
+  border:2px solid #ffb74d;
+  color:#bf360c;
+  font-weight:700;
   line-height:1.7;
   box-shadow:0 3px 10px rgba(255,152,0,.18);
 }
-.shipping-price-notice.active {
-  display:block;
-}
-.shipping-price-title {
-  font-size:20px;
-  margin-bottom:8px;
-  text-align:center;
-}
-.shipping-price-grid {
-  display:grid;
-  grid-template-columns:1fr;
-  gap:8px;
-  margin-top:10px;
-}
-.shipping-price-item {
-  background:#fff;
-  border-radius:12px;
-  padding:10px;
-  color:#333;
-  font-size:15px;
-}
-.shipping-price-item strong {
-  color:#e65100;
+.shippingNotice h3 {
+  margin:0 0 8px;
   font-size:18px;
-}
-.shipping-summary-box {
-  margin-top:16px;
-  padding:16px;
-  background:#fff8e1;
-  border:3px solid #ffb300;
-  border-radius:16px;
   color:#e65100;
-  text-align:left;
-  line-height:1.75;
-  font-weight:900;
 }
-.shipping-summary-title {
-  text-align:center;
-  font-size:20px;
-  margin-bottom:8px;
+.shippingNotice p { margin:6px 0; }
+.shippingNotice strong {
+  font-size:18px;
+  color:#d84315;
 }
-.complete-action-btn {
-  width:100%;
-  box-sizing:border-box;
-  padding:14px;
-  font-size:17px;
-  font-weight:900;
-  border:none;
-  border-radius:14px;
-  color:white;
+.shippingNotice.success {
+  background:linear-gradient(135deg,#fff8e1,#ffe0b2);
+  border-color:#ff9800;
+  color:#1b5e20;
+}
+.shippingNotice.success h3 { color:#ef6c00; }
+.shippingBreakdown {
   margin-top:10px;
-  box-shadow:0 4px 8px rgba(0,0,0,.18);
+  padding:10px;
+  border-radius:12px;
+  background:rgba(255,255,255,.72);
+  color:#e65100;
+  font-size:15px;
 }
 
   </style>
@@ -790,8 +762,6 @@
 
   <div id="firstFreeNoteBox" class="delivery-note-box"></div>
 
-  <div id="shippingPriceNotice" class="shipping-price-notice"></div>
-
 
   <label for="copiesSelect"
       data-ja="注文本数を選んでください"
@@ -832,6 +802,14 @@
            font-weight:bold;
            color:#e65100;">
       合計：800円
+    </div>
+
+
+    <div id="shippingNoticeInput" class="shippingNotice" style="display:none;">
+      <h3>📦 送料はまとめるほどお得！</h3>
+      <p>本日中に同じ発送先電話番号で登録されたご注文は、自動的に同梱発送いたします。</p>
+      <p>レターパックライト送料は <strong>10本ごとに430円</strong> です。</p>
+      <p>写真を分けて登録しても、本日中なら送料はまとめて計算されます。</p>
     </div>
 
     <button id="orderBtn"
@@ -984,9 +962,6 @@ Miyajima Fan Studio<br><br>
     }
 
     function getOrderCopies() {
-      // 通販モードは配送ネット側の購入本数と照合するため、
-      // うちわ登録画面では本数を選ばせず、写真登録1件として保存します。
-      if (isEcommerceMode()) return 1;
       return Number(document.getElementById('copiesSelect')?.value || 1);
     }
 
@@ -1024,7 +999,7 @@ Miyajima Fan Studio<br><br>
       if (!needsCustomerInfo()) return true;
 
       if (isEcommerceMode()) {
-        return Boolean(customerInfo.name && customerInfo.phone);
+        return Boolean(customerInfo.name && customerInfo.phone && customerInfo.address);
       }
 
       return Boolean(customerInfo.name && customerInfo.kana && customerInfo.phone && customerInfo.address);
@@ -1041,37 +1016,38 @@ Miyajima Fan Studio<br><br>
       };
     }
 
-    function normalizePhoneNumber(value) {
-      return String(value || "").replace(/\D/g, "");
+    function normalizePhone(phone) {
+      return String(phone || "").replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)).replace(/[^0-9]/g, "");
     }
 
-    function createShippingGroupId(dayKey, normalizedPhone) {
-      if (!normalizedPhone) return "";
-      return `G20${String(dayKey || "").replace(/[^0-9]/g, "")}_${normalizedPhone}`;
+    function getShippingFee(copies) {
+      const n = Math.max(0, Number(copies || 0));
+      return Math.ceil(n / 10) * 430;
     }
 
-    function getPostpayShippingNoticeHtml() {
-      return `
-        <div class="shipping-price-title">📦 今日中なら送料まとめ発送！</div>
+    function getProductTotal(copies, unitPrice) {
+      return Number(copies || 0) * Number(unitPrice || 0);
+    }
 
-        <div>
-          同じ発送先電話番号でご注文いただいた商品は、まとめて発送いたします。<br>
-          写真やデザインを追加しても大丈夫です。
-        </div>
+    function getShippingGroupId(dayKey, normalizedPhone) {
+      return `${shopId}_${dayKey}_${normalizedPhone}`;
+    }
 
-        <div class="shipping-price-grid">
-          <div class="shipping-price-item">
-            商品代：<strong>880円 × 本数</strong>
-          </div>
-          <div class="shipping-price-item">
-            送料：<strong>10本ごとに430円</strong>
-          </div>
-          <div class="shipping-price-item">
-            お支払い：<strong>商品到着後</strong><br>
-            <span style="font-size:13px;color:#555;">請求書を同封いたします</span>
-          </div>
-        </div>
-      `;
+    async function getExistingShippingGroupCopies(dayKey, normalizedPhone) {
+      if (!dayKey || !normalizedPhone) return 0;
+      const q = query(
+        collection(db, 'orders'),
+        where('shopId', '==', shopId),
+        where('dayKey', '==', dayKey),
+        where('normalizedPhone', '==', normalizedPhone)
+      );
+      const snap = await getDocs(q);
+      let total = 0;
+      snap.forEach(docSnap => {
+        const d = docSnap.data() || {};
+        total += Number(d.copies || 1);
+      });
+      return total;
     }
 
     function setFieldBlockVisible(fieldId, visible) {
@@ -1089,15 +1065,15 @@ Miyajima Fan Studio<br><br>
       const deliveryNote = document.querySelector("#customerInfoArea .delivery-note-box");
 
       if (isEcommerceMode()) {
-        if (title) title.textContent = "写真登録情報";
+        if (title) title.textContent = "お届け先情報";
         setFieldBlockVisible("customerName", true);
         setFieldBlockVisible("customerKana", false);
         setFieldBlockVisible("customerPhone", true);
-        setFieldBlockVisible("customerAddress", false);
+        setFieldBlockVisible("customerAddress", true);
         setFieldBlockVisible("customerMemo", true);
         if (subscriptionLabel) subscriptionLabel.style.display = "none";
         if (subscriptionOptions) subscriptionOptions.style.display = "none";
-        if (deliveryNote) deliveryNote.textContent = "配送ネットでご購入済みの商品を制作します。完成後、中国新聞販売センターより発送いたします。";
+        if (deliveryNote) deliveryNote.textContent = "商品到着後のお支払いです。請求書を同封してレターパックライトで発送します。";
       } else {
         if (title) title.textContent = "お届け先情報";
         setFieldBlockVisible("customerName", true);
@@ -1119,41 +1095,30 @@ Miyajima Fan Studio<br><br>
       const copiesLabel = document.querySelector('label[for="copiesSelect"]');
       const copiesHint = document.getElementById("copiesHint");
       const copiesSelect = document.getElementById("copiesSelect");
-      const shippingPriceNotice = document.getElementById("shippingPriceNotice");
+      const shippingNoticeInput = document.getElementById("shippingNoticeInput");
 
       if (customerInfoArea) {
         customerInfoArea.classList.toggle("active", needsCustomerInfo());
       }
       updateCustomerInfoFields();
 
-      if (shippingPriceNotice) {
-        if (isDeliveryMode()) {
-          shippingPriceNotice.innerHTML = getPostpayShippingNoticeHtml();
-          shippingPriceNotice.classList.add("active");
-        } else {
-          shippingPriceNotice.innerHTML = "";
-          shippingPriceNotice.classList.remove("active");
-        }
-      }
-
       if (priceTypeArea) {
         priceTypeArea.style.display = (isEcommerceMode() || isFreeMode() || isFirstFreeMode() || isPaidGeneralOnlyMode()) ? "none" : "block";
       }
 
       if (copiesSelect) {
-        if (isEcommerceMode()) {
-          copiesSelect.value = "1";
-          copiesSelect.style.display = "none";
-          if (copiesLabel) copiesLabel.style.display = "none";
-          if (copiesHint) {
-            copiesHint.style.display = "block";
-            copiesHint.textContent = "購入本数は配送ネットの注文内容と照合します。この画面では写真登録のみ行います。";
+        copiesSelect.style.display = "block";
+        if (copiesLabel) copiesLabel.style.display = "block";
+        if (copiesHint) {
+          copiesHint.style.display = "";
+          if (isEcommerceMode()) {
+            copiesHint.textContent = "送料は本日中の同じ発送先電話番号ごとに、10本まで430円でまとめて計算します。";
           }
-        } else {
-          copiesSelect.style.display = "block";
-          if (copiesLabel) copiesLabel.style.display = "block";
-          if (copiesHint) copiesHint.style.display = "";
         }
+      }
+
+      if (shippingNoticeInput) {
+        shippingNoticeInput.style.display = isEcommerceMode() ? "block" : "none";
       }
 
       if (firstFreeNoteBox) {
@@ -1163,12 +1128,8 @@ Miyajima Fan Studio<br><br>
       }
 
       if (totalPriceBox) {
-        if (isEcommerceMode()) {
-          totalPriceBox.style.display = "none";
-        } else {
-          totalPriceBox.style.display = "block";
-          if (isFreeMode()) totalPriceBox.textContent = "特別企画（無料）";
-        }
+        totalPriceBox.style.display = "block";
+        if (isFreeMode()) totalPriceBox.textContent = "特別企画（無料）";
       }
     }
 
@@ -1497,9 +1458,9 @@ Miyajima Fan Studio<br><br>
           <li><b>うちわのデザインを選ぶ：</b> ご購入内容に合わせてデザインを選びます。</li>
           <li><b>写真を選ぶ：</b> カメラで撮影、またはスマホ内の写真を選びます。</li>
           <li><b>うちわに合わせる：</b> 指で移動・拡大縮小・回転できます。</li>
-          <li><b>完成イメージを確認：</b> 内容に問題がなければ登録へ進みます。</li>
-          <li><b>写真登録情報を入力：</b> 氏名・電話番号を入力してください。</li>
-          <li><b>登録する：</b> 送信後は内容を変更できません。</li>
+          <li><b>完成イメージを確認：</b> 内容に問題がなければ本数を選びます。</li>
+          <li><b>お届け先を入力：</b> 氏名・発送先電話番号・詳細住所を入力してください。</li>
+          <li><b>注文する：</b> 送信後は内容を変更できません。</li>
           <li><b>受付番号を保存：</b> 確認用にスクリーンショットを保存してください。</li>
           <li><b>発送：</b> 制作後、中国新聞販売センターより発送します。</li>
         </ol>
@@ -2565,9 +2526,14 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       let totalPrice = 0;
 
       if (isEcommerceMode()) {
-        totalPrice = 0;
+        const productTotal = getProductTotal(copies, getGeneralPrice());
+        const shippingFee = getShippingFee(copies);
+        totalPrice = productTotal + shippingFee;
         const box = document.getElementById('totalPriceBox');
-        if (box) box.style.display = 'none';
+        if (box) {
+          box.style.display = 'block';
+          box.innerHTML = `商品代：${getGeneralPrice().toLocaleString()}円 × ${copies}本 = ${productTotal.toLocaleString()}円<br>送料目安：${shippingFee.toLocaleString()}円（10本ごとに430円）<br>お支払い目安：${totalPrice.toLocaleString()}円（商品到着後／請求書同封）`;
+        }
         return;
       }
 
@@ -2610,22 +2576,36 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       if (isEcommerceMode()) {
         completeEl.innerHTML = `
-          写真登録を受け付けました。<br><br>
+          ご注文を受け付けました。<br><br>
           <div class="receipt-code-box">
-            <div class="receipt-code-label">写真登録番号</div>
+            <div class="receipt-code-label">受付番号</div>
             <div class="receipt-code-number">${displayCode}</div>
-            <div class="receipt-code-note">※配送ネットの注文と照合するため、スクリーンショットを保存してください</div>
+            <div class="receipt-code-note">※確認のためスクリーンショットを保存してください</div>
           </div>
-          <div style="font-size:18px;line-height:1.8;color:#1b5e20;font-weight:900;">
-            制作後、中国新聞販売センターより<br>
-            発送いたします
+          <div class="shippingNotice success">
+            <h3>📷 写真を追加登録できます</h3>
+            <p>本日中に同じ発送先電話番号で登録されたご注文は、自動的に同梱発送されます。</p>
+            <p>送料は発送単位で計算されます。（10本ごとに430円）</p>
           </div>
           <div style="font-size:13px;color:#555;margin-top:12px;line-height:1.6;">
-            配送ネットでご購入済みの商品として制作します。<br>
-            購入本数は配送ネットの注文内容と照合します。<br>
-            この画面での追加料金はありません。
+            お支払いは商品到着後です。請求書を同封して発送します。
           </div>
+          <div style="font-size:14px;color:#333;font-weight:700;margin-top:18px;margin-bottom:6px;">
+            写真を追加する場合はこちら
+          </div>
+          <button id="sameDesignBtn" style="margin-top:4px;background:#4caf50;color:white;">
+            同じデザインで追加注文する
+          </button>
+          <button id="anotherOrderBtn" style="margin-top:8px;background:#ff9800;color:white;">
+            別のデザインでも作る
+          </button>
         `;
+
+        document.getElementById('sameDesignBtn')
+          ?.addEventListener('click', resetForSameDesignOrder);
+
+        document.getElementById('anotherOrderBtn')
+          ?.addEventListener('click', resetForNewDesignOrder);
         return;
       }
 
@@ -2638,37 +2618,13 @@ document.getElementById('saveBtn').addEventListener('click', () => {
             <div class="receipt-code-note">※確認のためスクリーンショットを保存してください</div>
           </div>
           <div style="font-size:18px;line-height:1.8;color:#1b5e20;font-weight:900;">
-            制作後、中国新聞販売センターより<br>
-            発送いたします
+            お近くの中国新聞販売所より<br>
+            後日、完成後にお届けします
           </div>
-
-          <div class="shipping-summary-box">
-            ${getPostpayShippingNoticeHtml()}
-          </div>
-
-          <div style="font-size:14px;color:#333;font-weight:900;margin-top:18px;margin-bottom:8px;">
-            ▼追加注文はこちら
-          </div>
-
-          <button id="sameDesignBtn" class="complete-action-btn" style="background:#4caf50;">
-            🪭 同じデザインで追加注文する
-          </button>
-
-          <button id="anotherOrderBtn" class="complete-action-btn" style="background:#2196f3;">
-            📷 別のデザインでも作る
-          </button>
-
           <div style="font-size:13px;color:#555;margin-top:12px;line-height:1.6;">
             ご注文内容の確認のため、販売所よりご連絡する場合があります。
           </div>
         `;
-
-        document.getElementById('sameDesignBtn')
-          ?.addEventListener('click', resetForSameDesignOrder);
-
-        document.getElementById('anotherOrderBtn')
-          ?.addEventListener('click', resetForNewDesignOrder);
-
         return;
       }
 
@@ -2727,7 +2683,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       };
 
       const sameDesignTexts = {
-        ja: "同じデザインで追加注文",
+        ja: "同じデザインで追加注文する",
         en: "Order More of This Design",
         zh: "追加订购相同设计",
         ko: "같은 디자인 추가 주문",
@@ -2735,7 +2691,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       };
 
       const anotherOrderTexts = {
-        ja: "新しいデザインでもう1度作る",
+        ja: "別のデザインでも作る",
         en: "Create a New Design",
         zh: "重新制作新设计",
         ko: "새로운 디자인으로 다시 만들기",
@@ -2862,6 +2818,21 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const copies = getOrderCopies();
 
       const customerInfo = getCustomerInfo();
+      if (isEcommerceMode()) {
+        if (!customerInfo.name || !customerInfo.phone || !customerInfo.address) {
+          orderErrorEl.textContent = "氏名・発送先電話番号・詳細住所を入力してください。";
+          orderErrorEl.style.display = "block";
+          orderErrorEl.scrollIntoView({ behavior: "smooth", block: "center" });
+
+          orderBtn.disabled = false;
+          orderBtn.textContent =
+            orderBtn.dataset[currentLang] ||
+            orderBtn.dataset.ja ||
+            "注文する";
+          return;
+        }
+      }
+
       if (isDeliveryMode()) {
         if (!customerInfo.name || !customerInfo.kana || !customerInfo.phone || !customerInfo.address) {
           orderErrorEl.textContent = "氏名・ふりがな・電話番号・詳細住所を入力してください。";
@@ -2896,9 +2867,11 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       const unitPrice = getUnitPriceByType(priceType);
 
+      const productTotal = getProductTotal(copies, unitPrice);
+      const shippingFee = isEcommerceMode() ? getShippingFee(copies) : 0;
       const totalPrice =
         isEcommerceMode()
-          ? 0
+          ? productTotal + shippingFee
           : (isFreeMode()
             ? 0
             : (isFirstFreeMode() ? getGeneralPrice() * Math.max(copies - 1, 0) : unitPrice * copies));
@@ -2909,11 +2882,11 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           : document.querySelector('#templateSelector option:checked').textContent;
 
       const priceTypeLabelTexts = {
-        ja: isEcommerceMode() ? '配送ネットで支払い済み' : (isFreeMode() ? '無料' : (isFirstFreeMode() ? '1本目無料・2本目から通常料金' : (isPaidGeneralOnlyMode() ? '一般価格のみ' : (priceType === 'student' ? '学割' : '一般')))),
-        en: isEcommerceMode() ? 'Already paid online' : (isFreeMode() ? 'Free' : (isFirstFreeMode() ? 'First fan free, additional fans regular price' : (isPaidGeneralOnlyMode() ? 'General only' : (priceType === 'student' ? 'Student' : 'General')))),
-        zh: isEcommerceMode() ? '已在线支付' : (isFreeMode() ? '免费' : (isFirstFreeMode() ? '第一把免费，第二把起普通价格' : (isPaidGeneralOnlyMode() ? '仅普通价格' : (priceType === 'student' ? '学生优惠' : '普通价格')))),
-        ko: isEcommerceMode() ? '온라인 결제 완료' : (isFreeMode() ? '무료' : (isFirstFreeMode() ? '1개 무료, 2개째부터 일반 가격' : (isPaidGeneralOnlyMode() ? '일반 가격만' : (priceType === 'student' ? '학생 할인' : '일반')))),
-        vi: isEcommerceMode() ? 'Đã thanh toán online' : (isFreeMode() ? 'Miễn phí' : (isFirstFreeMode() ? 'Miễn phí quạt đầu tiên, từ quạt thứ 2 giá thường' : (isPaidGeneralOnlyMode() ? 'Chỉ giá thường' : (priceType === 'student' ? 'Ưu đãi học sinh' : 'Thông thường'))))
+        ja: isEcommerceMode() ? '商品到着後（請求書同封）' : (isFreeMode() ? '無料' : (isFirstFreeMode() ? '1本目無料・2本目から通常料金' : (isPaidGeneralOnlyMode() ? '一般価格のみ' : (priceType === 'student' ? '学割' : '一般')))),
+        en: isEcommerceMode() ? 'Pay after delivery' : (isFreeMode() ? 'Free' : (isFirstFreeMode() ? 'First fan free, additional fans regular price' : (isPaidGeneralOnlyMode() ? 'General only' : (priceType === 'student' ? 'Student' : 'General')))),
+        zh: isEcommerceMode() ? '货到后付款' : (isFreeMode() ? '免费' : (isFirstFreeMode() ? '第一把免费，第二把起普通价格' : (isPaidGeneralOnlyMode() ? '仅普通价格' : (priceType === 'student' ? '学生优惠' : '普通价格')))),
+        ko: isEcommerceMode() ? '상품 도착 후 결제' : (isFreeMode() ? '무료' : (isFirstFreeMode() ? '1개 무료, 2개째부터 일반 가격' : (isPaidGeneralOnlyMode() ? '일반 가격만' : (priceType === 'student' ? '학생 할인' : '일반')))),
+        vi: isEcommerceMode() ? 'Thanh toán sau khi nhận hàng' : (isFreeMode() ? 'Miễn phí' : (isFirstFreeMode() ? 'Miễn phí quạt đầu tiên, từ quạt thứ 2 giá thường' : (isPaidGeneralOnlyMode() ? 'Chỉ giá thường' : (priceType === 'student' ? 'Ưu đãi học sinh' : 'Thông thường'))))
       };
 
       const priceTypeLabel =
@@ -2921,18 +2894,22 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       if (isEcommerceMode()) {
         const ecommerceConfirmText = {
-          ja: `写真登録内容をご確認ください
+          ja: `ご注文内容をご確認ください
 
         デザイン：${templateName}
-        購入本数：配送ネットの注文内容と照合
-        お支払い：配送ネットで支払い済み
+        商品代：${unitPrice.toLocaleString()}円 × ${copies}本 = ${productTotal.toLocaleString()}円
+        送料目安：${shippingFee.toLocaleString()}円（10本ごとに430円）
+        お支払い目安：${totalPrice.toLocaleString()}円
+        お支払い：商品到着後（請求書同封）
 
         氏名：${customerInfo.name}
-        電話番号：${customerInfo.phone}
+        発送先電話番号：${customerInfo.phone}
+        住所：${customerInfo.address}
 
+        同じ日の同じ発送先電話番号のご注文は自動同梱します。
         送信後は変更できません。
 
-        登録しますか？`,
+        注文しますか？`,
           en: `Please confirm your registration
 
         Design: ${templateName}
@@ -3097,6 +3074,12 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         const displayCode = createDisplayCode(issued.dayKey, displayNo);
         const printLabel = createPrintLabel(issued, displayNo, copies);
 
+        const normalizedPhone = normalizePhone(customerInfo.phone);
+        const shippingGroupId = isEcommerceMode() ? getShippingGroupId(issued.dayKey, normalizedPhone) : "";
+        const existingGroupCopies = isEcommerceMode() ? await getExistingShippingGroupCopies(issued.dayKey, normalizedPhone) : 0;
+        const shippingGroupTotalCopies = isEcommerceMode() ? existingGroupCopies + copies : 0;
+        const shippingGroupShippingFee = isEcommerceMode() ? getShippingFee(shippingGroupTotalCopies) : 0;
+
         let imageUrl = "";
         let storagePath = "";
 
@@ -3164,9 +3147,6 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           );
         }
 
-        const normalizedPhone = normalizePhoneNumber(customerInfo.phone);
-        const shippingGroupId = createShippingGroupId(issued.dayKey, normalizedPhone);
-
         const orderRef = doc(db, 'orders', issued.queueId);
         await setDoc(orderRef, {
           queueId: issued.queueId,
@@ -3181,6 +3161,8 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
           priceType,
           unitPrice,
+          productTotal,
+          shippingFee,
           totalPrice,
 
           copies,
@@ -3193,22 +3175,24 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           salesMode: getSalesMode(),
           freeCopies: isFreeMode() ? copies : (isFirstFreeMode() ? Math.min(copies, 1) : 0),
           chargedCopies: (isEcommerceMode() || isFreeMode()) ? 0 : (isFirstFreeMode() ? Math.max(copies - 1, 0) : copies),
-          ecommerceQuantitySource: isEcommerceMode() ? 'delivery-net-order' : '',
-          ecommerceQuantityNote: isEcommerceMode() ? '購入本数は配送ネットの注文内容と照合' : '',
+          ecommerceQuantitySource: isEcommerceMode() ? 'fan-site-order' : '',
+          ecommerceQuantityNote: isEcommerceMode() ? 'うちわサイト内で本数・発送先を受付' : '',
+          normalizedPhone,
+          shippingGroupId,
+          shippingGroupRule: isEcommerceMode() ? 'same-day-and-normalized-phone' : '',
+          shippingMethod: isEcommerceMode() ? 'レターパックライト' : '',
+          shippingUnitLimit: isEcommerceMode() ? 10 : 0,
+          shippingUnitFee: isEcommerceMode() ? 430 : 0,
+          shippingGroupTotalCopies,
+          shippingGroupShippingFee,
+          paymentTiming: isEcommerceMode() ? '商品到着後（請求書同封）' : '',
           customerName: needsCustomerInfo() ? customerInfo.name : "",
           customerKana: isDeliveryMode() ? customerInfo.kana : "",
           customerPhone: needsCustomerInfo() ? customerInfo.phone : "",
-          normalizedPhone,
-          shippingGroupId,
-          shippingUnit: "letter-pack-light",
-          shippingUnitFee: 430,
-          shippingUnitCopies: 10,
-          paymentMethod: isDeliveryMode() ? "postpay-invoice" : "",
-          paymentNote: isDeliveryMode() ? "商品到着後・請求書同封" : "",
-          customerAddress: isDeliveryMode() ? customerInfo.address : "",
+          customerAddress: (isDeliveryMode() || isEcommerceMode()) ? customerInfo.address : "",
           customerMemo: customerInfo.memo,
           subscriptionStatus: isDeliveryMode() ? customerInfo.subscriptionStatus : [],
-          deliveryMessage: isDeliveryMode() ? "お近くの中国新聞販売所より後日、完成後にお届けします" : "",
+          deliveryMessage: isEcommerceMode() ? "レターパックライトで発送します。お支払いは商品到着後（請求書同封）です" : (isDeliveryMode() ? "お近くの中国新聞販売所より後日、完成後にお届けします" : ""),
 
           isReorder: isReuseMode,
           reuseFromQueueId: isReuseMode && reuseSourceOrder ? reuseSourceOrder.queueId : null,
@@ -3219,7 +3203,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           status: 'WAIT',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
-          source: isEcommerceMode() ? 'ecommerce-fan-studio' : (isDeliveryMode() ? 'kure-softball-fan-studio' : 'miyajima-fan-studio')
+          source: isEcommerceMode() ? 'fan-site-mail-order' : (isDeliveryMode() ? 'kure-softball-fan-studio' : 'miyajima-fan-studio')
         });
         
         document.getElementById('sendingOverlay').style.display = 'none';

@@ -151,7 +151,7 @@
           </label>
           <label class="radio-card">
             <input type="radio" name="operationMode" value="ecommerce">
-            通販（配送ネット）<br><span style="font-size:12px;color:#555;">氏名・電話番号のみ</span>
+            通販発送（後払い）<br><span style="font-size:12px;color:#555;">住所・電話番号で同梱</span>
           </label>
         </div>
         <div id="operationModeNote" class="mode-note"></div>
@@ -390,7 +390,7 @@
       if (operationMode === "delivery") {
         opNote.innerHTML = "後日訪問モード：注文時に氏名・電話番号・詳細住所・購読状況を入力してもらいます。完了画面には「お近くの中国新聞販売所より完成後にお届けします」と表示されます。";
       } else if (operationMode === "ecommerce") {
-        opNote.innerHTML = "通販モード：配送ネットで購入済みのお客さま向けです。うちわ側では氏名・電話番号・メモだけを入力してもらいます。";
+        opNote.innerHTML = "通販発送モード：うちわサイト内で本数・発送先を受け付けます。発送先電話番号を正規化し、同日＋同じ電話番号で自動同梱します。送料は10本ごとにレターパックライト430円、支払いは商品到着後（請求書同封）です。";
       } else {
         opNote.innerHTML = "即時受取モード：注文後に受付番号を発行し、当日会場で受け渡す運用です。";
       }
