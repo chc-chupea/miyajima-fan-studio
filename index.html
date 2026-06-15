@@ -1020,9 +1020,33 @@ Miyajima Fan Studio<br><br>
       return String(phone || "").replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)).replace(/[^0-9]/g, "");
     }
 
-    function getShippingFee(copies) {
+    function getShippingUnits(copies) {
       const n = Math.max(0, Number(copies || 0));
-      return Math.ceil(n / 10) * 430;
+      return Math.ceil(n / 10);
+    }
+
+    function getShippingFee(copies) {
+      return getShippingUnits(copies) * 430;
+    }
+
+    function getPaymentBreakdown(copies, unitPrice, existingGroupCopies = 0) {
+      const currentCopies = Number(copies || 0);
+      const groupCopies = Number(existingGroupCopies || 0) + currentCopies;
+      const currentProductTotal = getProductTotal(currentCopies, unitPrice);
+      const groupShippingUnits = getShippingUnits(groupCopies);
+      const groupShippingFee = getShippingFee(groupCopies);
+      const groupPaymentTotal = (Number(existingGroupCopies || 0) * unitPrice) + currentProductTotal + groupShippingFee;
+
+      return {
+        currentCopies,
+        existingGroupCopies: Number(existingGroupCopies || 0),
+        groupCopies,
+        currentProductTotal,
+        groupShippingUnits,
+        groupShippingFee,
+        groupPaymentTotal,
+        isAdditionalOrder: Number(existingGroupCopies || 0) > 0
+      };
     }
 
     function getProductTotal(copies, unitPrice) {
@@ -2472,6 +2496,9 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       document.getElementById('orderComplete').style.display = 'none';
       document.getElementById('orderArea').style.display = 'block';
       document.getElementById('copiesSelect').value = '1';
+      document.getElementById('orderError').style.display = 'none';
+      document.getElementById('orderError').textContent = '';
+      updateTotalPrice();
 
       const orderBtn = document.getElementById('orderBtn');
       orderBtn.disabled = false;
@@ -2500,6 +2527,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       document.getElementById('orderComplete').style.display = 'none';
       document.getElementById('orderArea').style.display = 'none';
       document.getElementById('copiesSelect').value = '1';
+      updateTotalPrice();
       lastCompleteDisplayNo = null;
       lastCompleteQueueId = null;
       document.getElementById('notice').textContent = '';
@@ -2532,7 +2560,11 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         const box = document.getElementById('totalPriceBox');
         if (box) {
           box.style.display = 'block';
-          box.innerHTML = `商品代：${getGeneralPrice().toLocaleString()}円 × ${copies}本 = ${productTotal.toLocaleString()}円<br>送料目安：${shippingFee.toLocaleString()}円（10本ごとに430円）<br>お支払い目安：${totalPrice.toLocaleString()}円（商品到着後／請求書同封）`;
+          box.innerHTML = `
+            今回の商品代：${getGeneralPrice().toLocaleString()}円 × ${copies}本 = ${productTotal.toLocaleString()}円<br>
+            送料は本日中の同じ発送先電話番号分とまとめて計算されます。<br>
+            <span style="font-size:14px;color:#666;">※今回分だけの場合の目安：送料${shippingFee.toLocaleString()}円／合計${totalPrice.toLocaleString()}円</span>
+          `;
         }
         return;
       }
@@ -2566,7 +2598,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         totalPriceTexts[currentLang] || totalPriceTexts.ja;
     }
 
-    function renderCompleteMessage(displayCode, queueId) {
+    function renderCompleteMessage(displayCode, queueId, shippingSummary = null) {
       const completeEl = document.getElementById('orderComplete');
 
       const orderErrorEl = document.getElementById('orderError');
@@ -2575,6 +2607,14 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
 
       if (isEcommerceMode()) {
+        const s = shippingSummary || {};
+        const groupCopies = Number(s.groupCopies || 0);
+        const groupShippingUnits = Number(s.groupShippingUnits || getShippingUnits(groupCopies));
+        const groupShippingFee = Number(s.groupShippingFee || getShippingFee(groupCopies));
+        const groupPaymentTotal = Number(s.groupPaymentTotal || 0);
+        const currentProductTotal = Number(s.currentProductTotal || 0);
+        const isAdditionalOrder = s.isAdditionalOrder === true;
+
         completeEl.innerHTML = `
           ご注文を受け付けました。<br><br>
           <div class="receipt-code-box">
@@ -2583,9 +2623,14 @@ document.getElementById('saveBtn').addEventListener('click', () => {
             <div class="receipt-code-note">※確認のためスクリーンショットを保存してください</div>
           </div>
           <div class="shippingNotice success">
-            <h3>📷 写真を追加登録できます</h3>
+            <h3>${isAdditionalOrder ? "📦 同梱対象の追加注文として受付しました" : "📦 同じ電話番号のご注文をまとめて計算しています"}</h3>
+            <div class="shippingBreakdown">
+              <div>今回の商品代：${getGeneralPrice().toLocaleString()}円 × ${Number(s.currentCopies || 0).toLocaleString()}本 = ${currentProductTotal.toLocaleString()}円</div>
+              <div><strong>現在の同梱予定合計：${groupCopies.toLocaleString()}本</strong></div>
+              <div>送料目安：${groupShippingFee.toLocaleString()}円（レターパックライト${groupShippingUnits.toLocaleString()}通分／10本ごとに430円）</div>
+              ${groupPaymentTotal ? `<div><strong>お支払い目安：${groupPaymentTotal.toLocaleString()}円</strong>（商品到着後／請求書同封）</div>` : ""}
+            </div>
             <p>本日中に同じ発送先電話番号で登録されたご注文は、自動的に同梱発送されます。</p>
-            <p>送料は発送単位で計算されます。（10本ごとに430円）</p>
           </div>
           <div style="font-size:13px;color:#555;margin-top:12px;line-height:1.6;">
             お支払いは商品到着後です。請求書を同封して発送します。
@@ -2869,9 +2914,10 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       const productTotal = getProductTotal(copies, unitPrice);
       const shippingFee = isEcommerceMode() ? getShippingFee(copies) : 0;
+      let shippingSummary = null;
       const totalPrice =
         isEcommerceMode()
-          ? productTotal + shippingFee
+          ? productTotal
           : (isFreeMode()
             ? 0
             : (isFirstFreeMode() ? getGeneralPrice() * Math.max(copies - 1, 0) : unitPrice * copies));
@@ -3077,8 +3123,13 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         const normalizedPhone = normalizePhone(customerInfo.phone);
         const shippingGroupId = isEcommerceMode() ? getShippingGroupId(issued.dayKey, normalizedPhone) : "";
         const existingGroupCopies = isEcommerceMode() ? await getExistingShippingGroupCopies(issued.dayKey, normalizedPhone) : 0;
-        const shippingGroupTotalCopies = isEcommerceMode() ? existingGroupCopies + copies : 0;
-        const shippingGroupShippingFee = isEcommerceMode() ? getShippingFee(shippingGroupTotalCopies) : 0;
+        shippingSummary = isEcommerceMode()
+          ? getPaymentBreakdown(copies, unitPrice, existingGroupCopies)
+          : null;
+        const shippingGroupTotalCopies = shippingSummary ? shippingSummary.groupCopies : 0;
+        const shippingGroupShippingFee = shippingSummary ? shippingSummary.groupShippingFee : 0;
+        const shippingGroupShippingUnits = shippingSummary ? shippingSummary.groupShippingUnits : 0;
+        const shippingGroupPaymentTotal = shippingSummary ? shippingSummary.groupPaymentTotal : 0;
 
         let imageUrl = "";
         let storagePath = "";
@@ -3209,7 +3260,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
         document.getElementById('sendingOverlay').style.display = 'none';
         lastCompleteDisplayNo = displayCode;
         lastCompleteQueueId = issued.queueId;
-        renderCompleteMessage(displayCode, issued.queueId);
+        renderCompleteMessage(displayCode, issued.queueId, shippingSummary);
 
 
 

@@ -43,6 +43,81 @@
     .btn-download { background:#00a86b; }
     .btn-label-single { background:#795548; }
     .ecommerce-alert { background:#fff8e1; color:#e65100; font-weight:900; border-radius:10px; padding:8px 10px; margin:6px 0; }
+    .shipping-group-detail {
+      background:#fff8e1;
+      border:2px solid #ffb74d;
+      color:#bf360c;
+      border-radius:12px;
+      padding:10px;
+      margin:8px 0;
+      font-weight:700;
+      line-height:1.7;
+    }
+    .shipping-group-detail .group-total {
+      font-size:17px;
+      color:#d84315;
+      font-weight:900;
+    }
+
+    .view-btn { background:#fff; color:#6d4c41; border:1px solid #bcaaa4; }
+    .view-btn.active { background:#6d4c41; color:#fff; }
+    .shipping-group-card {
+      background:#fff;
+      border-left:10px solid #ff9800;
+      border-radius:18px;
+      padding:14px;
+      margin-bottom:14px;
+      box-shadow:0 3px 10px rgba(0,0,0,.08);
+    }
+    .shipping-group-header {
+      display:grid;
+      grid-template-columns:1fr;
+      gap:8px;
+      background:#fff8e1;
+      border:2px solid #ffcc80;
+      border-radius:14px;
+      padding:12px;
+      color:#bf360c;
+      font-weight:800;
+      line-height:1.7;
+    }
+    .shipping-group-title {
+      font-size:21px;
+      font-weight:900;
+      color:#e65100;
+    }
+    .shipping-group-totals {
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:8px;
+      margin-top:8px;
+    }
+    .shipping-group-totals div {
+      background:#fff;
+      border-radius:12px;
+      padding:9px;
+      color:#d84315;
+      font-weight:900;
+      text-align:center;
+    }
+    .shipping-group-orders { margin-top:12px; }
+    .shipping-group-order-row {
+      display:grid;
+      grid-template-columns:120px 1fr;
+      gap:10px;
+      padding:10px;
+      margin-top:8px;
+      border-radius:12px;
+      border:1px solid #eee;
+      background:#fafafa;
+      align-items:start;
+    }
+    .shipping-group-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .btn-label-group { background:#795548; }
+    @media (max-width:640px) {
+      .shipping-group-totals { grid-template-columns:1fr; }
+      .shipping-group-order-row { grid-template-columns:1fr; }
+    }
     .empty { text-align:center; color:#777; padding:30px; }
     .small { font-size:12px; color:#777; margin-top:4px; }
     .shop-badge { display:inline-block; background:#e8f5e9; color:#1b5e20; padding:4px 10px; border-radius:999px; font-size:13px; font-weight:700; margin-left:6px; }
@@ -206,6 +281,8 @@
         <button class="filter-btn" data-filter="PICKED_UP">受渡済</button>
         <button id="csvExportBtn" style="background:#ff9800;">CSV出力</button>
         <button id="labelPrintBtn" style="background:#795548;">ラベル印刷</button>
+        <button class="view-btn active" data-view="GROUP">発送グループ表示</button>
+        <button class="view-btn" data-view="ORDER">注文単位表示</button>
       </div>
 
       <div class="search-row">
@@ -245,6 +322,7 @@
 
   let orders = [];
   let currentFilter = "ALL";
+  let currentView = "GROUP";
   let searchCode = "";
   let popupSettings = null;
 
@@ -338,23 +416,102 @@
     return value || "";
   }
 
+  function getShippingUnits(copies) {
+    return Math.max(0, Math.ceil(Number(copies || 0) / 10));
+  }
+
+  function getShippingFeeByCopies(copies) {
+    return getShippingUnits(copies) * 430;
+  }
+
+  function getShippingGroupKey(data) {
+    if (!data) return "";
+    if (data.shippingGroupId) return String(data.shippingGroupId);
+    if (data.dayKey && data.normalizedPhone) return `${shopId}_${data.dayKey}_${data.normalizedPhone}`;
+    return "";
+  }
+
+  function buildShippingGroupStats(list) {
+    const map = new Map();
+
+    list.forEach(item => {
+      const data = item.data || {};
+      if (!isEcommerceOrder(data)) return;
+
+      const key = getShippingGroupKey(data);
+      if (!key) return;
+
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          orderCount: 0,
+          copies: 0,
+          productTotal: 0,
+          shippingUnits: 0,
+          shippingFee: 0,
+          paymentTotal: 0
+        });
+      }
+
+      const stat = map.get(key);
+      const copies = Number(data.copies || 1);
+      const unitPrice = Number(data.unitPrice || popupSettings?.generalPrice || 800);
+      const productTotal = Number(data.productTotal || (unitPrice * copies));
+
+      stat.orderCount += 1;
+      stat.copies += copies;
+      stat.productTotal += productTotal;
+    });
+
+    map.forEach(stat => {
+      stat.shippingUnits = getShippingUnits(stat.copies);
+      stat.shippingFee = getShippingFeeByCopies(stat.copies);
+      stat.paymentTotal = stat.productTotal + stat.shippingFee;
+    });
+
+    return map;
+  }
+
+  let shippingGroupStats = new Map();
+
+  function getShippingGroupStats(data) {
+    const key = getShippingGroupKey(data);
+    if (key && shippingGroupStats.has(key)) return shippingGroupStats.get(key);
+
+    const copies = Number(data?.shippingGroupTotalCopies || data?.copies || 1);
+    const productTotal = Number(data?.shippingGroupProductTotal || data?.productTotal || (Number(data?.unitPrice || popupSettings?.generalPrice || 800) * copies));
+    const shippingFee = Number(data?.shippingGroupShippingFee || getShippingFeeByCopies(copies));
+    return {
+      key,
+      orderCount: key ? 1 : 0,
+      copies,
+      productTotal,
+      shippingUnits: getShippingUnits(copies),
+      shippingFee,
+      paymentTotal: Number(data?.shippingGroupPaymentTotal || (productTotal + shippingFee))
+    };
+  }
+
   function isEcommerceOrder(data) {
     return data?.operationMode === "ecommerce" || data?.source === "ecommerce-fan-studio" || data?.source === "fan-site-mail-order";
   }
 
   function shippingGroupSummary(data) {
     if (!isEcommerceOrder(data)) return "";
-    const groupId = data.shippingGroupId || "";
-    const groupCopies = Number(data.shippingGroupTotalCopies || data.copies || 1);
-    const groupFee = Number(data.shippingGroupShippingFee || data.shippingFee || 0);
+    const groupId = data.shippingGroupId || getShippingGroupKey(data);
+    const stat = getShippingGroupStats(data);
     return `
       <div class="ecommerce-alert">通販発送：同日＋正規化電話番号で自動同梱</div>
-      ${groupId ? `<div><strong>発送グループID：</strong>${escapeHtml(groupId)}</div>` : ""}
-      ${data.normalizedPhone ? `<div><strong>正規化電話番号：</strong>${escapeHtml(data.normalizedPhone)}</div>` : ""}
-      <div><strong>この登録の送料目安：</strong>${yen(Number(data.shippingFee || 0))}</div>
-      <div><strong>同梱後の本数目安：</strong>${escapeHtml(groupCopies)}本</div>
-      <div><strong>同梱後の送料目安：</strong>${yen(groupFee)}</div>
-      <div><strong>支払い：</strong>${escapeHtml(data.paymentTiming || "商品到着後（請求書同封）")}</div>
+      <div class="shipping-group-detail">
+        ${groupId ? `<div><strong>発送グループID：</strong>${escapeHtml(groupId)}</div>` : ""}
+        ${data.normalizedPhone ? `<div><strong>正規化電話番号：</strong>${escapeHtml(data.normalizedPhone)}</div>` : ""}
+        <div><strong>この登録の商品代：</strong>${yen(Number(data.productTotal || 0))}</div>
+        <div class="group-total">現在の同梱予定合計：${escapeHtml(stat.copies)}本</div>
+        <div><strong>送料目安：</strong>${yen(stat.shippingFee)}（レターパックライト${escapeHtml(stat.shippingUnits)}通分／10本ごとに430円）</div>
+        <div><strong>同梱グループ商品代：</strong>${yen(stat.productTotal)}</div>
+        <div><strong>お支払い目安：</strong>${yen(stat.paymentTotal)}（商品到着後／請求書同封）</div>
+        <div><strong>同梱注文数：</strong>${escapeHtml(stat.orderCount)}件</div>
+      </div>
     `;
   }
 
@@ -416,6 +573,7 @@
 
     const rows = orders.map(item => {
       const data = item.data || {};
+      const stat = isEcommerceOrder(data) ? getShippingGroupStats(data) : null;
       return [
         getDisplayCode(data),
         formatCreatedAtForCsv(data.createdAt),
@@ -426,8 +584,8 @@
         data.normalizedPhone || "",
         data.shippingGroupId || "",
         data.shippingFee || "",
-        data.shippingGroupTotalCopies || "",
-        data.shippingGroupShippingFee || "",
+        stat ? stat.copies : (data.shippingGroupTotalCopies || ""),
+        stat ? stat.shippingFee : (data.shippingGroupShippingFee || ""),
         data.customerAddress || "",
 
         data.customerMemo || "",
@@ -519,14 +677,13 @@
     return s;
   }
   function priceTypeText(priceType, data = {}) {
-    if (isEcommerceOrder(data)) return "配送ネット支払い済み";
+    if (isEcommerceOrder(data)) return "通販・後払い";
     if (data.salesMode === "free") return "無料";
     if (data.salesMode === "firstFree") return "1本目無料";
     if (data.salesMode === "paidGeneralOnly") return "一般のみ";
     return priceType === "student" ? "学割" : "一般";
   }
   function getUnitPrice(data) {
-    if (isEcommerceOrder(data)) return 0;
     if (data.unitPrice) return Number(data.unitPrice);
     const generalPrice = Number(popupSettings?.generalPrice || 800);
     const studentPrice = Number(popupSettings?.studentPrice || 500);
@@ -689,13 +846,150 @@
     `;
   }
 
+  function buildShippingGroupsFromOrders(list) {
+    const groups = new Map();
+
+    list.forEach(item => {
+      const data = item.data || {};
+      if (!isEcommerceOrder(data)) return;
+
+      const key = getShippingGroupKey(data);
+      if (!key) return;
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          orders: [],
+          customerName: data.customerName || "",
+          customerPhone: data.customerPhone || "",
+          normalizedPhone: data.normalizedPhone || "",
+          customerAddress: data.customerAddress || "",
+          latestTime: 0
+        });
+      }
+
+      const group = groups.get(key);
+      group.orders.push(item);
+      if (!group.customerName && data.customerName) group.customerName = data.customerName;
+      if (!group.customerPhone && data.customerPhone) group.customerPhone = data.customerPhone;
+      if (!group.normalizedPhone && data.normalizedPhone) group.normalizedPhone = data.normalizedPhone;
+      if (!group.customerAddress && data.customerAddress) group.customerAddress = data.customerAddress;
+      const t = data.createdAt?.toMillis ? data.createdAt.toMillis() : 0;
+      group.latestTime = Math.max(group.latestTime, t);
+    });
+
+    return Array.from(groups.values()).map(group => {
+      const stat = getShippingGroupStats(group.orders[0]?.data || { shippingGroupId: group.key });
+      group.stat = stat;
+      group.orders.sort((a, b) => {
+        const at = a.data.createdAt?.toMillis ? a.data.createdAt.toMillis() : 0;
+        const bt = b.data.createdAt?.toMillis ? b.data.createdAt.toMillis() : 0;
+        return at - bt;
+      });
+      return group;
+    }).sort((a, b) => b.latestTime - a.latestTime);
+  }
+
+  function renderShippingGroupCards(filteredOrders) {
+    const visibleGroupKeys = new Set(
+      filteredOrders
+        .filter(item => isEcommerceOrder(item.data || {}))
+        .map(item => getShippingGroupKey(item.data || {}))
+        .filter(Boolean)
+    );
+
+    const groups = buildShippingGroupsFromOrders(orders).filter(group => visibleGroupKeys.has(group.key));
+    const nonEcommerceOrders = filteredOrders.filter(item => !isEcommerceOrder(item.data || {}));
+
+    const groupHtml = groups.length === 0
+      ? `<div class="empty">該当する発送グループはありません。</div>`
+      : groups.map(group => {
+          const stat = group.stat;
+          const representative = group.customerName ? `${escapeHtml(group.customerName)} 様` : "氏名未入力";
+          const ordersHtml = group.orders.map(item => {
+            const data = item.data || {};
+            const status = String(data.status || "WAIT").toUpperCase();
+            const imageUrl = data.imageUrl || "";
+            const displayCode = getDisplayCode(data);
+            const queueId = data.queueId || item.id || "";
+            const imageHtml = imageUrl
+              ? `<a href="${escapeHtml(imageUrl)}" target="_blank" rel="noopener"><img class="thumb" src="${escapeHtml(imageUrl)}" alt="注文画像"></a>`
+              : `<div class="no-image">画像なし</div>`;
+            return `
+              <div class="shipping-group-order-row">
+                <div>${imageHtml}</div>
+                <div class="info">
+                  <div><strong>写真登録番号：</strong><span class="display-code-large" style="font-size:24px;padding:5px 12px;margin:0 0 6px;">${escapeHtml(displayCode)}</span></div>
+                  <div><span class="status-badge badge-${status}">${statusText(status)}</span></div>
+                  <div><strong>本数：</strong>${escapeHtml(data.copies || 1)}本 ／ <strong>商品代：</strong>${yen(getTotalPrice(data))}</div>
+                  <div><strong>テンプレート：</strong>${escapeHtml(templateText(data.template))}</div>
+                  ${data.customerMemo ? `<div><strong>メモ：</strong>${escapeHtml(data.customerMemo)}</div>` : ""}
+                  <div><strong>内部ID：</strong>${escapeHtml(queueId)}</div>
+                  <div class="actions">
+                    <button class="btn-download" data-url="${escapeHtml(imageUrl)}" data-code="${escapeHtml(displayCode)}">PNG保存</button>
+                    <button class="btn-label-single" data-id="${escapeHtml(queueId)}">個別ラベル</button>
+                    <button class="btn-printing" data-id="${escapeHtml(queueId)}" data-status="PRINTING">印刷中</button>
+                    <button class="btn-ready" data-id="${escapeHtml(queueId)}" data-status="READY">完成</button>
+                    <button class="btn-picked" data-id="${escapeHtml(queueId)}" data-status="PICKED_UP">受渡済</button>
+                    <button class="btn-wait" data-id="${escapeHtml(queueId)}" data-status="WAIT">受付済みに戻す</button>
+                    <button class="btn-close" data-id="${escapeHtml(queueId)}" data-status="CLOSED">終了</button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join("");
+
+          return `
+            <div class="shipping-group-card">
+              <div class="shipping-group-header">
+                <div class="shipping-group-title">📦 ${representative}</div>
+                <div><strong>電話番号：</strong>${escapeHtml(group.customerPhone || "")} ／ <strong>正規化：</strong>${escapeHtml(group.normalizedPhone || "")}</div>
+                <div><strong>住所：</strong>${escapeHtml(group.customerAddress || "")}</div>
+                <div><strong>発送グループID：</strong>${escapeHtml(group.key)}</div>
+                <div class="shipping-group-totals">
+                  <div>合計 ${escapeHtml(stat.copies)}本</div>
+                  <div>レターパック ${escapeHtml(stat.shippingUnits)}通</div>
+                  <div>送料 ${yen(stat.shippingFee)}</div>
+                  <div>支払目安 ${yen(stat.paymentTotal)}</div>
+                </div>
+                <div><strong>商品代合計：</strong>${yen(stat.productTotal)} ／ <strong>注文数：</strong>${escapeHtml(stat.orderCount)}件</div>
+                <div class="shipping-group-actions">
+                  <button class="btn-label-group" data-group="${escapeHtml(group.key)}">この発送グループのラベル印刷</button>
+                </div>
+              </div>
+              <div class="shipping-group-orders">
+                <strong>注文内訳</strong>
+                ${ordersHtml}
+              </div>
+            </div>
+          `;
+        }).join("");
+
+    const otherHtml = nonEcommerceOrders.length > 0
+      ? `<div class="section-title">その他の注文</div>${renderOrderCards(nonEcommerceOrders)}`
+      : "";
+
+    return groupHtml + otherHtml;
+  }
+
+  function bindShippingGroupButtons() {
+    document.querySelectorAll(".btn-label-group").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const key = btn.dataset.group || "";
+        const groupOrders = orders.filter(item => getShippingGroupKey(item.data || {}) === key);
+        printLabelsForOrders(groupOrders);
+      });
+    });
+  }
+
   function renderOrders() {
     renderSummary(orders);
     const box = document.getElementById("orders");
     const statusFiltered = currentFilter === "ALL" ? orders : orders.filter(item => String(item.data.status || "WAIT").toUpperCase() === currentFilter);
-    box.innerHTML = renderOrderCards(statusFiltered);
+    box.innerHTML = currentView === "GROUP" ? renderShippingGroupCards(statusFiltered) : renderOrderCards(statusFiltered);
     renderSearchResults();
     bindOrderButtons();
+    bindShippingGroupButtons();
   }
 
   function startWatch() {
@@ -711,6 +1005,7 @@
         const bTime = b.data.createdAt?.toMillis ? b.data.createdAt.toMillis() : 0;
         return bTime - aTime;
       });
+      shippingGroupStats = buildShippingGroupStats(orders);
       renderOrders();
     }, error => {
       console.error(error);
@@ -723,6 +1018,15 @@
       document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
       currentFilter = btn.dataset.filter;
+      renderOrders();
+    });
+  });
+
+  document.querySelectorAll(".view-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".view-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentView = btn.dataset.view || "GROUP";
       renderOrders();
     });
   });
