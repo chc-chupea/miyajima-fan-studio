@@ -150,7 +150,7 @@
     .file-btn.secondary{background:#e3f2fd;color:var(--blue-dark);}
     input[type=file]{display:none;}
     .canvas-wrap{background:#f7fbff;border:1px solid var(--line);border-radius:16px;padding:8px;}
-    canvas{display:block;width:100%;height:auto;border-radius:12px;background:#fff;touch-action:none;}
+    canvas{display:block;width:100%;height:auto;border-radius:12px;background:#fff;touch-action:none;user-select:none;-webkit-user-select:none;}
     .controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
     .btn{
       border:none;
@@ -563,10 +563,11 @@
   let cart = [];
   let isDragging=false;
   let lastPoint=null;
-  let lastTouchDist=0;
-  let lastTouchAngle=0;
-  let lastTouchScale=1;
-  let lastTouchRotation=0;
+  // 写真編集は Pointer Events に一本化します。
+  // pointer と touch の両方で処理すると、スマホで2本指操作時に二重反応してガタつくためです。
+  const activePointers = new Map();
+  let gestureStart = null;
+  let rafDrawPending = false;
   let guidedCameraStream=null;
   let guidedCameraFacing="environment";
   let guidedCameraZoom=1;
@@ -777,31 +778,162 @@
 
   function canvasPoint(event){
     const rect = els.canvas.getBoundingClientRect();
-    return {x:(event.clientX-rect.left)*(3508/rect.width), y:(event.clientY-rect.top)*(2480/rect.height)};
+    return {
+      x:(event.clientX-rect.left)*(3508/rect.width),
+      y:(event.clientY-rect.top)*(2480/rect.height)
+    };
   }
-  els.canvas.addEventListener("pointerdown",e=>{if(!photoImg)return; isDragging=true; lastPoint=canvasPoint(e); els.canvas.setPointerCapture(e.pointerId);});
-  els.canvas.addEventListener("pointermove",e=>{if(!isDragging||!lastPoint||!photoImg)return; const p=canvasPoint(e); photoState.x += p.x-lastPoint.x; photoState.y += p.y-lastPoint.y; lastPoint=p; drawCanvas();});
-  els.canvas.addEventListener("pointerup",()=>{isDragging=false; lastPoint=null;});
-  els.canvas.addEventListener("wheel",e=>{if(!photoImg)return; e.preventDefault(); photoState.scale *= e.deltaY<0 ? 1.06 : 0.94; drawCanvas();},{passive:false});
-  els.canvas.addEventListener("touchstart",e=>{
-    if(!photoImg || e.touches.length!==2) return;
-    const a=e.touches[0], b=e.touches[1];
-    lastTouchDist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
-    lastTouchAngle=Math.atan2(b.clientY-a.clientY,b.clientX-a.clientX);
-    lastTouchScale=photoState.scale;
-    lastTouchRotation=photoState.rotation;
-  },{passive:false});
-  els.canvas.addEventListener("touchmove",e=>{
-    if(!photoImg || e.touches.length!==2) return;
-    e.preventDefault();
-    const a=e.touches[0], b=e.touches[1];
-    const dist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
-    const angle=Math.atan2(b.clientY-a.clientY,b.clientX-a.clientX);
-    if(lastTouchDist){
-      photoState.scale = lastTouchScale * (dist/lastTouchDist);
-      photoState.rotation = lastTouchRotation + (angle-lastTouchAngle);
+
+  function scheduleDraw(){
+    if(rafDrawPending) return;
+    rafDrawPending = true;
+    requestAnimationFrame(()=>{
+      rafDrawPending = false;
       drawCanvas();
+    });
+  }
+
+  function getPointerArray(){
+    return Array.from(activePointers.values());
+  }
+
+  function pointerDistance(a,b){
+    return Math.hypot(a.x-b.x, a.y-b.y);
+  }
+
+  function pointerAngle(a,b){
+    return Math.atan2(b.y-a.y, b.x-a.x);
+  }
+
+  function pointerCenter(a,b){
+    return { x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
+  }
+
+  function imageLocalFromCanvasPoint(point, state){
+    const dx = point.x - state.x;
+    const dy = point.y - state.y;
+    const cos = Math.cos(-state.rotation);
+    const sin = Math.sin(-state.rotation);
+    return {
+      x:(dx*cos - dy*sin) / state.scale,
+      y:(dx*sin + dy*cos) / state.scale
+    };
+  }
+
+  function canvasPointFromImageLocal(local, state){
+    const cos = Math.cos(state.rotation);
+    const sin = Math.sin(state.rotation);
+    return {
+      x:state.x + (local.x*cos - local.y*sin) * state.scale,
+      y:state.y + (local.x*sin + local.y*cos) * state.scale
+    };
+  }
+
+  function beginTwoFingerGesture(){
+    const pts = getPointerArray();
+    if(pts.length < 2) return;
+    const a = pts[0];
+    const b = pts[1];
+    const center = pointerCenter(a,b);
+    const startState = {...photoState};
+    gestureStart = {
+      center,
+      localCenter:imageLocalFromCanvasPoint(center, startState),
+      distance:Math.max(1, pointerDistance(a,b)),
+      angle:pointerAngle(a,b),
+      state:startState
+    };
+  }
+
+  function endPointer(e){
+    activePointers.delete(e.pointerId);
+    try{ els.canvas.releasePointerCapture(e.pointerId); }catch(_e){}
+
+    const pts = getPointerArray();
+    if(pts.length === 1){
+      isDragging = true;
+      lastPoint = pts[0];
+      gestureStart = null;
+    }else{
+      isDragging = false;
+      lastPoint = null;
+      gestureStart = null;
     }
+  }
+
+  els.canvas.addEventListener("pointerdown", e=>{
+    if(!photoImg) return;
+    e.preventDefault();
+    const p = canvasPoint(e);
+    activePointers.set(e.pointerId, p);
+    els.canvas.setPointerCapture(e.pointerId);
+
+    if(activePointers.size === 1){
+      isDragging = true;
+      lastPoint = p;
+      gestureStart = null;
+    }else if(activePointers.size === 2){
+      isDragging = false;
+      lastPoint = null;
+      beginTwoFingerGesture();
+    }
+  });
+
+  els.canvas.addEventListener("pointermove", e=>{
+    if(!photoImg || !activePointers.has(e.pointerId)) return;
+    e.preventDefault();
+    const p = canvasPoint(e);
+    activePointers.set(e.pointerId, p);
+
+    const pts = getPointerArray();
+    if(pts.length === 1 && isDragging && lastPoint){
+      photoState.x += p.x - lastPoint.x;
+      photoState.y += p.y - lastPoint.y;
+      lastPoint = p;
+      scheduleDraw();
+      return;
+    }
+
+    if(pts.length >= 2 && gestureStart){
+      const a = pts[0];
+      const b = pts[1];
+      const center = pointerCenter(a,b);
+      const distance = Math.max(1, pointerDistance(a,b));
+      const angle = pointerAngle(a,b);
+
+      const next = {
+        x:gestureStart.state.x,
+        y:gestureStart.state.y,
+        scale:Math.max(0.05, Math.min(20, gestureStart.state.scale * (distance / gestureStart.distance))),
+        rotation:gestureStart.state.rotation + (angle - gestureStart.angle)
+      };
+
+      // ピンチ中心の画像上の点が、指2本の中心に残るように x/y を補正します。
+      // これにより拡大・回転中のガタつきとズレを抑えます。
+      const projected = canvasPointFromImageLocal(gestureStart.localCenter, next);
+      next.x += center.x - projected.x;
+      next.y += center.y - projected.y;
+      photoState = next;
+      scheduleDraw();
+    }
+  });
+
+  els.canvas.addEventListener("pointerup", endPointer);
+  els.canvas.addEventListener("pointercancel", endPointer);
+  els.canvas.addEventListener("pointerleave", e=>{
+    if(activePointers.has(e.pointerId)) endPointer(e);
+  });
+
+  els.canvas.addEventListener("wheel", e=>{
+    if(!photoImg) return;
+    e.preventDefault();
+    const point = canvasPoint(e);
+    const before = imageLocalFromCanvasPoint(point, photoState);
+    photoState.scale = Math.max(0.05, Math.min(20, photoState.scale * (e.deltaY < 0 ? 1.06 : 0.94)));
+    const after = canvasPointFromImageLocal(before, photoState);
+    photoState.x += point.x - after.x;
+    photoState.y += point.y - after.y;
+    scheduleDraw();
   },{passive:false});
 
   function updateItemPrice(){
@@ -1006,7 +1138,6 @@
 
   document.getElementById("openGuidedCameraBtn").addEventListener("click",openGuidedCamera);
   document.getElementById("closeGuidedCameraBtn").addEventListener("click",closeGuidedCamera);
-  document.getElementById("guidedCameraZoom").addEventListener("input",applyGuidedCameraZoom);
   document.getElementById("captureGuidedPhotoBtn").addEventListener("click",captureGuidedPhoto);
   document.getElementById("switchGuidedCameraBtn").addEventListener("click",switchGuidedCamera);
   document.getElementById("photoInput").addEventListener("change",e=>handleFile(e.target.files[0]));
