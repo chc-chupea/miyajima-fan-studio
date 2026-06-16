@@ -220,6 +220,86 @@
     .reception-no{font-size:38px;color:var(--blue-dark);background:#e3f2fd;border-radius:18px;padding:10px 16px;display:inline-block;margin:10px 0;letter-spacing:1px;}
     .hidden{display:none!important;}
     footer{max-width:980px;margin:20px auto;padding:0 14px;color:#90a4ae;font-size:11px;text-align:center;line-height:1.6;}
+
+    .camera-modal{
+      position:fixed;
+      inset:0;
+      z-index:1000;
+      background:#000;
+      display:none;
+      align-items:center;
+      justify-content:center;
+    }
+    .camera-modal.active{display:flex;}
+    .camera-stage{
+      position:relative;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      background:#000;
+    }
+    #guidedCameraVideo{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+    }
+    #guidedCameraTemplate{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      width:100vw;
+      max-width:640px;
+      height:auto;
+      max-height:86vh;
+      object-fit:contain;
+      pointer-events:none;
+      filter:drop-shadow(0 0 4px rgba(255,255,255,.9));
+      opacity:.86;
+      z-index:2;
+    }
+    .camera-guide-text{
+      position:absolute;
+      left:50%;
+      top:18px;
+      transform:translateX(-50%);
+      width:calc(100% - 32px);
+      max-width:420px;
+      padding:10px 12px;
+      border-radius:16px;
+      background:rgba(255,255,255,.92);
+      color:var(--blue-dark);
+      text-align:center;
+      font-weight:900;
+      font-size:14px;
+      z-index:3;
+    }
+    .camera-actions{
+      position:absolute;
+      left:14px;
+      right:14px;
+      bottom:22px;
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:8px;
+      z-index:4;
+    }
+    .camera-actions button{
+      border:none;
+      border-radius:999px;
+      padding:12px 8px;
+      font-weight:900;
+      color:#fff;
+      background:rgba(25,118,210,.92);
+      cursor:pointer;
+    }
+    .camera-actions .capture{
+      background:rgba(245,124,0,.96);
+      font-size:17px;
+    }
+    .camera-actions .close{
+      background:rgba(84,110,122,.92);
+    }
     @media(max-width:700px){
       .hero h1{font-size:24px;}
       .template-grid{grid-template-columns:1fr 1fr;}
@@ -266,7 +346,7 @@
       <h2>② 写真を選ぶ</h2>
       <p class="subtext">スマホ内の写真を選ぶか、その場で撮影してください。</p>
       <div class="upload-row">
-        <label class="file-btn" for="cameraInput">📷 撮影する</label>
+        <button id="openGuidedCameraBtn" class="file-btn" type="button">📷 フィルターを見ながら撮影</button>
         <label class="file-btn secondary" for="photoInput">🖼 写真を選ぶ</label>
       </div>
       <input id="cameraInput" type="file" accept="image/*" capture="environment">
@@ -326,6 +406,20 @@
 
     <section id="completeBox" class="complete"></section>
   </main>
+
+
+  <div id="guidedCameraModal" class="camera-modal" aria-hidden="true">
+    <div class="camera-stage">
+      <video id="guidedCameraVideo" autoplay playsinline muted></video>
+      <img id="guidedCameraTemplate" alt="撮影ガイド">
+      <div class="camera-guide-text">うちわの枠に合わせて撮影してください</div>
+      <div class="camera-actions">
+        <button id="closeGuidedCameraBtn" class="close" type="button">閉じる</button>
+        <button id="captureGuidedPhotoBtn" class="capture" type="button">撮影</button>
+        <button id="switchGuidedCameraBtn" type="button">切替</button>
+      </div>
+    </div>
+  </div>
 
   <div class="cart-fixed">
     <div class="cart-fixed-inner">
@@ -401,6 +495,13 @@
     canvas:document.getElementById("mainCanvas"),
     photoInput:document.getElementById("photoInput"),
     cameraInput:document.getElementById("cameraInput"),
+    openGuidedCameraBtn:document.getElementById("openGuidedCameraBtn"),
+    guidedCameraModal:document.getElementById("guidedCameraModal"),
+    guidedCameraVideo:document.getElementById("guidedCameraVideo"),
+    guidedCameraTemplate:document.getElementById("guidedCameraTemplate"),
+    closeGuidedCameraBtn:document.getElementById("closeGuidedCameraBtn"),
+    captureGuidedPhotoBtn:document.getElementById("captureGuidedPhotoBtn"),
+    switchGuidedCameraBtn:document.getElementById("switchGuidedCameraBtn"),
     copiesSelect:document.getElementById("copiesSelect"),
     itemPriceText:document.getElementById("itemPriceText"),
     addToCartBtn:document.getElementById("addToCartBtn"),
@@ -428,6 +529,8 @@
   let lastTouchAngle=0;
   let lastTouchScale=1;
   let lastTouchRotation=0;
+  let guidedCameraStream=null;
+  let guidedCameraFacing="environment";
 
   function yen(n){return `${Number(n||0).toLocaleString()}円`;}
   function unitPrice(){return Number(settings.generalPrice || 880);}
@@ -517,6 +620,79 @@
     if(templateImg && templateImg.complete && templateImg.naturalWidth){
       ctx.drawImage(templateImg,0,0,3508,2480);
     }
+  }
+
+
+  async function openGuidedCamera(){
+    hideError();
+    if(!selectedTemplate){showError("先にデザインを選んでください。",true);return;}
+    if(els.guidedCameraTemplate) els.guidedCameraTemplate.src = selectedTemplate.file;
+    try{
+      stopGuidedCamera();
+      guidedCameraStream = await navigator.mediaDevices.getUserMedia({
+        video:{facingMode:{ideal:guidedCameraFacing}},
+        audio:false
+      });
+      els.guidedCameraVideo.srcObject = guidedCameraStream;
+      els.guidedCameraModal.classList.add("active");
+      els.guidedCameraModal.setAttribute("aria-hidden","false");
+      setStep(2);
+    }catch(error){
+      console.error("カメラ起動に失敗しました:", error);
+      showError("カメラを起動できませんでした。写真を選ぶボタンから画像を選択してください。", true);
+      if(els.cameraInput) els.cameraInput.click();
+    }
+  }
+
+  function stopGuidedCamera(){
+    if(guidedCameraStream){
+      guidedCameraStream.getTracks().forEach(track=>track.stop());
+      guidedCameraStream=null;
+    }
+    if(els.guidedCameraVideo) els.guidedCameraVideo.srcObject=null;
+  }
+
+  function closeGuidedCamera(){
+    stopGuidedCamera();
+    els.guidedCameraModal.classList.remove("active");
+    els.guidedCameraModal.setAttribute("aria-hidden","true");
+  }
+
+  async function switchGuidedCamera(){
+    guidedCameraFacing = guidedCameraFacing === "environment" ? "user" : "environment";
+    await openGuidedCamera();
+  }
+
+  function captureGuidedPhoto(){
+    const video = els.guidedCameraVideo;
+    if(!video || !video.videoWidth || !video.videoHeight){
+      showError("カメラ映像の準備ができていません。もう一度お試しください。", true);
+      return;
+    }
+    const temp = document.createElement("canvas");
+    temp.width = 3508;
+    temp.height = 2480;
+    const tctx = temp.getContext("2d");
+    const canvasRatio = temp.width / temp.height;
+    const videoRatio = video.videoWidth / video.videoHeight;
+    let sx=0, sy=0, sw=video.videoWidth, sh=video.videoHeight;
+    if(videoRatio > canvasRatio){
+      sw = video.videoHeight * canvasRatio;
+      sx = (video.videoWidth - sw) / 2;
+    }else{
+      sh = video.videoWidth / canvasRatio;
+      sy = (video.videoHeight - sh) / 2;
+    }
+    tctx.drawImage(video, sx, sy, sw, sh, 0, 0, temp.width, temp.height);
+    const dataUrl = temp.toDataURL("image/jpeg", .92);
+    photoImg = new Image();
+    photoImg.onload = ()=>{
+      closeGuidedCamera();
+      resetPhotoState();
+      setStep(3);
+      document.getElementById("editCard").scrollIntoView({behavior:"smooth",block:"start"});
+    };
+    photoImg.src = dataUrl;
   }
 
   function handleFile(file){
@@ -759,6 +935,10 @@
     els.completeBox.scrollIntoView({behavior:"smooth",block:"start"});
   }
 
+  document.getElementById("openGuidedCameraBtn").addEventListener("click",openGuidedCamera);
+  document.getElementById("closeGuidedCameraBtn").addEventListener("click",closeGuidedCamera);
+  document.getElementById("captureGuidedPhotoBtn").addEventListener("click",captureGuidedPhoto);
+  document.getElementById("switchGuidedCameraBtn").addEventListener("click",switchGuidedCamera);
   document.getElementById("photoInput").addEventListener("change",e=>handleFile(e.target.files[0]));
   document.getElementById("cameraInput").addEventListener("change",e=>handleFile(e.target.files[0]));
   document.getElementById("copiesSelect").addEventListener("change",updateItemPrice);
