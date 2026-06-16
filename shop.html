@@ -563,10 +563,13 @@
   let cart = [];
   let isDragging=false;
   let lastPoint=null;
-  // 写真編集は Pointer Events に一本化します。
-  // pointer と touch の両方で処理すると、スマホで2本指操作時に二重反応してガタつくためです。
+  // PC/Android向けの Pointer Events と、iPhone向けの Touch Events を併用します。
+  // Touch中はPointer側を止め、二重反応によるガタつきを防ぎます。
   const activePointers = new Map();
   let gestureStart = null;
+  let touchModeActive = false;
+  let touchDragPoint = null;
+  let touchGestureStart = null;
   let rafDrawPending = false;
   let guidedCameraStream=null;
   let guidedCameraFacing="environment";
@@ -862,6 +865,7 @@
   }
 
   els.canvas.addEventListener("pointerdown", e=>{
+    if(touchModeActive) return;
     if(!photoImg) return;
     e.preventDefault();
     const p = canvasPoint(e);
@@ -880,6 +884,7 @@
   });
 
   els.canvas.addEventListener("pointermove", e=>{
+    if(touchModeActive) return;
     if(!photoImg || !activePointers.has(e.pointerId)) return;
     e.preventDefault();
     const p = canvasPoint(e);
@@ -923,6 +928,104 @@
   els.canvas.addEventListener("pointerleave", e=>{
     if(activePointers.has(e.pointerId)) endPointer(e);
   });
+
+
+  function touchPoint(touch){
+    const rect = els.canvas.getBoundingClientRect();
+    return {
+      x:(touch.clientX-rect.left)*(3508/rect.width),
+      y:(touch.clientY-rect.top)*(2480/rect.height)
+    };
+  }
+
+  function beginTouchGesture(touches){
+    if(touches.length < 2) return;
+    const a = touchPoint(touches[0]);
+    const b = touchPoint(touches[1]);
+    const center = pointerCenter(a,b);
+    const startState = {...photoState};
+    touchGestureStart = {
+      center,
+      localCenter:imageLocalFromCanvasPoint(center, startState),
+      distance:Math.max(1, pointerDistance(a,b)),
+      angle:pointerAngle(a,b),
+      state:startState
+    };
+  }
+
+  els.canvas.addEventListener("touchstart", e=>{
+    if(!photoImg) return;
+    touchModeActive = true;
+    activePointers.clear();
+    isDragging = false;
+    lastPoint = null;
+    gestureStart = null;
+
+    if(e.touches.length === 1){
+      touchDragPoint = touchPoint(e.touches[0]);
+      touchGestureStart = null;
+    }else if(e.touches.length >= 2){
+      e.preventDefault();
+      touchDragPoint = null;
+      beginTouchGesture(e.touches);
+    }
+  }, {passive:false});
+
+  els.canvas.addEventListener("touchmove", e=>{
+    if(!photoImg) return;
+    e.preventDefault();
+
+    if(e.touches.length === 1 && touchDragPoint && !touchGestureStart){
+      const p = touchPoint(e.touches[0]);
+      photoState.x += p.x - touchDragPoint.x;
+      photoState.y += p.y - touchDragPoint.y;
+      touchDragPoint = p;
+      scheduleDraw();
+      return;
+    }
+
+    if(e.touches.length >= 2){
+      if(!touchGestureStart) beginTouchGesture(e.touches);
+      const a = touchPoint(e.touches[0]);
+      const b = touchPoint(e.touches[1]);
+      const center = pointerCenter(a,b);
+      const distance = Math.max(1, pointerDistance(a,b));
+      const angle = pointerAngle(a,b);
+      const scaleRatio = distance / Math.max(1, touchGestureStart.distance);
+
+      const next = {
+        x:touchGestureStart.state.x,
+        y:touchGestureStart.state.y,
+        scale:Math.max(0.05, Math.min(20, touchGestureStart.state.scale * scaleRatio)),
+        rotation:touchGestureStart.state.rotation + (angle - touchGestureStart.angle)
+      };
+
+      const projected = canvasPointFromImageLocal(touchGestureStart.localCenter, next);
+      next.x += center.x - projected.x;
+      next.y += center.y - projected.y;
+      photoState = next;
+      scheduleDraw();
+    }
+  }, {passive:false});
+
+  els.canvas.addEventListener("touchend", e=>{
+    if(e.touches.length === 1){
+      touchDragPoint = touchPoint(e.touches[0]);
+      touchGestureStart = null;
+    }else if(e.touches.length === 0){
+      touchDragPoint = null;
+      touchGestureStart = null;
+      setTimeout(()=>{ touchModeActive = false; }, 80);
+    }else if(e.touches.length >= 2){
+      beginTouchGesture(e.touches);
+    }
+  }, {passive:false});
+
+  els.canvas.addEventListener("touchcancel", ()=>{
+    touchDragPoint = null;
+    touchGestureStart = null;
+    setTimeout(()=>{ touchModeActive = false; }, 80);
+  }, {passive:false});
 
   els.canvas.addEventListener("wheel", e=>{
     if(!photoImg) return;
