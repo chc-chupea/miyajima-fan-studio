@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Myうちわ Shop</title>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --blue:#1976d2;
+      --blue-dark:#0d47a1;
+      --orange:#f57c00;
+      --green:#2e7d32;
+      --bg:#f5f8fc;
+      --card:#ffffff;
+      --line:#dbe7f3;
+      --text:#243447;
+      --muted:#66788a;
+      --danger:#c62828;
+      --radius:18px;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      font-family:'M PLUS Rounded 1c',sans-serif;
+      color:var(--text);
+      background:var(--bg);
+      padding-bottom:92px;
+    }
+    button,input,textarea,select{font-family:inherit;}
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:30;
+      background:rgba(255,255,255,.94);
+      backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--line);
+      padding:10px 14px;
+    }
+    .topbar-inner{
+      max-width:980px;
+      margin:0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .brand{font-weight:900;color:var(--blue-dark);line-height:1.2;}
+    .brand small{display:block;font-size:11px;color:var(--muted);font-weight:700;}
+    .cart-pill{
+      border:none;
+      border-radius:999px;
+      background:var(--blue);
+      color:#fff;
+      padding:10px 14px;
+      font-weight:900;
+      cursor:pointer;
+      min-width:88px;
+    }
+    .hero{
+      max-width:980px;
+      margin:14px auto 0;
+      padding:0 14px;
+    }
+    .hero-card{
+      background:linear-gradient(135deg,#e3f2fd,#ffffff);
+      border:1px solid var(--line);
+      border-radius:26px;
+      padding:20px;
+      box-shadow:0 8px 24px rgba(21,101,192,.10);
+    }
+    .hero h1{margin:0 0 8px;font-size:28px;color:var(--blue-dark);line-height:1.25;}
+    .hero p{margin:6px 0;color:#37556f;font-weight:700;line-height:1.55;}
+    .fee-badge{
+      display:inline-block;
+      margin-top:10px;
+      background:#fff3e0;
+      color:#e65100;
+      border:1px solid #ffcc80;
+      border-radius:999px;
+      padding:8px 12px;
+      font-weight:900;
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:14px;}
+    .steps{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:6px;
+      margin:14px 0;
+    }
+    .step{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:8px 6px;
+      text-align:center;
+      font-size:12px;
+      font-weight:900;
+      color:var(--muted);
+    }
+    .step.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:16px;
+      margin-bottom:14px;
+      box-shadow:0 3px 12px rgba(0,0,0,.05);
+    }
+    .card h2{font-size:18px;margin:0 0 12px;color:var(--blue-dark);}
+    .subtext{font-size:13px;color:var(--muted);line-height:1.5;margin:6px 0 12px;}
+    .template-grid{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
+    }
+    .template-card{
+      border:2px solid var(--line);
+      border-radius:16px;
+      background:#fff;
+      padding:10px;
+      cursor:pointer;
+      text-align:center;
+      font-weight:900;
+      color:var(--blue-dark);
+    }
+    .template-card.selected{border-color:var(--blue);box-shadow:0 0 0 3px rgba(25,118,210,.12);}
+    .template-card img{
+      display:block;
+      width:100%;
+      height:92px;
+      object-fit:contain;
+      border-radius:10px;
+      background:#f7fbff;
+      margin-bottom:6px;
+    }
+    .upload-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .file-btn{
+      display:block;
+      width:100%;
+      border-radius:999px;
+      border:none;
+      background:var(--blue);
+      color:#fff;
+      font-weight:900;
+      padding:13px 16px;
+      text-align:center;
+      cursor:pointer;
+    }
+    .file-btn.secondary{background:#e3f2fd;color:var(--blue-dark);}
+    input[type=file]{display:none;}
+    .canvas-wrap{background:#f7fbff;border:1px solid var(--line);border-radius:16px;padding:8px;}
+    canvas{display:block;width:100%;height:auto;border-radius:12px;background:#fff;touch-action:none;}
+    .controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+    .btn{
+      border:none;
+      border-radius:999px;
+      padding:13px 16px;
+      font-size:16px;
+      font-weight:900;
+      cursor:pointer;
+      background:var(--blue);
+      color:#fff;
+      width:100%;
+    }
+    .btn.orange{background:var(--orange);}
+    .btn.green{background:var(--green);}
+    .btn.light{background:#e3f2fd;color:var(--blue-dark);}
+    .btn.gray{background:#78909c;}
+    .btn:disabled{background:#b0bec5;cursor:not-allowed;}
+    .qty-row{display:grid;grid-template-columns:1fr 150px;gap:10px;align-items:end;}
+    label{display:block;font-weight:900;color:var(--blue-dark);font-size:14px;margin:0 0 6px;}
+    select,input,textarea{
+      width:100%;
+      border:1px solid #cfd8dc;
+      border-radius:14px;
+      padding:12px;
+      font-size:16px;
+      background:#fff;
+    }
+    textarea{min-height:88px;resize:vertical;}
+    .price-line{font-size:18px;font-weight:900;color:#e65100;margin-top:8px;}
+    .cart-fixed{
+      position:fixed;
+      left:0;
+      right:0;
+      bottom:0;
+      z-index:25;
+      background:#fff;
+      border-top:1px solid var(--line);
+      box-shadow:0 -4px 16px rgba(0,0,0,.08);
+      padding:10px 14px;
+    }
+    .cart-fixed-inner{max-width:980px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;}
+    .cart-summary{font-weight:900;color:var(--blue-dark);line-height:1.35;}
+    .cart-summary small{display:block;color:var(--muted);font-size:12px;}
+    .cart-panel{display:none;}
+    .cart-panel.active{display:block;}
+    .cart-item{
+      display:grid;
+      grid-template-columns:72px 1fr auto;
+      gap:10px;
+      align-items:center;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:8px;
+      margin:8px 0;
+      background:#fff;
+    }
+    .cart-item img{width:72px;height:52px;object-fit:contain;background:#f7fbff;border-radius:8px;border:1px solid var(--line);}
+    .cart-item-title{font-weight:900;color:var(--blue-dark);}
+    .cart-item-meta{font-size:13px;color:var(--muted);font-weight:700;}
+    .remove-btn{border:none;background:#eeeeee;color:#555;border-radius:999px;padding:8px 10px;font-weight:900;cursor:pointer;}
+    .total-box{background:#fff3e0;border:1px solid #ffcc80;border-radius:16px;padding:12px;margin-top:12px;color:#e65100;font-weight:900;line-height:1.7;}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .form-grid .full{grid-column:1/-1;}
+    .notice{border-radius:16px;padding:12px;background:#e8f5e9;color:#1b5e20;font-weight:900;line-height:1.6;}
+    .error{display:none;background:#ffebee;color:var(--danger);border-radius:14px;padding:12px;font-weight:900;margin-bottom:14px;}
+    .complete{display:none;background:#e8f5e9;border:2px solid #81c784;border-radius:20px;padding:18px;text-align:center;color:#1b5e20;font-weight:900;line-height:1.7;}
+    .reception-no{font-size:38px;color:var(--blue-dark);background:#e3f2fd;border-radius:18px;padding:10px 16px;display:inline-block;margin:10px 0;letter-spacing:1px;}
+    .hidden{display:none!important;}
+    footer{max-width:980px;margin:20px auto;padding:0 14px;color:#90a4ae;font-size:11px;text-align:center;line-height:1.6;}
+    @media(max-width:700px){
+      .hero h1{font-size:24px;}
+      .template-grid{grid-template-columns:1fr 1fr;}
+      .upload-row,.controls,.qty-row,.form-grid{grid-template-columns:1fr;}
+      .steps{grid-template-columns:repeat(5,1fr);gap:4px;}
+      .step{font-size:11px;padding:7px 2px;}
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><span id="brandName">Myうちわ Shop</span><small>Photo Fan Studio</small></div>
+      <button id="topCartBtn" class="cart-pill">🛒 0</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-card">
+      <h1>世界に一つだけの<br>オリジナルうちわを作ろう</h1>
+      <p>写真とデザインを選んで、複数デザインをまとめて注文できます。</p>
+      <div class="fee-badge">送料・代引手数料込み 全国一律 <span id="heroFee">1,000円</span></div>
+    </div>
+  </section>
+
+  <main class="wrap">
+    <div class="steps">
+      <div class="step active" id="step1">①デザイン</div>
+      <div class="step" id="step2">②写真</div>
+      <div class="step" id="step3">③編集</div>
+      <div class="step" id="step4">④カート</div>
+      <div class="step" id="step5">⑤注文</div>
+    </div>
+
+    <div id="orderError" class="error"></div>
+
+    <section class="card" id="designCard">
+      <h2>① デザインを選ぶ</h2>
+      <p class="subtext">作りたいデザインを選んでください。あとから別デザインも追加できます。</p>
+      <div class="template-grid" id="templateGrid"></div>
+    </section>
+
+    <section class="card" id="photoCard">
+      <h2>② 写真を選ぶ</h2>
+      <p class="subtext">スマホ内の写真を選ぶか、その場で撮影してください。</p>
+      <div class="upload-row">
+        <label class="file-btn" for="cameraInput">📷 撮影する</label>
+        <label class="file-btn secondary" for="photoInput">🖼 写真を選ぶ</label>
+      </div>
+      <input id="cameraInput" type="file" accept="image/*" capture="environment">
+      <input id="photoInput" type="file" accept="image/*">
+    </section>
+
+    <section class="card" id="editCard">
+      <h2>③ 完成イメージを調整</h2>
+      <p class="subtext">写真は指で移動できます。2本指で拡大縮小・回転できます。</p>
+      <div class="canvas-wrap"><canvas id="mainCanvas" width="3508" height="2480"></canvas></div>
+      <div class="controls">
+        <button id="resetPhotoBtn" class="btn light" type="button">写真位置をリセット</button>
+        <button id="changeDesignBtn" class="btn light" type="button">デザインを選び直す</button>
+      </div>
+    </section>
+
+    <section class="card" id="qtyCard">
+      <h2>④ 本数を選んでカートへ</h2>
+      <div class="qty-row">
+        <div>
+          <label for="copiesSelect">本数</label>
+          <select id="copiesSelect">
+            <option value="1">1本</option><option value="2">2本</option><option value="3">3本</option><option value="4">4本</option><option value="5">5本</option>
+            <option value="6">6本</option><option value="7">7本</option><option value="8">8本</option><option value="9">9本</option><option value="10">10本</option>
+            <option value="20">20本</option><option value="30">30本</option><option value="40">40本</option><option value="50">50本</option>
+            <option value="100">100本</option>
+          </select>
+          <div class="price-line" id="itemPriceText">商品代：0円</div>
+        </div>
+        <button id="addToCartBtn" class="btn orange" type="button">カートへ追加</button>
+      </div>
+    </section>
+
+    <section class="card cart-panel" id="cartPanel">
+      <h2>🛒 現在のカート</h2>
+      <div id="cartItems"></div>
+      <div id="cartTotals" class="total-box"></div>
+      <div class="controls">
+        <button id="addAnotherBtn" type="button" class="btn light">別デザインを作る</button>
+        <button id="goCheckoutBtn" type="button" class="btn orange">注文へ進む</button>
+      </div>
+      <button id="clearCartBtn" type="button" class="btn gray" style="margin-top:10px;">カートを空にする</button>
+    </section>
+
+    <section class="card hidden" id="checkoutCard">
+      <h2>⑤ お届け先を入力</h2>
+      <div class="notice">商品は代金引換でお届けします。商品到着時に、商品代金・送料代引手数料込みの合計金額を配送業者へお支払いください。</div>
+      <div class="form-grid" style="margin-top:12px;">
+        <div><label for="customerName">氏名 必須</label><input id="customerName" type="text" autocomplete="name" placeholder="例：山田 太郎"></div>
+        <div><label for="customerPhone">電話番号 必須</label><input id="customerPhone" type="tel" autocomplete="tel" placeholder="例：09012345678"></div>
+        <div class="full"><label for="customerAddress">お届け先住所 必須</label><textarea id="customerAddress" autocomplete="street-address" placeholder="例：広島市○区○○町1-2-3 ○○マンション101号室"></textarea></div>
+        <div class="full"><label for="customerMemo">ご要望・連絡事項 任意</label><textarea id="customerMemo" placeholder="例：平日夕方希望 など"></textarea></div>
+      </div>
+      <div id="checkoutTotals" class="total-box"></div>
+      <button id="submitOrderBtn" type="button" class="btn orange">この内容で注文を確定する</button>
+    </section>
+
+    <section id="completeBox" class="complete"></section>
+  </main>
+
+  <div class="cart-fixed">
+    <div class="cart-fixed-inner">
+      <div class="cart-summary" id="fixedCartSummary">カートは空です<small>複数デザインをまとめて注文できます</small></div>
+      <button id="fixedCartBtn" type="button" class="btn" style="width:auto;min-width:120px;">カートを見る</button>
+    </div>
+  </div>
+
+  <footer>© 2026 Hitomi Sasaki / Chugoku Shimbun Hanbai Center</footer>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+  import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBKSYZgaSVTu-HO_lS1Tp2eFjSjMuOONNI",
+    authDomain: "my-uchiwa-queue.firebaseapp.com",
+    projectId: "my-uchiwa-queue",
+    storageBucket: "my-uchiwa-queue.firebasestorage.app",
+    messagingSenderId: "245883628081",
+    appId: "1:245883628081:web:ab7f00f01ba256ebca8310",
+    measurementId: "G-W4S3EKL9TY"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+
+  const params = new URLSearchParams(window.location.search);
+  const shopId = (params.get("shop") || "ippin").replace(/[^a-zA-Z0-9_-]/g, "");
+
+  const defaultSettings = {
+    shopName:"Myうちわ Shop",
+    shopCode:"S",
+    generalPrice:880,
+    cartFixedFee:1000,
+    templateSet:"ecommerce_fan",
+    operationMode:"ecommerce",
+    salesMode:"paidGeneralOnly",
+    popupClosed:false,
+    startDate:"",
+    endDate:"",
+    openTime:"00:00",
+    closeTime:"23:59",
+    orderDeadline:""
+  };
+  let settings = {...defaultSettings};
+
+  const templateSets = {
+    general:[
+      {file:"fan1-highres.png", name:"無地"},
+      {file:"fan2-highres.png", name:"母の日"},
+      {file:"fan3-highres.png", name:"父の日"}
+    ],
+    ecommerce_fan:[
+      {file:"fan1-highres.png", name:"無地"},
+      {file:"fan2-highres.png", name:"母の日"},
+      {file:"fan3-highres.png", name:"父の日"},
+      {file:"fan-birthday.png", name:"誕生日"},
+      {file:"fan-keiro.png", name:"敬老の日"}
+    ],
+    kure_softball:[
+      {file:"fan1-highres.png", name:"無地"},
+      {file:"kure-softball.png", name:"呉ソフトボール大会"}
+    ]
+  };
+
+  const els = {
+    brandName:document.getElementById("brandName"),
+    heroFee:document.getElementById("heroFee"),
+    templateGrid:document.getElementById("templateGrid"),
+    canvas:document.getElementById("mainCanvas"),
+    photoInput:document.getElementById("photoInput"),
+    cameraInput:document.getElementById("cameraInput"),
+    copiesSelect:document.getElementById("copiesSelect"),
+    itemPriceText:document.getElementById("itemPriceText"),
+    addToCartBtn:document.getElementById("addToCartBtn"),
+    cartPanel:document.getElementById("cartPanel"),
+    cartItems:document.getElementById("cartItems"),
+    cartTotals:document.getElementById("cartTotals"),
+    fixedCartSummary:document.getElementById("fixedCartSummary"),
+    topCartBtn:document.getElementById("topCartBtn"),
+    fixedCartBtn:document.getElementById("fixedCartBtn"),
+    checkoutCard:document.getElementById("checkoutCard"),
+    checkoutTotals:document.getElementById("checkoutTotals"),
+    orderError:document.getElementById("orderError"),
+    completeBox:document.getElementById("completeBox")
+  };
+  const ctx = els.canvas.getContext("2d");
+
+  let selectedTemplate = null;
+  let templateImg = new Image();
+  let photoImg = null;
+  let photoState = {x:1754,y:1240,scale:1,rotation:0};
+  let cart = [];
+  let isDragging=false;
+  let lastPoint=null;
+  let lastTouchDist=0;
+  let lastTouchAngle=0;
+  let lastTouchScale=1;
+  let lastTouchRotation=0;
+
+  function yen(n){return `${Number(n||0).toLocaleString()}円`;}
+  function unitPrice(){return Number(settings.generalPrice || 880);}
+  function fixedFee(){return Number(settings.cartFixedFee || 1000);}
+  function escapeHtml(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#039;");}
+  function nowDayKey(){const d=new Date();return `${String(d.getFullYear()).slice(-2)}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;}
+  function fullDayKey(){const d=new Date();return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;}
+  function getCartCopies(){return cart.reduce((sum,item)=>sum+Number(item.copies||0),0);}
+  function getCartProductTotal(){return cart.reduce((sum,item)=>sum+Number(item.productTotal||0),0);}
+  function getCartPaymentTotal(){return cart.length ? getCartProductTotal()+fixedFee() : 0;}
+
+  async function loadSettings(){
+    try{
+      const snap = await getDoc(doc(db,"settings",shopId));
+      settings = snap.exists() ? {...defaultSettings,...snap.data()} : {...defaultSettings};
+    }catch(e){
+      console.error(e);
+      settings = {...defaultSettings};
+    }
+    document.title = `${settings.shopName || defaultSettings.shopName} - 通販`;
+    els.brandName.textContent = settings.shopName || defaultSettings.shopName;
+    els.heroFee.textContent = yen(fixedFee());
+    renderTemplates();
+    updateItemPrice();
+    renderCart();
+  }
+
+  function renderTemplates(){
+    const list = templateSets[settings.templateSet] || templateSets.ecommerce_fan;
+    els.templateGrid.innerHTML = "";
+    list.forEach((t,idx)=>{
+      const card = document.createElement("button");
+      card.type="button";
+      card.className="template-card";
+      card.innerHTML = `<img src="${escapeHtml(t.file)}" alt="${escapeHtml(t.name)}"><span>${escapeHtml(t.name)}</span>`;
+      card.addEventListener("click",()=>selectTemplate(t));
+      els.templateGrid.appendChild(card);
+      if(idx===0) selectTemplate(t);
+    });
+  }
+
+  function selectTemplate(t){
+    selectedTemplate = t;
+    [...document.querySelectorAll(".template-card")].forEach(btn=>{
+      btn.classList.toggle("selected", btn.textContent.trim() === t.name);
+    });
+    templateImg = new Image();
+    templateImg.onload = drawCanvas;
+    templateImg.onerror = drawCanvas;
+    templateImg.src = t.file;
+    setStep(1);
+  }
+
+  function setStep(n){
+    for(let i=1;i<=5;i++) document.getElementById(`step${i}`).classList.toggle("active",i===n);
+  }
+
+  function resetPhotoState(){
+    photoState = {x:1754,y:1240,scale:1,rotation:0};
+    if(photoImg){
+      const scaleX = 3508 / photoImg.width;
+      const scaleY = 2480 / photoImg.height;
+      photoState.scale = Math.max(scaleX, scaleY);
+    }
+    drawCanvas();
+  }
+
+  function drawCanvas(){
+    ctx.clearRect(0,0,3508,2480);
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(0,0,3508,2480);
+    if(photoImg){
+      ctx.save();
+      ctx.translate(photoState.x,photoState.y);
+      ctx.rotate(photoState.rotation);
+      ctx.scale(photoState.scale,photoState.scale);
+      ctx.drawImage(photoImg,-photoImg.width/2,-photoImg.height/2);
+      ctx.restore();
+    }else{
+      ctx.fillStyle="#eef6ff";
+      ctx.fillRect(0,0,3508,2480);
+      ctx.fillStyle="#0d47a1";
+      ctx.font="bold 110px sans-serif";
+      ctx.textAlign="center";
+      ctx.fillText("写真を選んでください",1754,1240);
+    }
+    if(templateImg && templateImg.complete && templateImg.naturalWidth){
+      ctx.drawImage(templateImg,0,0,3508,2480);
+    }
+  }
+
+  function handleFile(file){
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = e=>{
+      photoImg = new Image();
+      photoImg.onload = ()=>{resetPhotoState(); setStep(3); document.getElementById("editCard").scrollIntoView({behavior:"smooth",block:"start"});};
+      photoImg.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function canvasPoint(event){
+    const rect = els.canvas.getBoundingClientRect();
+    return {x:(event.clientX-rect.left)*(3508/rect.width), y:(event.clientY-rect.top)*(2480/rect.height)};
+  }
+  els.canvas.addEventListener("pointerdown",e=>{if(!photoImg)return; isDragging=true; lastPoint=canvasPoint(e); els.canvas.setPointerCapture(e.pointerId);});
+  els.canvas.addEventListener("pointermove",e=>{if(!isDragging||!lastPoint||!photoImg)return; const p=canvasPoint(e); photoState.x += p.x-lastPoint.x; photoState.y += p.y-lastPoint.y; lastPoint=p; drawCanvas();});
+  els.canvas.addEventListener("pointerup",()=>{isDragging=false; lastPoint=null;});
+  els.canvas.addEventListener("wheel",e=>{if(!photoImg)return; e.preventDefault(); photoState.scale *= e.deltaY<0 ? 1.06 : 0.94; drawCanvas();},{passive:false});
+  els.canvas.addEventListener("touchstart",e=>{
+    if(!photoImg || e.touches.length!==2) return;
+    const a=e.touches[0], b=e.touches[1];
+    lastTouchDist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    lastTouchAngle=Math.atan2(b.clientY-a.clientY,b.clientX-a.clientX);
+    lastTouchScale=photoState.scale;
+    lastTouchRotation=photoState.rotation;
+  },{passive:false});
+  els.canvas.addEventListener("touchmove",e=>{
+    if(!photoImg || e.touches.length!==2) return;
+    e.preventDefault();
+    const a=e.touches[0], b=e.touches[1];
+    const dist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    const angle=Math.atan2(b.clientY-a.clientY,b.clientX-a.clientX);
+    if(lastTouchDist){
+      photoState.scale = lastTouchScale * (dist/lastTouchDist);
+      photoState.rotation = lastTouchRotation + (angle-lastTouchAngle);
+      drawCanvas();
+    }
+  },{passive:false});
+
+  function updateItemPrice(){
+    const copies = Number(els.copiesSelect.value || 1);
+    els.itemPriceText.textContent = `商品代：${yen(unitPrice())} × ${copies}本 = ${yen(unitPrice()*copies)}`;
+  }
+
+  function addToCart(){
+    hideError();
+    if(!selectedTemplate){showError("デザインを選んでください。",true);return;}
+    if(!photoImg){showError("写真を選んでください。",true);return;}
+    const copies = Number(els.copiesSelect.value || 1);
+    const dataUrl = els.canvas.toDataURL("image/png");
+    cart.push({
+      localId:`cart_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      templateFile:selectedTemplate.file,
+      templateName:selectedTemplate.name,
+      copies,
+      unitPrice:unitPrice(),
+      productTotal:unitPrice()*copies,
+      previewDataUrl:dataUrl
+    });
+    renderCart();
+    setStep(4);
+    els.cartPanel.classList.add("active");
+    els.cartPanel.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  function renderCart(){
+    els.topCartBtn.textContent = `🛒 ${cart.length}`;
+    if(!cart.length){
+      els.fixedCartSummary.innerHTML = `カートは空です<small>複数デザインをまとめて注文できます</small>`;
+      els.cartItems.innerHTML = `<div class="subtext">まだ商品が入っていません。</div>`;
+      els.cartTotals.textContent = "";
+      els.checkoutTotals.textContent = "";
+      return;
+    }
+    const copies = getCartCopies();
+    const product = getCartProductTotal();
+    const total = getCartPaymentTotal();
+    els.fixedCartSummary.innerHTML = `${copies}本 / ${yen(total)}<small>送料・代引手数料込み ${yen(fixedFee())}</small>`;
+    els.cartItems.innerHTML = cart.map(item=>`
+      <div class="cart-item">
+        <img src="${item.previewDataUrl}" alt="${escapeHtml(item.templateName)}">
+        <div>
+          <div class="cart-item-title">${escapeHtml(item.templateName)}</div>
+          <div class="cart-item-meta">${item.copies}本 / ${yen(item.productTotal)}</div>
+        </div>
+        <button type="button" class="remove-btn" data-remove="${escapeHtml(item.localId)}">削除</button>
+      </div>
+    `).join("");
+    document.querySelectorAll("[data-remove]").forEach(btn=>btn.addEventListener("click",()=>{
+      cart = cart.filter(item=>item.localId!==btn.dataset.remove);
+      renderCart();
+    }));
+    const totalsHtml = `
+      商品代：${yen(product)}<br>
+      送料・代引手数料：${yen(fixedFee())}<br>
+      合計：${yen(total)}<br>
+      <span style="font-size:13px;color:#795548;">商品は代金引換でお届けします。</span>
+    `;
+    els.cartTotals.innerHTML = totalsHtml;
+    els.checkoutTotals.innerHTML = totalsHtml;
+  }
+
+  function goCheckout(){
+    hideError();
+    if(!cart.length){showError("カートに商品を追加してください。",true);return;}
+    els.checkoutCard.classList.remove("hidden");
+    setStep(5);
+    els.checkoutCard.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  function clearCart(){
+    if(!cart.length) return;
+    if(confirm("カートを空にしますか？")){
+      cart=[];
+      renderCart();
+      els.checkoutCard.classList.add("hidden");
+    }
+  }
+
+  function showError(message, scroll=false){
+    els.orderError.textContent = message;
+    els.orderError.style.display = "block";
+    if(scroll) els.orderError.scrollIntoView({behavior:"smooth",block:"center"});
+  }
+  function hideError(){els.orderError.textContent="";els.orderError.style.display="none";}
+
+  function normalizePhone(phone){return String(phone||"").replace(/[０-９]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0xFEE0)).replace(/[^0-9]/g,"");}
+  function customerInfo(){
+    return {
+      name:document.getElementById("customerName").value.trim(),
+      phone:document.getElementById("customerPhone").value.trim(),
+      normalizedPhone:normalizePhone(document.getElementById("customerPhone").value),
+      address:document.getElementById("customerAddress").value.trim(),
+      memo:document.getElementById("customerMemo").value.trim()
+    };
+  }
+
+  async function submitOrder(){
+    hideError();
+    if(!cart.length){showError("カートに商品を追加してください。",true);return;}
+    const info = customerInfo();
+    if(!info.name || !info.phone || !info.address){showError("氏名・電話番号・お届け先住所を入力してください。",true);return;}
+    const btn = document.getElementById("submitOrderBtn");
+    btn.disabled = true;
+    btn.textContent = "送信中です…";
+    try{
+      const counterRef = doc(db,"counters",`${shopId}_${nowDayKey()}`);
+      const seq = await runTransaction(db, async tx=>{
+        const snap = await tx.get(counterRef);
+        const current = snap.exists() ? Number(snap.data().seq || 0) : 0;
+        const next = current + 1;
+        tx.set(counterRef,{seq:next,shopId,dayKey:nowDayKey(),updatedAt:serverTimestamp()},{merge:true});
+        return next;
+      });
+      const code = String(settings.shopCode || "S").toUpperCase().slice(0,4) || "S";
+      const shortId = String(seq).padStart(4,"0");
+      const queueId = `${nowDayKey()}-${shortId}`;
+      const displayCode = `${code}${nowDayKey()}-${shortId}`;
+      const orderId = `${shopId}_${queueId}`;
+      const folder = `${shopId}/${fullDayKey()}/${orderId}`;
+      const uploadedItems=[];
+      for(let i=0;i<cart.length;i++){
+        const item = cart[i];
+        const storageRef = ref(storage,`orders/${folder}/item_${i+1}.png`);
+        await uploadString(storageRef,item.previewDataUrl,"data_url");
+        const imageUrl = await getDownloadURL(storageRef);
+        uploadedItems.push({
+          templateFile:item.templateFile,
+          templateName:item.templateName,
+          copies:item.copies,
+          unitPrice:item.unitPrice,
+          productTotal:item.productTotal,
+          imageUrl
+        });
+      }
+      const productTotal = getCartProductTotal();
+      const orderData = {
+        shopId,
+        orderType:"cart_cod",
+        source:"shop-cart-cod",
+        operationMode:"ecommerce",
+        paymentMethod:"代金引換",
+        paymentTiming:"商品到着時に配送業者へお支払い",
+        cartFixedFee:fixedFee(),
+        shippingFee:fixedFee(),
+        codFeeIncluded:true,
+        copies:getCartCopies(),
+        itemCount:cart.length,
+        productTotal,
+        totalPrice:productTotal+fixedFee(),
+        cartItems:uploadedItems,
+        imageUrl:uploadedItems[0]?.imageUrl || "",
+        queueId,
+        shortId,
+        displayNo:seq,
+        displayCode,
+        status:"WAIT",
+        dayKey:nowDayKey(),
+        createdAt:serverTimestamp(),
+        customerName:info.name,
+        customerPhone:info.phone,
+        normalizedPhone:info.normalizedPhone,
+        customerAddress:info.address,
+        customerMemo:info.memo,
+        templateFile:uploadedItems[0]?.templateFile || "",
+        templateName:uploadedItems[0]?.templateName || "",
+        unitPrice:unitPrice(),
+        priceType:"general"
+      };
+      await setDoc(doc(db,"orders",orderId),orderData);
+      showComplete(displayCode, orderData);
+      cart=[];
+      renderCart();
+      els.checkoutCard.classList.add("hidden");
+      els.cartPanel.classList.remove("active");
+    }catch(e){
+      console.error(e);
+      showError("注文の送信に失敗しました。通信状態を確認してもう一度お試しください。",true);
+    }finally{
+      btn.disabled = false;
+      btn.textContent = "この内容で注文を確定する";
+    }
+  }
+
+  function showComplete(displayCode, data){
+    setStep(5);
+    els.completeBox.style.display = "block";
+    els.completeBox.innerHTML = `
+      <div style="font-size:22px;">ありがとうございます</div>
+      <div>受付番号</div>
+      <div class="reception-no">${escapeHtml(displayCode)}</div>
+      <div>商品代：${yen(data.productTotal)}</div>
+      <div>送料・代引手数料：${yen(data.cartFixedFee)}</div>
+      <div style="font-size:22px;color:#e65100;">合計：${yen(data.totalPrice)}</div>
+      <div style="margin-top:10px;">商品は制作後、代金引換で発送します。<br>受付番号はスクリーンショットで保存してください。</div>
+    `;
+    els.completeBox.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  document.getElementById("photoInput").addEventListener("change",e=>handleFile(e.target.files[0]));
+  document.getElementById("cameraInput").addEventListener("change",e=>handleFile(e.target.files[0]));
+  document.getElementById("copiesSelect").addEventListener("change",updateItemPrice);
+  document.getElementById("resetPhotoBtn").addEventListener("click",resetPhotoState);
+  document.getElementById("changeDesignBtn").addEventListener("click",()=>document.getElementById("designCard").scrollIntoView({behavior:"smooth"}));
+  document.getElementById("addToCartBtn").addEventListener("click",addToCart);
+  document.getElementById("addAnotherBtn").addEventListener("click",()=>{photoImg=null; drawCanvas(); document.getElementById("designCard").scrollIntoView({behavior:"smooth"}); setStep(1);});
+  document.getElementById("goCheckoutBtn").addEventListener("click",goCheckout);
+  document.getElementById("clearCartBtn").addEventListener("click",clearCart);
+  document.getElementById("submitOrderBtn").addEventListener("click",submitOrder);
+  document.getElementById("fixedCartBtn").addEventListener("click",()=>{els.cartPanel.classList.add("active"); els.cartPanel.scrollIntoView({behavior:"smooth"}); setStep(4);});
+  document.getElementById("topCartBtn").addEventListener("click",()=>{els.cartPanel.classList.add("active"); els.cartPanel.scrollIntoView({behavior:"smooth"}); setStep(4);});
+
+  await loadSettings();
+  drawCanvas();
+</script>
+</body>
+</html>
