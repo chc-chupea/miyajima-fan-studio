@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>通販設定画面 - Myうちわ SHOP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue:#1565c0;
+      --light-blue:#e3f2fd;
+      --green:#1b5e20;
+      --light-green:#e8f5e9;
+      --orange:#e65100;
+      --light-orange:#fff3e0;
+      --red:#c62828;
+      --gray:#666;
+      --border:#d9e5f2;
+      --card:#fff;
+      --bg:#f3f7fb;
+    }
+    body {
+      font-family:'M PLUS Rounded 1c',sans-serif;
+      background:var(--bg);
+      margin:0;
+      padding:14px;
+      color:#333;
+    }
+    .wrap { max-width:960px; margin:0 auto; }
+    h1 {
+      text-align:center;
+      color:var(--blue);
+      font-size:22px;
+      margin:12px 0 18px;
+    }
+    .card {
+      background:var(--card);
+      border-radius:18px;
+      padding:16px;
+      margin-bottom:14px;
+      box-shadow:0 3px 10px rgba(0,0,0,.08);
+    }
+    .card h2 {
+      margin:0 0 12px;
+      color:var(--blue);
+      font-size:18px;
+    }
+    .nav-links,
+    .actions {
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:12px;
+    }
+    a,
+    button {
+      border:none;
+      border-radius:20px;
+      padding:10px 14px;
+      font-weight:900;
+      cursor:pointer;
+      background:#2196f3;
+      color:#fff;
+      text-decoration:none;
+      display:inline-block;
+      font-family:inherit;
+      font-size:15px;
+    }
+    button.secondary { background:#777; }
+    button.green { background:#4caf50; }
+    button.orange { background:#ff9800; }
+    .shop-badge {
+      display:inline-block;
+      background:var(--light-green);
+      color:var(--green);
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:13px;
+      font-weight:900;
+      margin-left:6px;
+    }
+    .grid {
+      display:grid;
+      grid-template-columns:180px 1fr;
+      gap:12px;
+      align-items:center;
+    }
+    label {
+      font-weight:900;
+      color:var(--blue);
+      font-size:14px;
+    }
+    input,
+    textarea,
+    select {
+      width:100%;
+      box-sizing:border-box;
+      padding:11px;
+      border-radius:12px;
+      border:1px solid #ccc;
+      font-size:15px;
+      font-family:inherit;
+      background:#fff;
+    }
+    textarea {
+      min-height:100px;
+      resize:vertical;
+      line-height:1.5;
+    }
+    .checkbox-row {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:900;
+      color:#333;
+    }
+    .checkbox-row input {
+      width:auto;
+      transform:scale(1.25);
+    }
+    .note {
+      background:var(--light-blue);
+      color:#0d47a1;
+      border-radius:14px;
+      padding:12px;
+      font-size:13px;
+      font-weight:700;
+      line-height:1.6;
+      margin-top:10px;
+    }
+    .danger-note {
+      background:var(--light-orange);
+      color:var(--orange);
+      border-radius:14px;
+      padding:12px;
+      font-size:13px;
+      font-weight:700;
+      line-height:1.6;
+      margin-top:10px;
+    }
+    .status {
+      font-size:13px;
+      font-weight:900;
+      margin-top:10px;
+      min-height:1.5em;
+      color:var(--green);
+    }
+    .url-list {
+      display:grid;
+      gap:8px;
+      margin-top:10px;
+    }
+    .url-row {
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:6px;
+      align-items:center;
+    }
+    .url-row a {
+      background:var(--light-blue);
+      color:#0d47a1;
+      border-radius:12px;
+      padding:9px 10px;
+      word-break:break-all;
+      font-size:13px;
+    }
+    .copy-btn {
+      background:#ff9800;
+      border-radius:12px;
+      padding:9px 12px;
+      white-space:nowrap;
+      font-size:13px;
+    }
+    .copy-btn.copied { background:#4caf50; }
+    .preview-box {
+      background:#f8fbff;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+      line-height:1.8;
+      font-weight:700;
+    }
+    .price-line {
+      display:flex;
+      justify-content:space-between;
+      border-bottom:1px dashed #cfd8dc;
+      padding:4px 0;
+    }
+    .price-line strong { color:var(--orange); }
+    @media (max-width:640px) {
+      .grid { grid-template-columns:1fr; }
+      .url-row { grid-template-columns:1fr; }
+      .nav-links a,
+      .actions button { width:100%; text-align:center; box-sizing:border-box; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>通販設定画面 <span id="shopBadge" class="shop-badge">shop</span></h1>
+
+    <div class="card">
+      <strong>通販専用の設定画面です。</strong>
+      <div class="note">
+        この画面は <strong>shop.html</strong> と <strong>shop_admin.html</strong> 用です。<br>
+        イベント会場用の index.html / admin.html / settings.html とは分けて運用します。
+      </div>
+      <div class="nav-links">
+        <a id="shopLink" href="shop.html?shop=ippin" target="_blank" rel="noopener">通販注文画面</a>
+        <a id="shopAdminLink" href="shop_admin.html?shop=ippin" target="_blank" rel="noopener">通販管理画面</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>ショップ基本設定</h2>
+      <div class="grid">
+        <label for="shopName">ショップ名</label>
+        <input id="shopName" type="text" placeholder="例：Myうちわ SHOP">
+
+        <label for="shopCode">受付番号の頭文字</label>
+        <input id="shopCode" type="text" maxlength="4" placeholder="例：S">
+
+        <label for="adminPin">管理画面PIN</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="adminPin" type="password" inputmode="numeric" maxlength="4" placeholder="例：4946">
+          <button type="button" id="togglePinBtn" class="secondary" style="border-radius:12px;white-space:nowrap;">👁</button>
+        </div>
+
+        <label for="templateSet">テンプレートセット</label>
+        <select id="templateSet">
+          <option value="ecommerce_fan">通販用うちわ（無地・母の日・父の日・誕生日・敬老の日）</option>
+          <option value="general">一般（無地・母の日・父の日）</option>
+          <option value="kure_softball">呉ソフトボール大会</option>
+        </select>
+
+        <label for="unitPrice">うちわ単価</label>
+        <input id="unitPrice" type="number" min="0" step="10" placeholder="880">
+
+        <label for="cartFixedFee">送料・代引手数料</label>
+        <input id="cartFixedFee" type="number" min="0" step="10" placeholder="1000">
+
+        <label for="paymentMethod">支払い方法表示</label>
+        <input id="paymentMethod" type="text" placeholder="代金引換">
+
+        <label for="phone">問い合わせ電話番号</label>
+        <input id="phone" type="tel" placeholder="082-245-1133">
+
+        <label for="orderOpen">受付状態</label>
+        <div class="checkbox-row">
+          <input id="orderOpen" type="checkbox">
+          <span>受付中にする</span>
+        </div>
+
+        <label for="closedMessage">受付停止中の表示文</label>
+        <textarea id="closedMessage" placeholder="ただいま受付を停止しています。"></textarea>
+      </div>
+
+      <div class="actions">
+        <button id="saveSettingsBtn" class="green">設定を保存</button>
+        <button id="reloadSettingsBtn" class="secondary">設定を再読込</button>
+      </div>
+      <div id="settingsStatus" class="status"></div>
+    </div>
+
+    <div class="card">
+      <h2>料金表示プレビュー</h2>
+      <div class="preview-box">
+        <div class="price-line"><span>商品代</span><strong><span id="previewUnitPrice">880</span>円 × 本数</strong></div>
+        <div class="price-line"><span>送料・代引手数料</span><strong><span id="previewFixedFee">1,000</span>円</strong></div>
+        <div class="price-line"><span>お支払い</span><strong id="previewPaymentMethod">代金引換</strong></div>
+        <div style="margin-top:8px;color:#555;font-size:13px;">商品到着時に、配達員へお支払いください。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>公開URL</h2>
+      <div id="urlList" class="url-list"></div>
+      <div class="danger-note">
+        GitHubに <strong>shop.html</strong>、<strong>shop_admin.html</strong>、<strong>shop_settings.html</strong> を追加して使います。<br>
+        通販用URL例：<strong>shop.html?shop=<span id="currentShopIdText">ippin</span></strong>
+      </div>
+    </div>
+  </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBKSYZgaSVTu-HO_lS1Tp2eFjSjMuOONNI",
+    authDomain: "my-uchiwa-queue.firebaseapp.com",
+    projectId: "my-uchiwa-queue",
+    storageBucket: "my-uchiwa-queue.firebasestorage.app",
+    messagingSenderId: "245883628081",
+    appId: "1:245883628081:web:ab7f00f01ba256ebca8310",
+    measurementId: "G-W4S3EKL9TY"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const params = new URLSearchParams(window.location.search);
+  const shopId = (params.get("shop") || "ippin").replace(/[^a-zA-Z0-9_-]/g, "");
+  const settingsRef = doc(db, "shopSettings", shopId);
+
+  const defaultSettings = {
+    shopId,
+    shopName: "Myうちわ SHOP",
+    shopCode: "S",
+    adminPin: "4946",
+    templateSet: "ecommerce_fan",
+    unitPrice: 880,
+    cartFixedFee: 1000,
+    paymentMethod: "代金引換",
+    phone: "082-245-1133",
+    orderOpen: true,
+    closedMessage: "ただいま受付を停止しています。再開までしばらくお待ちください。"
+  };
+
+  document.getElementById("shopBadge").textContent = shopId;
+  document.getElementById("currentShopIdText").textContent = shopId;
+
+  function getVersionKey() {
+    const now = new Date();
+    return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+  }
+
+  function getBasePath() {
+    const path = window.location.pathname.replace(/[^/]*$/, "");
+    return `${window.location.origin}${path}`;
+  }
+
+  function buildUrl(fileName) {
+    const versionParam = fileName === "shop.html" ? `&v=${getVersionKey()}` : "";
+    return `${getBasePath()}${fileName}?shop=${encodeURIComponent(shopId)}${versionParam}`;
+  }
+
+  function renderUrls() {
+    const urls = [
+      ["通販注文画面", "shop.html"],
+      ["通販管理画面", "shop_admin.html"],
+      ["通販設定画面", "shop_settings.html"]
+    ];
+    document.getElementById("urlList").innerHTML = urls.map(([label, file]) => {
+      const url = buildUrl(file);
+      return `
+        <div class="url-row">
+          <a href="${url}" target="_blank" rel="noopener">${label}：${url}</a>
+          <button type="button" class="copy-btn" data-copy-url="${url}">コピー</button>
+        </div>
+      `;
+    }).join("");
+
+    document.getElementById("shopLink").href = buildUrl("shop.html");
+    document.getElementById("shopAdminLink").href = buildUrl("shop_admin.html");
+    setupCopyButtons();
+  }
+
+  async function copyTextToClipboard(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const ok = document.execCommand("copy");
+      textarea.remove();
+      return ok;
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
+  }
+
+  function setupCopyButtons() {
+    document.querySelectorAll(".copy-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const ok = await copyTextToClipboard(btn.dataset.copyUrl || "");
+        if (!ok) {
+          alert("コピーできませんでした。リンクを選択してコピーしてください。");
+          return;
+        }
+        const original = btn.textContent;
+        btn.textContent = "コピー済";
+        btn.classList.add("copied");
+        setTimeout(() => {
+          btn.textContent = original;
+          btn.classList.remove("copied");
+        }, 1400);
+      });
+    });
+  }
+
+  function setStatus(message, isError = false) {
+    const el = document.getElementById("settingsStatus");
+    el.textContent = message || "";
+    el.style.color = isError ? "#c62828" : "#1b5e20";
+  }
+
+  function normalizeShopCode(value) {
+    return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4) || "S";
+  }
+
+  function fillForm(settings) {
+    const s = { ...defaultSettings, ...(settings || {}) };
+    document.getElementById("shopName").value = s.shopName || "";
+    document.getElementById("shopCode").value = s.shopCode || "S";
+    document.getElementById("adminPin").value = String(s.adminPin || "4946").replace(/[^0-9]/g, "").slice(0, 4);
+    document.getElementById("templateSet").value = s.templateSet || "ecommerce_fan";
+    document.getElementById("unitPrice").value = Number(s.unitPrice || 880);
+    document.getElementById("cartFixedFee").value = Number(s.cartFixedFee || 1000);
+    document.getElementById("paymentMethod").value = s.paymentMethod || "代金引換";
+    document.getElementById("phone").value = s.phone || "";
+    document.getElementById("orderOpen").checked = s.orderOpen !== false;
+    document.getElementById("closedMessage").value = s.closedMessage || "";
+    updatePreview();
+  }
+
+  function readForm() {
+    return {
+      shopId,
+      shopName: document.getElementById("shopName").value.trim() || defaultSettings.shopName,
+      shopCode: normalizeShopCode(document.getElementById("shopCode").value || defaultSettings.shopCode),
+      adminPin: String(document.getElementById("adminPin").value || defaultSettings.adminPin).replace(/[^0-9]/g, "").slice(0, 4),
+      templateSet: document.getElementById("templateSet").value || "ecommerce_fan",
+      unitPrice: Number(document.getElementById("unitPrice").value || 880),
+      cartFixedFee: Number(document.getElementById("cartFixedFee").value || 1000),
+      paymentMethod: document.getElementById("paymentMethod").value.trim() || "代金引換",
+      phone: document.getElementById("phone").value.trim() || "082-245-1133",
+      orderOpen: !!document.getElementById("orderOpen").checked,
+      closedMessage: document.getElementById("closedMessage").value.trim() || defaultSettings.closedMessage,
+      updatedAt: serverTimestamp()
+    };
+  }
+
+  function updatePreview() {
+    document.getElementById("previewUnitPrice").textContent = Number(document.getElementById("unitPrice").value || 880).toLocaleString();
+    document.getElementById("previewFixedFee").textContent = Number(document.getElementById("cartFixedFee").value || 1000).toLocaleString();
+    document.getElementById("previewPaymentMethod").textContent = document.getElementById("paymentMethod").value || "代金引換";
+  }
+
+  async function loadSettings() {
+    try {
+      setStatus("設定を読み込み中です…");
+      const snap = await getDoc(settingsRef);
+      if (snap.exists()) {
+        fillForm(snap.data());
+        setStatus("設定を読み込みました。");
+      } else {
+        fillForm(defaultSettings);
+        setStatus("未作成の通販設定です。必要に応じて保存してください。");
+      }
+    } catch (error) {
+      console.error(error);
+      fillForm(defaultSettings);
+      setStatus("設定の読み込みに失敗しました。", true);
+    }
+  }
+
+  async function saveSettings() {
+    try {
+      const settings = readForm();
+      if (!/^\d{4}$/.test(settings.adminPin)) {
+        alert("管理画面PINは数字4桁で入力してください。");
+        return;
+      }
+      if (settings.unitPrice < 0 || settings.cartFixedFee < 0) {
+        alert("金額は0円以上で入力してください。");
+        return;
+      }
+      await setDoc(settingsRef, settings, { merge:true });
+      setStatus("設定を保存しました。");
+      alert("設定を保存しました。");
+    } catch (error) {
+      console.error(error);
+      setStatus("設定の保存に失敗しました。", true);
+      alert("設定の保存に失敗しました。通信状態を確認してください。");
+    }
+  }
+
+  ["unitPrice", "cartFixedFee", "paymentMethod"].forEach(id => {
+    document.getElementById(id).addEventListener("input", updatePreview);
+  });
+  document.getElementById("shopCode").addEventListener("input", e => {
+    e.target.value = normalizeShopCode(e.target.value);
+  });
+  document.getElementById("adminPin").addEventListener("input", e => {
+    e.target.value = String(e.target.value || "").replace(/[^0-9]/g, "").slice(0, 4);
+  });
+  document.getElementById("togglePinBtn").addEventListener("click", () => {
+    const input = document.getElementById("adminPin");
+    input.type = input.type === "password" ? "text" : "password";
+  });
+  document.getElementById("saveSettingsBtn").addEventListener("click", saveSettings);
+  document.getElementById("reloadSettingsBtn").addEventListener("click", loadSettings);
+
+  renderUrls();
+  await loadSettings();
+</script>
+</body>
+</html>
