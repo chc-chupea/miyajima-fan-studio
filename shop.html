@@ -572,9 +572,18 @@
   let touchDragPoint = null;
   let touchGestureStart = null;
   let rafDrawPending = false;
-  let guidedCameraStream=null;
-  let guidedCameraFacing="environment";
-  let guidedCameraZoom=1;
+  let cameraModule = {
+    stream: null,
+    track: null,
+    facing: "environment",
+    zoom: 1,
+    minZoom: 1,
+    maxZoom: 3,
+    opticalZoomSupported: false,
+    digitalZoomActive: true,
+    pinchStartDistance: 0,
+    pinchStartZoom: 1
+  };
 
   function yen(n){return `${Number(n||0).toLocaleString()}円`;}
   function unitPrice(){return Number(settings.generalPrice || 880);}
@@ -667,36 +676,149 @@
   }
 
 
-  function applyGuidedCameraZoom(){
-    guidedCameraZoom = Math.max(1, Math.min(3, Number(els.guidedCameraZoom?.value || 1)));
-    if(els.guidedCameraVideo){
-      els.guidedCameraVideo.style.transform = `scale(${guidedCameraZoom})`;
-    }
-    if(els.guidedCameraZoomValue){
-      els.guidedCameraZoomValue.textContent = `${guidedCameraZoom.toFixed(1)}x`;
-    }
+  function clamp(value, min, max){
+    return Math.max(min, Math.min(max, Number(value || min)));
   }
 
-  function resetGuidedCameraZoom(){
-    guidedCameraZoom = 1;
-    if(els.guidedCameraZoom) els.guidedCameraZoom.value = "1";
-    applyGuidedCameraZoom();
+  function updateCameraZoomLabel(){
+    if(!els.guidedCameraZoomValue) return;
+    const mode = cameraModule.opticalZoomSupported ? "光学" : "デジタル";
+    els.guidedCameraZoomValue.textContent = `${cameraModule.zoom.toFixed(1)}x ${mode}`;
+  }
+
+  function syncCameraZoomSlider(){
+    if(!els.guidedCameraZoom) return;
+    els.guidedCameraZoom.min = String(cameraModule.minZoom || 1);
+    els.guidedCameraZoom.max = String(cameraModule.maxZoom || 3);
+    els.guidedCameraZoom.step = "0.05";
+    els.guidedCameraZoom.value = String(cameraModule.zoom || 1);
+    updateCameraZoomLabel();
+  }
+
+  function waitForVideoReady(video){
+    return new Promise(resolve=>{
+      if(video.readyState >= 2 && video.videoWidth && video.videoHeight){
+        resolve();
+        return;
+      }
+      const done = ()=>{
+        video.removeEventListener("loadedmetadata", done);
+        video.removeEventListener("canplay", done);
+        resolve();
+      };
+      video.addEventListener("loadedmetadata", done, {once:true});
+      video.addEventListener("canplay", done, {once:true});
+    });
+  }
+
+  async function setupCameraCapabilities(){
+    cameraModule.track = cameraModule.stream?.getVideoTracks?.()[0] || null;
+    cameraModule.minZoom = 1;
+    cameraModule.maxZoom = 3;
+    cameraModule.zoom = 1;
+    cameraModule.opticalZoomSupported = false;
+    cameraModule.digitalZoomActive = true;
+
+    if(!cameraModule.track) {
+      syncCameraZoomSlider();
+      return;
+    }
+
+    const capabilities = cameraModule.track.getCapabilities ? cameraModule.track.getCapabilities() : {};
+    const advanced = [];
+
+    // 端末が対応している場合だけ、カメラ側のズームを使用します。
+    // CSS拡大より画質が落ちにくいので、これを最優先します。
+    if(capabilities && typeof capabilities.zoom === "object"){
+      cameraModule.minZoom = Number(capabilities.zoom.min || 1);
+      cameraModule.maxZoom = Math.min(Number(capabilities.zoom.max || 3), 5);
+      cameraModule.zoom = cameraModule.minZoom;
+      cameraModule.opticalZoomSupported = cameraModule.maxZoom > cameraModule.minZoom;
+      cameraModule.digitalZoomActive = !cameraModule.opticalZoomSupported;
+    }
+
+    // 対応端末では継続AFを要求します。未対応なら無視されます。
+    if(Array.isArray(capabilities.focusMode) && capabilities.focusMode.includes("continuous")){
+      advanced.push({focusMode:"continuous"});
+    }
+
+    // 対応端末では高品質寄りの設定を追加で要求します。
+    if(Array.isArray(capabilities.exposureMode) && capabilities.exposureMode.includes("continuous")){
+      advanced.push({exposureMode:"continuous"});
+    }
+    if(Array.isArray(capabilities.whiteBalanceMode) && capabilities.whiteBalanceMode.includes("continuous")){
+      advanced.push({whiteBalanceMode:"continuous"});
+    }
+
+    try{
+      if(advanced.length){
+        await cameraModule.track.applyConstraints({advanced});
+      }
+    }catch(error){
+      console.warn("カメラ詳細設定は一部未対応です:", error);
+    }
+
+    syncCameraZoomSlider();
+    await applyGuidedCameraZoom(cameraModule.zoom);
+  }
+
+  async function applyGuidedCameraZoom(value){
+    const nextZoom = clamp(value ?? els.guidedCameraZoom?.value ?? 1, cameraModule.minZoom, cameraModule.maxZoom);
+    cameraModule.zoom = nextZoom;
+
+    if(els.guidedCameraZoom) els.guidedCameraZoom.value = String(nextZoom);
+
+    if(cameraModule.opticalZoomSupported && cameraModule.track){
+      try{
+        await cameraModule.track.applyConstraints({advanced:[{zoom:nextZoom}]});
+        cameraModule.digitalZoomActive = false;
+        if(els.guidedCameraVideo) els.guidedCameraVideo.style.transform = "scale(1)";
+      }catch(error){
+        console.warn("光学ズームが使えないため、デジタルズームに切り替えます:", error);
+        cameraModule.opticalZoomSupported = false;
+        cameraModule.digitalZoomActive = true;
+        if(els.guidedCameraVideo) els.guidedCameraVideo.style.transform = `scale(${nextZoom})`;
+      }
+    }else{
+      cameraModule.digitalZoomActive = true;
+      if(els.guidedCameraVideo) els.guidedCameraVideo.style.transform = `scale(${nextZoom})`;
+    }
+
+    updateCameraZoomLabel();
+  }
+
+  async function resetGuidedCameraZoom(){
+    cameraModule.zoom = cameraModule.minZoom || 1;
+    syncCameraZoomSlider();
+    await applyGuidedCameraZoom(cameraModule.zoom);
   }
 
   async function openGuidedCamera(){
     hideError();
     if(!selectedTemplate){showError("先にデザインを選んでください。",true);return;}
     if(els.guidedCameraTemplate) els.guidedCameraTemplate.src = selectedTemplate.file;
+
     try{
       stopGuidedCamera();
-      resetGuidedCameraZoom();
-      guidedCameraStream = await navigator.mediaDevices.getUserMedia({
-        video:{facingMode:{ideal:guidedCameraFacing}},
+
+      // 高解像度を優先して取得します。端末が対応しない場合はブラウザが自動で落とします。
+      const constraints = {
+        video:{
+          facingMode:{ideal:cameraModule.facing},
+          width:{ideal:3840},
+          height:{ideal:2160},
+          frameRate:{ideal:30, max:60}
+        },
         audio:false
-      });
-      els.guidedCameraVideo.srcObject = guidedCameraStream;
+      };
+
+      cameraModule.stream = await navigator.mediaDevices.getUserMedia(constraints);
+      els.guidedCameraVideo.srcObject = cameraModule.stream;
       els.guidedCameraModal.classList.add("active");
       els.guidedCameraModal.setAttribute("aria-hidden","false");
+
+      await waitForVideoReady(els.guidedCameraVideo);
+      await setupCameraCapabilities();
       setStep(2);
     }catch(error){
       console.error("カメラ起動に失敗しました:", error);
@@ -706,11 +828,19 @@
   }
 
   function stopGuidedCamera(){
-    if(guidedCameraStream){
-      guidedCameraStream.getTracks().forEach(track=>track.stop());
-      guidedCameraStream=null;
+    if(cameraModule.stream){
+      cameraModule.stream.getTracks().forEach(track=>track.stop());
     }
-    if(els.guidedCameraVideo) els.guidedCameraVideo.srcObject=null;
+    cameraModule.stream = null;
+    cameraModule.track = null;
+    cameraModule.opticalZoomSupported = false;
+    cameraModule.digitalZoomActive = true;
+    cameraModule.pinchStartDistance = 0;
+    cameraModule.pinchStartZoom = 1;
+    if(els.guidedCameraVideo){
+      els.guidedCameraVideo.srcObject = null;
+      els.guidedCameraVideo.style.transform = "scale(1)";
+    }
   }
 
   function closeGuidedCamera(){
@@ -720,23 +850,15 @@
   }
 
   async function switchGuidedCamera(){
-    guidedCameraFacing = guidedCameraFacing === "environment" ? "user" : "environment";
+    cameraModule.facing = cameraModule.facing === "environment" ? "user" : "environment";
     await openGuidedCamera();
   }
 
-  function captureGuidedPhoto(){
-    const video = els.guidedCameraVideo;
-    if(!video || !video.videoWidth || !video.videoHeight){
-      showError("カメラ映像の準備ができていません。もう一度お試しください。", true);
-      return;
-    }
-    const temp = document.createElement("canvas");
-    temp.width = 3508;
-    temp.height = 2480;
-    const tctx = temp.getContext("2d");
-    const canvasRatio = temp.width / temp.height;
+  function getCameraCrop(video, outputWidth, outputHeight){
+    const canvasRatio = outputWidth / outputHeight;
     const videoRatio = video.videoWidth / video.videoHeight;
     let sx=0, sy=0, sw=video.videoWidth, sh=video.videoHeight;
+
     if(videoRatio > canvasRatio){
       sw = video.videoHeight * canvasRatio;
       sx = (video.videoWidth - sw) / 2;
@@ -745,20 +867,41 @@
       sy = (video.videoHeight - sh) / 2;
     }
 
-    // 画面上のズーム表示と保存画像がずれないよう、
-    // CSSで拡大した分だけ中央をトリミングして撮影します。
-    const zoom = Math.max(1, Math.min(3, Number(guidedCameraZoom || 1)));
-    if(zoom > 1){
-      const zoomSw = sw / zoom;
-      const zoomSh = sh / zoom;
-      sx += (sw - zoomSw) / 2;
-      sy += (sh - zoomSh) / 2;
-      sw = zoomSw;
-      sh = zoomSh;
+    // 光学ズーム対応端末では映像自体がズーム済みなので、追加トリミングしません。
+    // 非対応端末ではCSSで拡大した分だけ中央をトリミングして見た目に合わせます。
+    if(cameraModule.digitalZoomActive){
+      const zoom = clamp(cameraModule.zoom, 1, cameraModule.maxZoom || 3);
+      if(zoom > 1){
+        const zoomSw = sw / zoom;
+        const zoomSh = sh / zoom;
+        sx += (sw - zoomSw) / 2;
+        sy += (sh - zoomSh) / 2;
+        sw = zoomSw;
+        sh = zoomSh;
+      }
     }
 
-    tctx.drawImage(video, sx, sy, sw, sh, 0, 0, temp.width, temp.height);
-    const dataUrl = temp.toDataURL("image/jpeg", .92);
+    return {sx, sy, sw, sh};
+  }
+
+  function captureGuidedPhoto(){
+    const video = els.guidedCameraVideo;
+    if(!video || !video.videoWidth || !video.videoHeight){
+      showError("カメラ映像の準備ができていません。もう一度お試しください。", true);
+      return;
+    }
+
+    const temp = document.createElement("canvas");
+    temp.width = 3508;
+    temp.height = 2480;
+    const tctx = temp.getContext("2d", {alpha:false});
+    const crop = getCameraCrop(video, temp.width, temp.height);
+
+    tctx.imageSmoothingEnabled = true;
+    tctx.imageSmoothingQuality = "high";
+    tctx.drawImage(video, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, temp.width, temp.height);
+
+    const dataUrl = temp.toDataURL("image/jpeg", .95);
     photoImg = new Image();
     photoImg.onload = ()=>{
       closeGuidedCamera();
@@ -767,6 +910,25 @@
       document.getElementById("editCard").scrollIntoView({behavior:"smooth",block:"start"});
     };
     photoImg.src = dataUrl;
+  }
+
+  function cameraStagePointDistance(touches){
+    if(!touches || touches.length < 2) return 0;
+    const a = touches[0], b = touches[1];
+    return Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
+  }
+
+  async function handleCameraPinchMove(e){
+    if(!cameraModule.stream || e.touches.length < 2) return;
+    e.preventDefault();
+    const distance = cameraStagePointDistance(e.touches);
+    if(!cameraModule.pinchStartDistance) {
+      cameraModule.pinchStartDistance = distance;
+      cameraModule.pinchStartZoom = cameraModule.zoom;
+      return;
+    }
+    const ratio = distance / Math.max(1, cameraModule.pinchStartDistance);
+    await applyGuidedCameraZoom(cameraModule.pinchStartZoom * ratio);
   }
 
   function handleFile(file){
@@ -1247,8 +1409,29 @@
 
   // 撮影画面のズームスライダー。
   // input/change の両方で反映し、スマホブラウザでも確実に効かせます。
-  document.getElementById("guidedCameraZoom").addEventListener("input", applyGuidedCameraZoom);
-  document.getElementById("guidedCameraZoom").addEventListener("change", applyGuidedCameraZoom);
+  document.getElementById("guidedCameraZoom").addEventListener("input", e=>applyGuidedCameraZoom(e.target.value));
+  document.getElementById("guidedCameraZoom").addEventListener("change", e=>applyGuidedCameraZoom(e.target.value));
+
+  // カメラ画面自体も2本指ズームに対応します。
+  const cameraStageEl = document.querySelector(".camera-stage");
+  if(cameraStageEl){
+    cameraStageEl.addEventListener("touchstart", e=>{
+      if(e.touches.length >= 2){
+        e.preventDefault();
+        cameraModule.pinchStartDistance = cameraStagePointDistance(e.touches);
+        cameraModule.pinchStartZoom = cameraModule.zoom;
+      }
+    }, {passive:false});
+    cameraStageEl.addEventListener("touchmove", handleCameraPinchMove, {passive:false});
+    cameraStageEl.addEventListener("touchend", ()=>{
+      cameraModule.pinchStartDistance = 0;
+      cameraModule.pinchStartZoom = cameraModule.zoom;
+    }, {passive:false});
+    cameraStageEl.addEventListener("touchcancel", ()=>{
+      cameraModule.pinchStartDistance = 0;
+      cameraModule.pinchStartZoom = cameraModule.zoom;
+    }, {passive:false});
+  }
 
   document.getElementById("photoInput").addEventListener("change",e=>handleFile(e.target.files[0]));
   document.getElementById("cameraInput").addEventListener("change",e=>handleFile(e.target.files[0]));
