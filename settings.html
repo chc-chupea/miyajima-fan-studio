@@ -157,23 +157,7 @@
         <div id="operationModeNote" class="mode-note"></div>
 
         <label>テンプレートセット</label>
-        <div class="radio-group">
-          <label class="radio-card">
-            <input type="radio" name="templateSet" value="general" checked>
-            一般<br><span style="font-size:12px;color:#555;">無地・母の日・父の日</span>
-          </label>
-          <label class="radio-card">
-            <input type="radio" name="templateSet" value="kure_softball">
-            呉ソフトボール大会<br><span style="font-size:12px;color:#555;">無地・大会名入り</span>
-          </label>
-          <label class="radio-card">
-            <input type="radio" name="templateSet" value="ecommerce_fan">
-            通販用うちわ<br>
-            <span style="font-size:12px;color:#555;">
-              無地・母の日・父の日・誕生日・敬老の日
-            </span>
-          </label>
-        </div>
+        <div id="templateSetGroup" class="radio-group"></div>
         <div id="templateSetNote" class="mode-note"></div>
 
         <label>販売方式</label>
@@ -226,6 +210,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
   import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+  import { TEMPLATE_SETS } from "./templates.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBKSYZgaSVTu-HO_lS1Tp2eFjSjMuOONNI",
@@ -370,6 +355,32 @@
     setupCopyButtons();
   }
 
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function renderTemplateSetOptions() {
+    const group = document.getElementById("templateSetGroup");
+    if (!group) return;
+
+    group.innerHTML = Object.entries(TEMPLATE_SETS).map(([value, set], index) => `
+      <label class="radio-card">
+        <input type="radio" name="templateSet" value="${escapeHtml(value)}" ${index === 0 ? "checked" : ""}>
+        ${escapeHtml(set.label || value)}<br>
+        <span style="font-size:12px;color:#555;">${escapeHtml(set.note || "")}</span>
+      </label>
+    `).join("");
+
+    document.querySelectorAll('input[name="templateSet"]').forEach(el => {
+      el.addEventListener("change", updateModeNotes);
+    });
+  }
+
   function getCheckedValue(name, fallback) {
     return document.querySelector(`input[name="${name}"]:checked`)?.value || fallback;
   }
@@ -399,13 +410,9 @@
 
     const templateNote = document.getElementById("templateSetNote");
     if (templateNote) {
-      if (templateSet === "kure_softball") {
-        templateNote.innerHTML = "呉ソフトボール大会セット：注文画面には「無地」と「呉ソフトボール大会」のテンプレートだけを表示します。";
-      } else if (templateSet === "ecommerce_fan") {
-        templateNote.innerHTML = "通販用うちわセット：常時販売向けに「無地」「母の日」「父の日」「誕生日」「敬老の日」のテンプレートを表示します。";
-      } else {
-        templateNote.innerHTML = "一般セット：注文画面には「無地」「母の日」「父の日」のテンプレートを表示します。";
-      }
+      const selectedSet = TEMPLATE_SETS[templateSet] || TEMPLATE_SETS.general;
+      const templateNames = (selectedSet.templates || []).map(item => `「${escapeHtml(item.name)}」`).join(" ");
+      templateNote.innerHTML = `${escapeHtml(selectedSet.label)}セット：注文画面には ${templateNames} のテンプレートを表示します。`;
     }
 
     const salesNote = document.getElementById("salesModeNote");
@@ -535,9 +542,6 @@
   document.querySelectorAll('input[name="operationMode"]').forEach(el => {
     el.addEventListener("change", updateModeNotes);
   });
-  document.querySelectorAll('input[name="templateSet"]').forEach(el => {
-    el.addEventListener("change", updateModeNotes);
-  });
   document.querySelectorAll('input[name="salesMode"]').forEach(el => {
     el.addEventListener("change", updateModeNotes);
   });
@@ -596,6 +600,7 @@
     updateNewShopPreview();
   });
 
+  renderTemplateSetOptions();
   updateNewShopPreview();
   const pendingName = sessionStorage.getItem(`newShopName_${shopId}`);
   const pendingCode = sessionStorage.getItem(`newShopCode_${shopId}`);
