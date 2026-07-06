@@ -914,6 +914,7 @@ Miyajima Fan Studio<br><br>
       limit
     } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
     import { getStorage, ref, uploadString, uploadBytes, getDownloadURL, getBlob } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
+    import { TEMPLATE_SETS, getTemplates } from "./templates.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBKSYZgaSVTu-HO_lS1Tp2eFjSjMuOONNI",
@@ -1658,24 +1659,9 @@ Miyajima Fan Studio<br><br>
     let imgX = 100, imgY = 100, scale = 1, rotation = 0;
     let isDragging = false, lastX, lastY;
 
-    const templateSets = {
-      general: [
-        { file: "fan1-highres.png", name: "無地", en: "Plain", zh: "素色", ko: "무지", vi: "Trơn" },
-        { file: "fan2-highres.png", name: "母の日", en: "Mother's Day", zh: "母亲节", ko: "어머니의 날", vi: "Ngày của Mẹ" },
-        { file: "fan3-highres.png", name: "父の日", en: "Father's Day", zh: "父亲节", ko: "아버지의 날", vi: "Ngày của Cha" }
-      ],
-      kure_softball: [
-        { file: "fan1-highres.png", name: "無地", en: "Plain", zh: "素色", ko: "무지", vi: "Trơn" },
-        { file: "kure-softball.png", name: "呉ソフトボール大会", en: "Kure Softball Tournament", zh: "吴市垒球大会", ko: "구레 소프트볼 대회", vi: "Giải bóng mềm Kure" }
-      ],
-      ecommerce_fan: [
-        { file: "fan1-highres.png", name: "無地", en: "Plain", zh: "素色", ko: "무지", vi: "Trơn" },
-        { file: "fan2-highres.png", name: "母の日", en: "Mother's Day", zh: "母亲节", ko: "어머니의 날", vi: "Ngày của Mẹ"},
-        { file: "fan3-highres.png", name: "父の日", en: "Father's Day", zh: "父亲节", ko: "아버지의 날", vi: "Ngày của Cha"},
-        { file: "fan-birthday.png", name: "誕生日", en: "Birthday", zh: "生日", ko: "생일", vi: "Sinh nhật"},
-        { file: "fan-keiro.png", name: "敬老の日", en: "Respect for the Aged Day", zh: "敬老日", ko: "경로의 날", vi: "Ngày Kính lão"}
-      ]
-    };
+    function getTemplateFile(template) {
+      return template.image || template.file || "fan1-highres.png";
+    }
 
     function getTemplateSet() {
       return popupSettings?.templateSet || "general";
@@ -1683,7 +1669,7 @@ Miyajima Fan Studio<br><br>
 
     function getTemplateDisplayName(template) {
       const langKey = currentLang === "ja" ? "name" : currentLang;
-      return template[langKey] || template.name || template.file;
+      return template[langKey] || template.name || getTemplateFile(template);
     }
 
     function updateTemplateSelector() {
@@ -1691,23 +1677,25 @@ Miyajima Fan Studio<br><br>
       if (!selector) return;
 
       const selectedBefore = selector.value;
-      const templates = templateSets[getTemplateSet()] || templateSets.general;
+      const templates = getTemplates(getTemplateSet());
 
       selector.innerHTML = "";
 
       templates.forEach(template => {
+        const file = getTemplateFile(template);
         const option = document.createElement("option");
-        option.value = template.file;
+        option.value = file;
         option.textContent = getTemplateDisplayName(template);
-        option.dataset.ja = template.name || template.file;
-        option.dataset.en = template.en || template.name || template.file;
-        option.dataset.zh = template.zh || template.name || template.file;
-        option.dataset.ko = template.ko || template.name || template.file;
-        option.dataset.vi = template.vi || template.name || template.file;
+        option.dataset.templateId = template.id || "";
+        option.dataset.ja = template.name || file;
+        option.dataset.en = template.en || template.name || file;
+        option.dataset.zh = template.zh || template.name || file;
+        option.dataset.ko = template.ko || template.name || file;
+        option.dataset.vi = template.vi || template.name || file;
         selector.appendChild(option);
       });
 
-      if (templates.some(template => template.file === selectedBefore)) {
+      if (templates.some(template => getTemplateFile(template) === selectedBefore)) {
         selector.value = selectedBefore;
       }
 
