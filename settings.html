@@ -156,6 +156,10 @@
         </div>
         <div id="operationModeNote" class="mode-note"></div>
 
+        <label for="deliveryCompleteText">後日訪問 完了表示文</label>
+        <textarea id="deliveryCompleteText" placeholder="例：お近くの中国新聞販売所より
+完成後にお届けします"></textarea>
+
         <label>テンプレートセット</label>
         <div id="templateSetGroup" class="radio-group"></div>
         <div id="templateSetNote" class="mode-note"></div>
@@ -223,9 +227,8 @@
     },
     summer: {
       label: "夏バージョン",
-      note: "無地・花火・海の仲間・水彩マリン・トロピカル",
+      note: "花火・海の仲間・水彩マリン・トロピカル",
       templates: [
-        { id: "plain", name: "無地", image: "fan1-highres.png" },
         { id: "summer01", name: "花火", image: "fan2026summer01-highres.png" },
         { id: "summer02", name: "海の仲間", image: "fan2026summer02-highres.png" },
         { id: "summer03", name: "水彩マリン", image: "fan2026summer03-highres.png" },
@@ -302,6 +305,7 @@
 
   const defaultSettings = {
     shopName: "ＦＦファンスタジオ", shopCode: "F", adminPin: "4946", operationMode: "instant", templateSet: "general", salesMode: "paid", generalPrice: 800, studentPrice: 500, cartFixedFee: 1000,
+    deliveryCompleteText: "お近くの中国新聞販売所より\n完成後にお届けします",
     startDate: "", endDate: "", openTime: "10:00", closeTime: "17:00", orderDeadline: "", phone: "082-245-1133", pickupDeadlineText: "",
     popupClosed: false, expiredTitle: "⏰ 受取期限が終了しました",
     expiredBody: "ポップアップストアの営業は終了しました。<br>未受取の商品については、<br>土日祝を除く10時～17時に<br>082-245-1133 へお問い合わせください。"
@@ -455,7 +459,8 @@
     if (opNote) {
       opNote.classList.toggle("delivery", operationMode === "delivery" || operationMode === "ecommerce");
       if (operationMode === "delivery") {
-        opNote.innerHTML = "後日訪問モード：注文時に氏名・電話番号・詳細住所・購読状況を入力してもらいます。完了画面には「お近くの中国新聞販売所より完成後にお届けします」と表示されます。";
+        const deliveryText = String(document.getElementById("deliveryCompleteText")?.value || defaultSettings.deliveryCompleteText).replace(/\n/g, "");
+        opNote.innerHTML = `後日訪問モード：注文時に氏名・電話番号・詳細住所・購読状況を入力してもらいます。完了画面には「${escapeHtml(deliveryText)}」と表示されます。`;
       } else if (operationMode === "ecommerce") {
         opNote.innerHTML = "通販発送モード：複数デザインを1回の注文でまとめて購入できます。送料・代引手数料込みで1注文につき一律1,000円です。商品は代金引換でお届けし、商品到着時に配送業者へお支払いいただきます。";
       } else {
@@ -509,6 +514,7 @@
     document.getElementById("generalPrice").value = Number(s.generalPrice || 800);
     document.getElementById("studentPrice").value = Number(s.studentPrice || 500);
     document.getElementById("cartFixedFee").value = Number(s.cartFixedFee || 1000);
+    document.getElementById("deliveryCompleteText").value = String(s.deliveryCompleteText || defaultSettings.deliveryCompleteText || "").replace(/<br\s*\/?/g, "\n");
     document.getElementById("phone").value = s.phone || "";
     document.getElementById("pickupDeadlineText").value = s.pickupDeadlineText || "";
     document.getElementById("popupClosed").checked = !!s.popupClosed;
@@ -536,6 +542,7 @@
       generalPrice: Number(document.getElementById("generalPrice").value || 800),
       studentPrice: Number(document.getElementById("studentPrice").value || 500),
       cartFixedFee: Number(document.getElementById("cartFixedFee")?.value || 1000),
+      deliveryCompleteText: document.getElementById("deliveryCompleteText").value.trim() || defaultSettings.deliveryCompleteText,
       phone: document.getElementById("phone").value.trim() || "082-245-1133",
       pickupDeadlineText: document.getElementById("pickupDeadlineText").value.trim(),
       popupClosed: document.getElementById("popupClosed").checked,
@@ -593,6 +600,7 @@
   document.getElementById("saveSettingsBtn").addEventListener("click", saveSettings);
   document.getElementById("reloadSettingsBtn").addEventListener("click", loadSettings);
   document.getElementById("popupClosed").addEventListener("change", updateClosedModeBanner);
+  document.getElementById("deliveryCompleteText").addEventListener("input", updateModeNotes);
 
   document.querySelectorAll('input[name="operationMode"]').forEach(el => {
     el.addEventListener("change", updateModeNotes);

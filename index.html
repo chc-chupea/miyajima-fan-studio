@@ -914,7 +914,6 @@ Miyajima Fan Studio<br><br>
       limit
     } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
     import { getStorage, ref, uploadString, uploadBytes, getDownloadURL, getBlob } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
-    import { TEMPLATE_SETS, getTemplates } from "./templates.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBKSYZgaSVTu-HO_lS1Tp2eFjSjMuOONNI",
@@ -943,6 +942,7 @@ Miyajima Fan Studio<br><br>
       operationMode: "instant",
       templateSet: "general",
       salesMode: "paid",
+      deliveryCompleteText: "お近くの中国新聞販売所より\n完成後にお届けします",
 
     startDate: "",
       endDate: "",
@@ -974,6 +974,10 @@ Miyajima Fan Studio<br><br>
 
     function nl2br(value) {
       return String(value || "").replace(/\n/g, "<br>");
+    }
+
+    function getDeliveryCompleteText() {
+      return String(popupSettings?.deliveryCompleteText || defaultSettings.deliveryCompleteText || "お近くの中国新聞販売所より\n完成後にお届けします");
     }
 
     function getGeneralPrice() {
@@ -1149,7 +1153,7 @@ Miyajima Fan Studio<br><br>
         setFieldBlockVisible("customerMemo", true);
         if (subscriptionLabel) subscriptionLabel.style.display = "";
         if (subscriptionOptions) subscriptionOptions.style.display = "";
-        if (deliveryNote) deliveryNote.textContent = "完成後、後日お近くの中国新聞販売所よりお届けします。";
+        if (deliveryNote) deliveryNote.innerHTML = nl2br(getDeliveryCompleteText());
       }
     }
 
@@ -1659,9 +1663,24 @@ Miyajima Fan Studio<br><br>
     let imgX = 100, imgY = 100, scale = 1, rotation = 0;
     let isDragging = false, lastX, lastY;
 
-    function getTemplateFile(template) {
-      return template.image || template.file || "fan1-highres.png";
-    }
+    const templateSets = {
+      general: [
+        { file: "fan1-highres.png", name: "無地", en: "Plain", zh: "素色", ko: "무지", vi: "Trơn" },
+        { file: "fan2-highres.png", name: "母の日", en: "Mother's Day", zh: "母亲节", ko: "어머니의 날", vi: "Ngày của Mẹ" },
+        { file: "fan3-highres.png", name: "父の日", en: "Father's Day", zh: "父亲节", ko: "아버지의 날", vi: "Ngày của Cha" }
+      ],
+      kure_softball: [
+        { file: "fan1-highres.png", name: "無地", en: "Plain", zh: "素色", ko: "무지", vi: "Trơn" },
+        { file: "kure-softball.png", name: "呉ソフトボール大会", en: "Kure Softball Tournament", zh: "吴市垒球大会", ko: "구레 소프트볼 대회", vi: "Giải bóng mềm Kure" }
+      ],
+      ecommerce_fan: [
+        { file: "fan1-highres.png", name: "無地", en: "Plain", zh: "素色", ko: "무지", vi: "Trơn" },
+        { file: "fan2-highres.png", name: "母の日", en: "Mother's Day", zh: "母亲节", ko: "어머니의 날", vi: "Ngày của Mẹ"},
+        { file: "fan3-highres.png", name: "父の日", en: "Father's Day", zh: "父亲节", ko: "아버지의 날", vi: "Ngày của Cha"},
+        { file: "fan-birthday.png", name: "誕生日", en: "Birthday", zh: "生日", ko: "생일", vi: "Sinh nhật"},
+        { file: "fan-keiro.png", name: "敬老の日", en: "Respect for the Aged Day", zh: "敬老日", ko: "경로의 날", vi: "Ngày Kính lão"}
+      ]
+    };
 
     function getTemplateSet() {
       return popupSettings?.templateSet || "general";
@@ -1669,7 +1688,7 @@ Miyajima Fan Studio<br><br>
 
     function getTemplateDisplayName(template) {
       const langKey = currentLang === "ja" ? "name" : currentLang;
-      return template[langKey] || template.name || getTemplateFile(template);
+      return template[langKey] || template.name || template.file;
     }
 
     function updateTemplateSelector() {
@@ -1677,25 +1696,23 @@ Miyajima Fan Studio<br><br>
       if (!selector) return;
 
       const selectedBefore = selector.value;
-      const templates = getTemplates(getTemplateSet());
+      const templates = templateSets[getTemplateSet()] || templateSets.general;
 
       selector.innerHTML = "";
 
       templates.forEach(template => {
-        const file = getTemplateFile(template);
         const option = document.createElement("option");
-        option.value = file;
+        option.value = template.file;
         option.textContent = getTemplateDisplayName(template);
-        option.dataset.templateId = template.id || "";
-        option.dataset.ja = template.name || file;
-        option.dataset.en = template.en || template.name || file;
-        option.dataset.zh = template.zh || template.name || file;
-        option.dataset.ko = template.ko || template.name || file;
-        option.dataset.vi = template.vi || template.name || file;
+        option.dataset.ja = template.name || template.file;
+        option.dataset.en = template.en || template.name || template.file;
+        option.dataset.zh = template.zh || template.name || template.file;
+        option.dataset.ko = template.ko || template.name || template.file;
+        option.dataset.vi = template.vi || template.name || template.file;
         selector.appendChild(option);
       });
 
-      if (templates.some(template => getTemplateFile(template) === selectedBefore)) {
+      if (templates.some(template => template.file === selectedBefore)) {
         selector.value = selectedBefore;
       }
 
@@ -2197,8 +2214,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       if (isDeliveryMode()) {
         return `
           <div class="receipt-code-note">
-            お近くの中国新聞販売所より<br>
-            完成後にお届けします。
+            ${nl2br(getDeliveryCompleteText())}
           </div>
         `;
       }
@@ -2670,8 +2686,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
             <div class="receipt-code-note">※確認のためスクリーンショットを保存してください</div>
           </div>
           <div style="font-size:18px;line-height:1.8;color:#1b5e20;font-weight:900;">
-            お近くの中国新聞販売所より<br>
-            後日、完成後にお届けします
+            ${nl2br(getDeliveryCompleteText())}
           </div>
           <div style="font-size:13px;color:#555;margin-top:12px;line-height:1.6;">
             ご注文内容の確認のため、販売所よりご連絡する場合があります。
@@ -3514,7 +3529,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
           customerAddress: (isDeliveryMode() || isEcommerceMode()) ? customerInfo.address : "",
           customerMemo: customerInfo.memo,
           subscriptionStatus: isDeliveryMode() ? customerInfo.subscriptionStatus : [],
-          deliveryMessage: isEcommerceMode() ? "送料・代引手数料込み一律1,000円。商品は代金引換でお届けします。" : (isDeliveryMode() ? "お近くの中国新聞販売所より後日、完成後にお届けします" : ""),
+          deliveryMessage: isEcommerceMode() ? "送料・代引手数料込み一律1,000円。商品は代金引換でお届けします。" : (isDeliveryMode() ? getDeliveryCompleteText().replace(/\n/g, " ") : ""),
 
           isReorder: isReuseMode,
           reuseFromQueueId: isReuseMode && reuseSourceOrder ? reuseSourceOrder.queueId : null,
