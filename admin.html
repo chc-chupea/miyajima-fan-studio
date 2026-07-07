@@ -676,6 +676,7 @@
       const isEc = isEcommerceOrder(data);
       const codeLabel = isEc ? "写真登録番号" : "受付番号";
       const quantityLine = `本数：${escapeHtml(data.copies || 1)}本`;
+      const receivePriceLine = `受取料金：${yen(getTotalPrice(data))}`;
       const shippingLine = isEc && data.shippingGroupId
         ? `発送G：${escapeHtml(data.shippingGroupId)}／送料目安：${escapeHtml(data.shippingGroupShippingFee || data.shippingFee || 0)}円`
         : "";
@@ -689,6 +690,7 @@
           ${data.customerPhone ? `<div class="print-label-phone">TEL：${escapeHtml(data.customerPhone)}</div>` : ""}
           <div class="print-label-phone">テンプレート：${escapeHtml(templateText(data.template))}</div>
           <div class="print-label-phone">${quantityLine}</div>
+          <div class="print-label-phone"><strong>${receivePriceLine}</strong></div>
           ${shippingLine ? `<div class="print-label-phone">${shippingLine}</div>` : ""}
           ${data.customerMemo ? `<div class="print-label-phone">メモ：${escapeHtml(data.customerMemo)}</div>` : ""}
           ${data.subscriptionStatus ? `<div class="print-label-subscription">購読状況：${escapeHtml(formatSubscriptionStatus(data.subscriptionStatus))}</div>` : ""}
@@ -731,47 +733,22 @@
     const studentPrice = Number(popupSettings?.studentPrice || 500);
     return data.priceType === "student" ? studentPrice : generalPrice;
   }
-  function getChargedCopies(data) {
-    const copies = Number(data?.copies || 1);
-
-    if (isEcommerceOrder(data)) return copies;
-    if (data?.salesMode === "free") return 0;
-    if (data?.salesMode === "firstFree") {
-      if (data.chargedCopies !== undefined && data.chargedCopies !== null && data.chargedCopies !== "") {
-        return Math.max(0, Number(data.chargedCopies || 0));
-      }
-      return Math.max(0, copies - 1);
-    }
-
-    return copies;
-  }
-
-  function getFreeCopies(data) {
-    const copies = Number(data?.copies || 1);
-    if (data?.salesMode === "free") return copies;
-    if (data?.salesMode === "firstFree") {
-      if (data.freeCopies !== undefined && data.freeCopies !== null && data.freeCopies !== "") {
-        return Math.max(0, Number(data.freeCopies || 0));
-      }
-      return Math.min(copies, 1);
-    }
-    return 0;
-  }
-
   function getTotalPrice(data) {
-    if (isEcommerceOrder(data)) {
-      if (data.totalPrice !== undefined && data.totalPrice !== null && data.totalPrice !== "") return Number(data.totalPrice || 0);
-      return Number(data.productTotal || 0);
-    }
+    const copies = Number(data?.copies || 1);
+    const unitPrice = getUnitPrice(data || {});
 
+    // 1本目無料は、既存注文に誤った totalPrice が保存されていても
+    // 管理画面側では必ず再計算して表示する。
     if (data?.salesMode === "free") return 0;
-
     if (data?.salesMode === "firstFree") {
-      return getUnitPrice(data) * getChargedCopies(data);
+      return Math.max(0, copies - 1) * unitPrice;
     }
 
-    if (data.totalPrice !== undefined && data.totalPrice !== null && data.totalPrice !== "") return Number(data.totalPrice || 0);
-    return getUnitPrice(data) * Number(data.copies || 1);
+    if (data?.totalPrice !== undefined && data?.totalPrice !== null && data?.totalPrice !== "") {
+      return Number(data.totalPrice);
+    }
+
+    return unitPrice * copies;
   }
   function getDisplayCode(data) {
     if (data.displayCode) return String(data.displayCode);
@@ -839,8 +816,6 @@
             <div><strong>料金区分：</strong>${priceTypeText(data.priceType, data)}</div>
             <div><strong>単価：</strong>${yen(unitPrice)}</div>
             <div><strong>注文本数：</strong>${escapeHtml(copies)}本</div>
-            ${data.salesMode === "firstFree" ? `<div><strong>請求対象：</strong>${escapeHtml(getChargedCopies(data))}本（1本目無料）</div>` : ""}
-            ${data.salesMode === "free" ? `<div><strong>請求対象：</strong>0本（無料）</div>` : ""}
             ${isEc ? shippingGroupSummary(data) : ""}
             <div><strong>合計金額：</strong>${yen(totalPrice)}</div>
             <div><strong>印刷ラベル：</strong>${escapeHtml(printLabel)}</div>
