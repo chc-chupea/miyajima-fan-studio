@@ -731,8 +731,46 @@
     const studentPrice = Number(popupSettings?.studentPrice || 500);
     return data.priceType === "student" ? studentPrice : generalPrice;
   }
+  function getChargedCopies(data) {
+    const copies = Number(data?.copies || 1);
+
+    if (isEcommerceOrder(data)) return copies;
+    if (data?.salesMode === "free") return 0;
+    if (data?.salesMode === "firstFree") {
+      if (data.chargedCopies !== undefined && data.chargedCopies !== null && data.chargedCopies !== "") {
+        return Math.max(0, Number(data.chargedCopies || 0));
+      }
+      return Math.max(0, copies - 1);
+    }
+
+    return copies;
+  }
+
+  function getFreeCopies(data) {
+    const copies = Number(data?.copies || 1);
+    if (data?.salesMode === "free") return copies;
+    if (data?.salesMode === "firstFree") {
+      if (data.freeCopies !== undefined && data.freeCopies !== null && data.freeCopies !== "") {
+        return Math.max(0, Number(data.freeCopies || 0));
+      }
+      return Math.min(copies, 1);
+    }
+    return 0;
+  }
+
   function getTotalPrice(data) {
-    if (data.totalPrice) return Number(data.totalPrice);
+    if (isEcommerceOrder(data)) {
+      if (data.totalPrice !== undefined && data.totalPrice !== null && data.totalPrice !== "") return Number(data.totalPrice || 0);
+      return Number(data.productTotal || 0);
+    }
+
+    if (data?.salesMode === "free") return 0;
+
+    if (data?.salesMode === "firstFree") {
+      return getUnitPrice(data) * getChargedCopies(data);
+    }
+
+    if (data.totalPrice !== undefined && data.totalPrice !== null && data.totalPrice !== "") return Number(data.totalPrice || 0);
     return getUnitPrice(data) * Number(data.copies || 1);
   }
   function getDisplayCode(data) {
@@ -801,6 +839,8 @@
             <div><strong>料金区分：</strong>${priceTypeText(data.priceType, data)}</div>
             <div><strong>単価：</strong>${yen(unitPrice)}</div>
             <div><strong>注文本数：</strong>${escapeHtml(copies)}本</div>
+            ${data.salesMode === "firstFree" ? `<div><strong>請求対象：</strong>${escapeHtml(getChargedCopies(data))}本（1本目無料）</div>` : ""}
+            ${data.salesMode === "free" ? `<div><strong>請求対象：</strong>0本（無料）</div>` : ""}
             ${isEc ? shippingGroupSummary(data) : ""}
             <div><strong>合計金額：</strong>${yen(totalPrice)}</div>
             <div><strong>印刷ラベル：</strong>${escapeHtml(printLabel)}</div>
