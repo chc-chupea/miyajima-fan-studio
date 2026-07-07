@@ -281,8 +281,8 @@
         <button class="filter-btn" data-filter="PICKED_UP">受渡済</button>
         <button id="csvExportBtn" style="background:#ff9800;">CSV出力</button>
         <button id="labelPrintBtn" style="background:#795548;">ラベル印刷</button>
-        <button class="view-btn active" data-view="GROUP">発送グループ表示</button>
-        <button class="view-btn" data-view="ORDER">注文単位表示</button>
+        <button class="view-btn" data-view="GROUP">発送グループ表示</button>
+        <button class="view-btn active" data-view="ORDER">注文単位表示</button>
       </div>
 
       <div class="search-row">
@@ -322,7 +322,7 @@
 
   let orders = [];
   let currentFilter = "ALL";
-  let currentView = "GROUP";
+  let currentView = "ORDER";
   let searchCode = "";
   let popupSettings = null;
 
@@ -345,6 +345,29 @@
       console.error(error);
       popupSettings = { ...defaultSettings };
     }
+  }
+
+
+  function isEcommerceSetting() {
+    return popupSettings?.operationMode === "ecommerce";
+  }
+
+  function updateViewModeButtons() {
+    const showViewButtons = isEcommerceSetting();
+    document.querySelectorAll(".view-btn").forEach(btn => {
+      btn.style.display = showViewButtons ? "inline-block" : "none";
+    });
+
+    // 通販以外では、発送グループ表示は使わず注文単位表示に固定します。
+    if (!showViewButtons) {
+      currentView = "ORDER";
+    } else if (currentView !== "GROUP" && currentView !== "ORDER") {
+      currentView = "GROUP";
+    }
+
+    document.querySelectorAll(".view-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.view === currentView);
+    });
   }
 
   function getAdminPin() {
@@ -1048,12 +1071,14 @@
 
   function renderOrders() {
     renderSummary(orders);
+    updateViewModeButtons();
     const box = document.getElementById("orders");
     const statusFiltered = currentFilter === "ALL" ? orders : orders.filter(item => String(item.data.status || "WAIT").toUpperCase() === currentFilter);
-    box.innerHTML = currentView === "GROUP" ? renderShippingGroupCards(statusFiltered) : renderOrderCards(statusFiltered);
+    const useGroupView = isEcommerceSetting() && currentView === "GROUP";
+    box.innerHTML = useGroupView ? renderShippingGroupCards(statusFiltered) : renderOrderCards(statusFiltered);
     renderSearchResults();
     bindOrderButtons();
-    bindShippingGroupButtons();
+    if (useGroupView) bindShippingGroupButtons();
   }
 
   function startWatch() {
@@ -1117,6 +1142,8 @@
   document.getElementById("labelPrintBtn").addEventListener("click", printDeliveryLabels);
 
   await loadSettings();
+  currentView = isEcommerceSetting() ? "GROUP" : "ORDER";
+  updateViewModeButtons();
   setupPinGate();
 </script>
 </body>
