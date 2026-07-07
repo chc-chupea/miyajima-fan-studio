@@ -210,7 +210,62 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
   import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
-  import { TEMPLATE_SETS } from "./templates.js";
+
+  const FALLBACK_TEMPLATE_SETS = {
+    general: {
+      label: "一般",
+      note: "無地・母の日・父の日",
+      templates: [
+        { id: "plain", name: "無地", image: "fan1-highres.png" },
+        { id: "mother", name: "母の日", image: "fan-mother-highres.png" },
+        { id: "father", name: "父の日", image: "fan-father-highres.png" }
+      ]
+    },
+    summer: {
+      label: "夏バージョン",
+      note: "無地・花火・海の仲間・水彩マリン・トロピカル",
+      templates: [
+        { id: "plain", name: "無地", image: "fan1-highres.png" },
+        { id: "summer01", name: "花火", image: "fan2026summer01-highres.png" },
+        { id: "summer02", name: "海の仲間", image: "fan2026summer02-highres.png" },
+        { id: "summer03", name: "水彩マリン", image: "fan2026summer03-highres.png" },
+        { id: "summer04", name: "トロピカル", image: "fan2026summer04-highres.png" }
+      ]
+    },
+    kure_softball: {
+      label: "呉ソフトボール大会",
+      note: "無地・大会名入り",
+      templates: [
+        { id: "plain", name: "無地", image: "fan1-highres.png" },
+        { id: "kure", name: "呉ソフトボール大会", image: "kure-softball.png" }
+      ]
+    },
+    ecommerce_fan: {
+      label: "通販用うちわ",
+      note: "無地・母の日・父の日・誕生日・敬老の日",
+      templates: [
+        { id: "plain", name: "無地", image: "fan1-highres.png" },
+        { id: "mother", name: "母の日", image: "fan-mother-highres.png" },
+        { id: "father", name: "父の日", image: "fan-father-highres.png" },
+        { id: "birthday", name: "誕生日", image: "fan-birthday-highres.png" },
+        { id: "respect", name: "敬老の日", image: "fan-respect-highres.png" }
+      ]
+    }
+  };
+
+  let TEMPLATE_SETS = { ...FALLBACK_TEMPLATE_SETS };
+
+  async function loadTemplateSets() {
+    try {
+      const module = await import(`./templates.js?v=${getVersionKey()}`);
+      if (module && module.TEMPLATE_SETS && Object.keys(module.TEMPLATE_SETS).length > 0) {
+        TEMPLATE_SETS = module.TEMPLATE_SETS;
+      }
+    } catch (error) {
+      console.warn("templates.js を読み込めませんでした。内蔵テンプレート定義を使用します。", error);
+      TEMPLATE_SETS = { ...FALLBACK_TEMPLATE_SETS };
+    }
+  }
 
   const firebaseConfig = {
     apiKey: "AIzaSyBKSYZgaSVTu-HO_lS1Tp2eFjSjMuOONNI",
@@ -600,6 +655,7 @@
     updateNewShopPreview();
   });
 
+  await loadTemplateSets();
   renderTemplateSetOptions();
   updateNewShopPreview();
   const pendingName = sessionStorage.getItem(`newShopName_${shopId}`);
