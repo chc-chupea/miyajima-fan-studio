@@ -705,6 +705,12 @@
   function printDeliveryLabels() {
     const labelOrders = orders.filter(item => {
       const data = item.data || {};
+      const status = String(data.status || "WAIT").toUpperCase();
+
+      // 一覧ラベル印刷では「終了（CLOSED）」を除外します。
+      // 個別ラベル印刷は renderOrderCard 側のボタンから従来どおり出力できます。
+      if (status === "CLOSED") return false;
+
       return data.customerName || data.customerPhone || data.customerAddress || isEcommerceOrder(data);
     });
 
