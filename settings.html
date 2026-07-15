@@ -82,7 +82,23 @@
     .mode-note.delivery { background:#f1f8e9; color:#1b5e20; }
     .mode-note.free { background:#fff8e1; color:#e65100; }
 
-    @media (max-width:640px) { .settings-grid, .shop-create-grid { grid-template-columns:1fr; } }
+    .survey-editor { grid-column:1 / -1; display:grid; gap:12px; }
+    .survey-editor-toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .survey-question-card { border:2px solid #bbdefb; background:#f8fbff; border-radius:16px; padding:12px; }
+    .survey-question-head { display:flex; justify-content:space-between; gap:8px; align-items:center; margin-bottom:10px; }
+    .survey-question-title { font-weight:900; color:#0d47a1; }
+    .survey-mini-actions { display:flex; gap:6px; flex-wrap:wrap; }
+    .survey-mini-actions button { width:auto; margin:0; padding:7px 10px; border-radius:10px; font-size:12px; box-shadow:none; }
+    .survey-fields { display:grid; grid-template-columns:150px 1fr; gap:8px; align-items:center; }
+    .survey-fields label { color:#1565c0; font-size:13px; font-weight:700; }
+    .survey-fields select { width:100%; box-sizing:border-box; padding:10px; border-radius:10px; border:1px solid #ccc; font-size:15px; background:#fff; }
+    .survey-options-editor { margin-top:10px; padding-top:10px; border-top:1px dashed #90caf9; }
+    .survey-option-row { display:grid; grid-template-columns:1fr auto; gap:6px; margin:6px 0; }
+    .survey-option-row button { width:auto; margin:0; padding:8px 10px; border-radius:10px; background:#ef5350; box-shadow:none; }
+    .survey-add-option { width:auto; margin:8px 0 0; padding:8px 12px; border-radius:12px; background:#43a047; box-shadow:none; }
+    .survey-help { background:#fff8e1; color:#e65100; border-radius:12px; padding:10px; font-size:13px; line-height:1.6; }
+
+    @media (max-width:640px) { .settings-grid, .shop-create-grid, .survey-fields { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -197,6 +213,15 @@
         <label for="popupClosed">受取終了モード</label><div class="checkbox-row"><input id="popupClosed" type="checkbox"><span>ONにすると status.html で受取期限終了表示に切り替えます</span></div>
         <label for="expiredTitle">期限終了タイトル</label><input id="expiredTitle" type="text" placeholder="⏰ 受取期限が終了しました">
         <label for="expiredBody">期限終了本文</label><textarea id="expiredBody" placeholder="ポップアップストアの営業は終了しました。"></textarea>
+        <label>アンケート設定</label>
+        <div class="survey-editor">
+          <div class="survey-help">会場ごとにアンケートを設定できます。質問形式は「複数選択・1つだけ選択・プルダウン・自由記述」に対応しています。質問と選択肢は追加・削除・並び替えできます。</div>
+          <div class="survey-editor-toolbar">
+            <button type="button" id="addSurveyQuestionBtn" style="background:#43a047;">＋ 質問を追加</button>
+            <button type="button" id="resetSurveyBtn" style="background:#ff9800;">基本のアンケート①・②に戻す</button>
+          </div>
+          <div id="surveyEditorList"></div>
+        </div>
       </div>
       <div class="settings-actions">
         <button id="saveSettingsBtn">設定を保存</button>
@@ -303,7 +328,27 @@
   document.getElementById("readyLink").href = `ready_inquiry.html?shop=${encodeURIComponent(shopId)}`;
   document.getElementById("orderLink").href = `index.html?shop=${encodeURIComponent(shopId)}&v=${getVersionKey()}`;
 
+  const DEFAULT_SURVEY = [
+    {
+      id: "subscription_status",
+      title: "アンケート①",
+      description: "現在の新聞購読状況を教えてください。",
+      type: "checkbox",
+      required: false,
+      options: ["中国新聞を購読中", "中国新聞デジタルを購読中", "中国新聞以外の新聞を購読中", "新聞は購読していない"]
+    },
+    {
+      id: "non_subscriber_interest",
+      title: "アンケート②",
+      description: "中国新聞を購読されていない方へ",
+      type: "checkbox",
+      required: false,
+      options: ["中国新聞を購読したい", "中国新聞を試読（7日間無料）したい", "資料だけ欲しい", "今は希望しない"]
+    }
+  ];
+
   const defaultSettings = {
+    surveyQuestions: DEFAULT_SURVEY,
     shopName: "ＦＦファンスタジオ", shopCode: "F", adminPin: "4946", operationMode: "instant", templateSet: "general", salesMode: "paid", generalPrice: 800, studentPrice: 500, cartFixedFee: 1000,
     deliveryCompleteText: "お近くの中国新聞販売所より\n完成後にお届けします",
     startDate: "", endDate: "", openTime: "10:00", closeTime: "17:00", orderDeadline: "", phone: "082-245-1133", pickupDeadlineText: "",
@@ -490,6 +535,89 @@
     }
   }
 
+  function createSurveyId() {
+    return `survey_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  }
+
+  function normalizeSurveyQuestions(value) {
+    const source = Array.isArray(value) ? value : DEFAULT_SURVEY;
+    return source.map((q, index) => ({
+      id: String(q?.id || createSurveyId()),
+      title: String(q?.title || `アンケート${index + 1}`),
+      description: String(q?.description || ""),
+      type: ["checkbox", "radio", "select", "textarea"].includes(q?.type) ? q.type : "checkbox",
+      required: q?.required === true,
+      options: Array.isArray(q?.options) ? q.options.map(v => String(v || "")).filter(Boolean) : []
+    }));
+  }
+
+  let surveyDraft = normalizeSurveyQuestions(DEFAULT_SURVEY);
+
+  function surveyTypeLabel(type) {
+    return ({ checkbox:"チェックボックス（複数選択）", radio:"ラジオボタン（1つだけ）", select:"プルダウン", textarea:"自由記述" })[type] || type;
+  }
+
+  function renderSurveyEditor() {
+    const list = document.getElementById("surveyEditorList");
+    if (!list) return;
+    if (surveyDraft.length === 0) {
+      list.innerHTML = '<div class="small">アンケートは設定されていません。「＋ 質問を追加」から作成できます。</div>';
+      return;
+    }
+    list.innerHTML = surveyDraft.map((q, index) => {
+      const needsOptions = q.type !== "textarea";
+      return `
+        <div class="survey-question-card" data-survey-index="${index}">
+          <div class="survey-question-head">
+            <div class="survey-question-title">質問 ${index + 1}</div>
+            <div class="survey-mini-actions">
+              <button type="button" data-survey-action="up" ${index === 0 ? "disabled" : ""}>↑ 上へ</button>
+              <button type="button" data-survey-action="down" ${index === surveyDraft.length - 1 ? "disabled" : ""}>↓ 下へ</button>
+              <button type="button" data-survey-action="delete" style="background:#ef5350;">削除</button>
+            </div>
+          </div>
+          <div class="survey-fields">
+            <label>見出し</label><input type="text" data-survey-field="title" value="${escapeHtml(q.title)}" placeholder="例：アンケート①">
+            <label>質問・説明文</label><textarea data-survey-field="description" placeholder="質問文を入力">${escapeHtml(q.description)}</textarea>
+            <label>回答形式</label>
+            <select data-survey-field="type">
+              ${["checkbox","radio","select","textarea"].map(type => `<option value="${type}" ${q.type === type ? "selected" : ""}>${surveyTypeLabel(type)}</option>`).join("")}
+            </select>
+            <label>回答の必須設定</label>
+            <label class="checkbox-row" style="color:#333;"><input type="checkbox" data-survey-field="required" ${q.required ? "checked" : ""}><span>必須にする（OFFなら任意）</span></label>
+          </div>
+          <div class="survey-options-editor" style="display:${needsOptions ? "block" : "none"};">
+            <strong style="color:#1565c0;">選択肢</strong>
+            <div data-survey-options>
+              ${q.options.map((option, optionIndex) => `
+                <div class="survey-option-row" data-option-index="${optionIndex}">
+                  <input type="text" value="${escapeHtml(option)}" placeholder="選択肢を入力">
+                  <button type="button" data-option-delete>削除</button>
+                </div>`).join("")}
+            </div>
+            <button type="button" class="survey-add-option" data-option-add>＋ 選択肢を追加</button>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  function syncSurveyDraftFromEditor() {
+    document.querySelectorAll("#surveyEditorList .survey-question-card").forEach((card, index) => {
+      const q = surveyDraft[index];
+      if (!q) return;
+      q.title = card.querySelector('[data-survey-field="title"]')?.value.trim() || `アンケート${index + 1}`;
+      q.description = card.querySelector('[data-survey-field="description"]')?.value.trim() || "";
+      q.type = card.querySelector('[data-survey-field="type"]')?.value || "checkbox";
+      q.required = !!card.querySelector('[data-survey-field="required"]')?.checked;
+      q.options = Array.from(card.querySelectorAll("[data-survey-options] input")).map(el => el.value.trim()).filter(Boolean);
+    });
+  }
+
+  function readSurveyQuestions() {
+    syncSurveyDraftFromEditor();
+    return normalizeSurveyQuestions(surveyDraft).filter(q => q.title || q.description);
+  }
+
   function updateClosedModeBanner() {
     const banner = document.getElementById("closedModeBanner");
     if (!banner) return;
@@ -520,6 +648,8 @@
     document.getElementById("popupClosed").checked = !!s.popupClosed;
     document.getElementById("expiredTitle").value = s.expiredTitle || "";
     document.getElementById("expiredBody").value = String(s.expiredBody || "").replace(/<br\s*\/?/g, "\n");
+    surveyDraft = normalizeSurveyQuestions(s.surveyQuestions);
+    renderSurveyEditor();
     updateClosedModeBanner();
     updateModeNotes();
   }
@@ -548,6 +678,7 @@
       popupClosed: document.getElementById("popupClosed").checked,
       expiredTitle: document.getElementById("expiredTitle").value.trim() || defaultSettings.expiredTitle,
       expiredBody: expiredBodyRaw ? expiredBodyRaw.replace(/\n/g, "<br>") : defaultSettings.expiredBody,
+      surveyQuestions: readSurveyQuestions(),
       updatedAt: serverTimestamp()
     };
   }
@@ -596,6 +727,38 @@
       alert("設定の保存に失敗しました。通信状態を確認してください。");
     }
   }
+
+  document.getElementById("addSurveyQuestionBtn").addEventListener("click", () => {
+    syncSurveyDraftFromEditor();
+    surveyDraft.push({ id:createSurveyId(), title:`アンケート${surveyDraft.length + 1}`, description:"", type:"checkbox", required:false, options:["選択肢1"] });
+    renderSurveyEditor();
+  });
+  document.getElementById("resetSurveyBtn").addEventListener("click", () => {
+    if (!confirm("アンケートを基本の①・②に戻しますか？")) return;
+    surveyDraft = normalizeSurveyQuestions(DEFAULT_SURVEY);
+    renderSurveyEditor();
+  });
+  document.getElementById("surveyEditorList").addEventListener("input", syncSurveyDraftFromEditor);
+  document.getElementById("surveyEditorList").addEventListener("change", (event) => {
+    syncSurveyDraftFromEditor();
+    if (event.target.matches('[data-survey-field="type"]')) renderSurveyEditor();
+  });
+  document.getElementById("surveyEditorList").addEventListener("click", (event) => {
+    const card = event.target.closest(".survey-question-card");
+    if (!card) return;
+    syncSurveyDraftFromEditor();
+    const index = Number(card.dataset.surveyIndex);
+    const action = event.target.dataset.surveyAction;
+    if (action === "delete") surveyDraft.splice(index, 1);
+    if (action === "up" && index > 0) [surveyDraft[index - 1], surveyDraft[index]] = [surveyDraft[index], surveyDraft[index - 1]];
+    if (action === "down" && index < surveyDraft.length - 1) [surveyDraft[index + 1], surveyDraft[index]] = [surveyDraft[index], surveyDraft[index + 1]];
+    if (event.target.hasAttribute("data-option-add")) surveyDraft[index].options.push(`選択肢${surveyDraft[index].options.length + 1}`);
+    if (event.target.hasAttribute("data-option-delete")) {
+      const optionIndex = Number(event.target.closest(".survey-option-row")?.dataset.optionIndex);
+      surveyDraft[index].options.splice(optionIndex, 1);
+    }
+    if (action || event.target.hasAttribute("data-option-add") || event.target.hasAttribute("data-option-delete")) renderSurveyEditor();
+  });
 
   document.getElementById("saveSettingsBtn").addEventListener("click", saveSettings);
   document.getElementById("reloadSettingsBtn").addEventListener("click", loadSettings);
