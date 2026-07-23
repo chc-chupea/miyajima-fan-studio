@@ -228,6 +228,23 @@
         font-size:10pt;
         margin-bottom:1mm;
       }
+
+      .print-label-survey {
+        margin-top:2mm;
+        padding-top:1.5mm;
+        border-top:0.3mm solid #999;
+        font-size:9pt;
+        line-height:1.35;
+        overflow-wrap:anywhere;
+      }
+
+      .print-label-survey-row {
+        margin-bottom:1mm;
+      }
+
+      .print-label-survey-question {
+        font-weight:700;
+      }
       .print-label-address {
         font-size:12pt;
         line-height:1.5;
@@ -595,6 +612,145 @@
     return String(value || "");
   }
 
+  function formatSurveyAnswer(value) {
+    if (Array.isArray(value)) {
+      return value
+        .map(item => String(item ?? "").trim())
+        .filter(Boolean)
+        .join(" / ");
+    }
+
+    if (value && typeof value === "object") {
+      if ("value" in value) return formatSurveyAnswer(value.value);
+      if ("answer" in value) return formatSurveyAnswer(value.answer);
+      return Object.values(value)
+        .map(formatSurveyAnswer)
+        .filter(Boolean)
+        .join(" / ");
+    }
+
+    return String(value ?? "").trim();
+  }
+
+  function getSurveyAnswer(data, question, index) {
+    const questionId = String(question?.id || "").trim();
+    const answerSources = [
+      data?.surveyAnswers,
+      data?.surveyResponses,
+      data?.surveyResponse,
+      data?.questionnaireAnswers,
+      data?.answers
+    ];
+
+    for (const source of answerSources) {
+      if (!source) continue;
+
+      if (Array.isArray(source)) {
+        const matched = source.find(item => {
+          if (!item || typeof item !== "object") return false;
+          return String(item.questionId || item.id || item.key || "") === questionId;
+        });
+        if (matched) {
+          const answer = formatSurveyAnswer(matched.answer ?? matched.value ?? matched.values ?? matched.response);
+          if (answer) return answer;
+        }
+
+        const positional = source[index];
+        if (positional !== undefined) {
+          const answer = formatSurveyAnswer(
+            positional && typeof positional === "object"
+              ? (positional.answer ?? positional.value ?? positional.values ?? positional.response)
+              : positional
+          );
+          if (answer) return answer;
+        }
+      } else if (typeof source === "object") {
+        const candidates = [
+          questionId,
+          question?.title,
+          question?.description,
+          String(index),
+          String(index + 1)
+        ].filter(Boolean);
+
+        for (const key of candidates) {
+          if (Object.prototype.hasOwnProperty.call(source, key)) {
+            const answer = formatSurveyAnswer(source[key]);
+            if (answer) return answer;
+          }
+        }
+      }
+    }
+
+    const legacyCandidates = [
+      questionId,
+      questionId.replace(/_([a-z])/g, (_, c) => c.toUpperCase()),
+      `survey_${questionId}`,
+      `survey${index + 1}`,
+      `question${index + 1}`
+    ].filter(Boolean);
+
+    if (questionId === "subscription_status") {
+      legacyCandidates.push("subscriptionStatus");
+    }
+    if (questionId === "non_subscriber_interest") {
+      legacyCandidates.push("nonSubscriberInterest", "interestStatus", "subscriptionInterest");
+    }
+
+    for (const key of legacyCandidates) {
+      if (Object.prototype.hasOwnProperty.call(data || {}, key)) {
+        const answer = formatSurveyAnswer(data[key]);
+        if (answer) return answer;
+      }
+    }
+
+    return "";
+  }
+
+  function getAllSurveyAnswers(data) {
+    const configuredQuestions = Array.isArray(popupSettings?.surveyQuestions)
+      ? popupSettings.surveyQuestions
+      : [];
+
+    const rows = configuredQuestions.map((question, index) => {
+      const answer = getSurveyAnswer(data, question, index);
+      if (!answer) return null;
+      const label = String(question?.description || question?.title || `アンケート${index + 1}`).trim();
+      return { label, answer };
+    }).filter(Boolean);
+
+    // 古い注文データで設定情報との照合ができない場合も、従来項目は必ず拾います。
+    if (!rows.some(row => row.answer === formatSurveyAnswer(data?.subscriptionStatus))) {
+      const legacySubscription = formatSurveyAnswer(data?.subscriptionStatus);
+      if (legacySubscription) rows.push({ label: "現在の新聞購読状況", answer: legacySubscription });
+    }
+
+    const legacyInterest = formatSurveyAnswer(
+      data?.nonSubscriberInterest ?? data?.interestStatus ?? data?.subscriptionInterest
+    );
+    if (legacyInterest && !rows.some(row => row.answer === legacyInterest)) {
+      rows.push({ label: "中国新聞を購読されていない方へ", answer: legacyInterest });
+    }
+
+    return rows;
+  }
+
+  function renderSurveyAnswersForLabel(data) {
+    const rows = getAllSurveyAnswers(data);
+    if (rows.length === 0) return "";
+
+    return `
+      <div class="print-label-survey">
+        ${rows.map(row => `
+          <div class="print-label-survey-row">
+            <span class="print-label-survey-question">${escapeHtml(row.label)}：</span>
+            ${escapeHtml(row.answer)}
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
   function formatCreatedAtForCsv(value) {
     if (value?.toDate) {
       return value.toDate().toLocaleString("ja-JP");
@@ -716,7 +872,7 @@
           <div class="print-label-phone"><strong>${receivePriceLine}</strong></div>
           ${shippingLine ? `<div class="print-label-phone">${shippingLine}</div>` : ""}
           ${data.customerMemo ? `<div class="print-label-phone">メモ：${escapeHtml(data.customerMemo)}</div>` : ""}
-          ${data.subscriptionStatus ? `<div class="print-label-subscription">購読状況：${escapeHtml(formatSubscriptionStatus(data.subscriptionStatus))}</div>` : ""}
+          ${renderSurveyAnswersForLabel(data)}
           <div class="print-label-address">${escapeHtml(data.customerAddress || "")}</div>
         </div>
       `;
