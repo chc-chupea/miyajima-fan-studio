@@ -47,6 +47,39 @@
       color:#6d4c41;
       border:2px solid #8d6e63;
     }
+    .btn-multi-reprint { background:#6d4c41; }
+    .btn-multi-reprint.active { background:#d84315; }
+    .reprint-select-bar {
+      display:none;
+      margin-top:10px;
+      padding:10px 12px;
+      border:2px solid #ffb74d;
+      border-radius:14px;
+      background:#fff8e1;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      font-weight:700;
+      color:#bf360c;
+    }
+    .reprint-select-bar.active { display:flex; }
+    .btn-print-selected { background:#d84315; }
+    .btn-cancel-select { background:#777; }
+    .reprint-check-wrap {
+      display:none;
+      margin:0 0 8px;
+      padding:8px 10px;
+      border:2px solid #ffb74d;
+      border-radius:10px;
+      background:#fff8e1;
+      color:#bf360c;
+      font-weight:900;
+      cursor:pointer;
+    }
+    .reprint-selection-mode .reprint-check-wrap { display:inline-flex; align-items:center; gap:7px; }
+    .reprint-check-wrap input { width:20px; height:20px; accent-color:#d84315; }
+    .order-card.reprint-selected,
+    .shipping-group-order-row.reprint-selected { outline:4px solid #ff9800; outline-offset:2px; }
     .ecommerce-alert { background:#fff8e1; color:#e65100; font-weight:900; border-radius:10px; padding:8px 10px; margin:6px 0; }
     .shipping-group-detail {
       background:#fff8e1;
@@ -303,8 +336,15 @@
         <button class="filter-btn" data-filter="PICKED_UP">受渡済</button>
         <button id="csvExportBtn" style="background:#ff9800;">CSV出力</button>
         <button id="labelPrintBtn" style="background:#795548;">未印刷ラベルを一覧印刷</button>
+        <button id="multiReprintBtn" class="btn-multi-reprint">複数ラベルを再印刷</button>
         <button class="view-btn" data-view="GROUP">発送グループ表示</button>
         <button class="view-btn active" data-view="ORDER">注文単位表示</button>
+      </div>
+
+      <div id="reprintSelectBar" class="reprint-select-bar">
+        <span id="reprintSelectedCount">再印刷する注文を選んでください（0件選択）</span>
+        <button id="printSelectedReprintBtn" class="btn-print-selected" disabled>選択した0件を再印刷</button>
+        <button id="cancelReprintSelectBtn" class="btn-cancel-select">選択をやめる</button>
       </div>
 
       <div class="search-row">
@@ -347,6 +387,8 @@
   let currentView = "ORDER";
   let searchCode = "";
   let popupSettings = null;
+  let reprintSelectionMode = false;
+  const selectedReprintIds = new Set();
 
   const params = new URLSearchParams(window.location.search);
   const shopId = (params.get("shop") || "miyajima").replace(/[^a-zA-Z0-9_-]/g, "");
@@ -1008,6 +1050,54 @@
     document.getElementById("summaryStudent").textContent = `学割：${studentCount}件 / ${studentCopies}本 / ${yen(studentSales)}`;
   }
 
+  function renderReprintSelector(queueId, labelPrinted) {
+    if (!labelPrinted || !queueId) return "";
+    const checked = selectedReprintIds.has(queueId) ? "checked" : "";
+    return `
+      <label class="reprint-check-wrap">
+        <input type="checkbox" class="reprint-select-checkbox" data-id="${escapeHtml(queueId)}" ${checked}>
+        このラベルを再印刷対象にする
+      </label>
+    `;
+  }
+
+  function updateReprintSelectionUi() {
+    const count = selectedReprintIds.size;
+    const bar = document.getElementById("reprintSelectBar");
+    const toggleBtn = document.getElementById("multiReprintBtn");
+    const countText = document.getElementById("reprintSelectedCount");
+    const printBtn = document.getElementById("printSelectedReprintBtn");
+
+    document.body.classList.toggle("reprint-selection-mode", reprintSelectionMode);
+    bar?.classList.toggle("active", reprintSelectionMode);
+    toggleBtn?.classList.toggle("active", reprintSelectionMode);
+    if (toggleBtn) toggleBtn.textContent = reprintSelectionMode ? "再印刷する注文を選択中" : "複数ラベルを再印刷";
+    if (countText) countText.textContent = `再印刷する注文を選んでください（${count}件選択）`;
+    if (printBtn) {
+      printBtn.textContent = `選択した${count}件を再印刷`;
+      printBtn.disabled = count === 0;
+      printBtn.style.opacity = count === 0 ? ".5" : "1";
+    }
+  }
+
+  function bindReprintSelectionCheckboxes() {
+    document.querySelectorAll(".reprint-select-checkbox").forEach(checkbox => {
+      checkbox.addEventListener("change", () => {
+        const id = checkbox.dataset.id || "";
+        if (!id) return;
+        if (checkbox.checked) selectedReprintIds.add(id);
+        else selectedReprintIds.delete(id);
+
+        document.querySelectorAll(`.reprint-select-checkbox[data-id="${CSS.escape(id)}"]`).forEach(other => {
+          other.checked = checkbox.checked;
+          other.closest(".order-card, .shipping-group-order-row")?.classList.toggle("reprint-selected", checkbox.checked);
+        });
+        updateReprintSelectionUi();
+      });
+      checkbox.closest(".order-card, .shipping-group-order-row")?.classList.toggle("reprint-selected", checkbox.checked);
+    });
+  }
+
   function renderOrderCards(list) {
     if (list.length === 0) return `<div class="empty">該当する注文はありません。</div>`;
 
@@ -1051,6 +1141,7 @@
             ${data.customerMemo ? `<div><strong>メモ：</strong>${escapeHtml(data.customerMemo)}</div>` : ""}
             ${data.subscriptionStatus ? `<div><strong>購読状況：</strong>${escapeHtml(formatSubscriptionStatus(data.subscriptionStatus))}</div>` : ""}
           </div>
+          ${renderReprintSelector(queueId, labelPrinted)}
           <div class="actions">
             <button class="btn-download" data-url="${escapeHtml(imageUrl)}" data-code="${escapeHtml(displayCode)}">印刷用PNG保存</button>
             ${labelPrinted
@@ -1209,6 +1300,7 @@
                   ${renderCartItems(data)}
                   ${data.customerMemo ? `<div><strong>メモ：</strong>${escapeHtml(data.customerMemo)}</div>` : ""}
                   <div><strong>内部ID：</strong>${escapeHtml(queueId)}</div>
+                  ${renderReprintSelector(queueId, labelPrinted)}
                   <div class="actions">
                     <button class="btn-download" data-url="${escapeHtml(imageUrl)}" data-code="${escapeHtml(displayCode)}">PNG保存</button>
                     ${labelPrinted
@@ -1282,7 +1374,9 @@
     box.innerHTML = useGroupView ? renderShippingGroupCards(statusFiltered) : renderOrderCards(statusFiltered);
     renderSearchResults();
     bindOrderButtons();
+    bindReprintSelectionCheckboxes();
     if (useGroupView) bindShippingGroupButtons();
+    updateReprintSelectionUi();
   }
 
   function startWatch() {
@@ -1344,6 +1438,27 @@
   document.getElementById("searchBtn").addEventListener("click", runSearch);
   document.getElementById("csvExportBtn").addEventListener("click", exportOrdersCsv);
   document.getElementById("labelPrintBtn").addEventListener("click", printDeliveryLabels);
+
+  document.getElementById("multiReprintBtn").addEventListener("click", () => {
+    reprintSelectionMode = !reprintSelectionMode;
+    if (!reprintSelectionMode) selectedReprintIds.clear();
+    renderOrders();
+  });
+
+  document.getElementById("cancelReprintSelectBtn").addEventListener("click", () => {
+    reprintSelectionMode = false;
+    selectedReprintIds.clear();
+    renderOrders();
+  });
+
+  document.getElementById("printSelectedReprintBtn").addEventListener("click", () => {
+    const selectedOrders = orders.filter(item => selectedReprintIds.has(getOrderQueueId(item)));
+    if (selectedOrders.length === 0) {
+      alert("再印刷する注文を選んでください。");
+      return;
+    }
+    printLabelsForOrders(selectedOrders, { emptyMessage: "再印刷する注文を選んでください。" });
+  });
 
   await loadSettings();
   currentView = isEcommerceSetting() ? "GROUP" : "ORDER";
