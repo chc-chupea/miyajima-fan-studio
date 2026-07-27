@@ -42,6 +42,17 @@
     .btn-close { background:#777; }
     .btn-download { background:#00a86b; }
     .btn-label-single { background:#795548; }
+    .label-state { display:inline-block; padding:5px 10px; border-radius:999px; font-size:13px; font-weight:900; margin:4px 6px 8px 0; }
+    .label-state-unprinted { background:#ffebee; color:#b71c1c; border:1px solid #ef9a9a; }
+    .label-state-printed { background:#e8f5e9; color:#1b5e20; border:1px solid #a5d6a7; }
+    .btn-label-reset { background:#546e7a; }
+    .label-confirm-panel { display:none; margin-top:12px; padding:14px; border:3px solid #ef6c00; border-radius:14px; background:#fff3e0; color:#bf360c; }
+    .label-confirm-panel.active { display:block; }
+    .label-confirm-title { font-size:18px; font-weight:900; margin-bottom:8px; }
+    .label-confirm-codes { background:#fff; border-radius:10px; padding:10px; font-weight:800; line-height:1.7; margin-bottom:10px; }
+    .label-confirm-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .btn-label-confirm { background:#2e7d32; }
+    .btn-label-cancel { background:#757575; }
     .ecommerce-alert { background:#fff8e1; color:#e65100; font-weight:900; border-radius:10px; padding:8px 10px; margin:6px 0; }
     .shipping-group-detail {
       background:#fff8e1;
@@ -297,9 +308,19 @@
         <button class="filter-btn" data-filter="READY">完成</button>
         <button class="filter-btn" data-filter="PICKED_UP">受渡済</button>
         <button id="csvExportBtn" style="background:#ff9800;">CSV出力</button>
-        <button id="labelPrintBtn" style="background:#795548;">ラベル印刷</button>
+        <button id="labelPrintBtn" style="background:#795548;">未印刷をまとめて印刷</button>
         <button class="view-btn" data-view="GROUP">発送グループ表示</button>
         <button class="view-btn active" data-view="ORDER">注文単位表示</button>
+      </div>
+
+      <div id="labelConfirmPanel" class="label-confirm-panel">
+        <div class="label-confirm-title">この印刷分をラベル印刷済にしますか？</div>
+        <div id="labelConfirmCodes" class="label-confirm-codes"></div>
+        <div class="small" style="color:#bf360c;margin-bottom:10px;">実際に印刷できたことを確認してから「印刷済にする」を押してください。</div>
+        <div class="label-confirm-actions">
+          <button id="labelConfirmBtn" class="btn-label-confirm">この件を印刷済にする</button>
+          <button id="labelCancelBtn" class="btn-label-cancel">印刷済にせず閉じる</button>
+        </div>
       </div>
 
       <div class="search-row">
@@ -342,6 +363,7 @@
   let currentView = "ORDER";
   let searchCode = "";
   let popupSettings = null;
+  let pendingLabelOrderIds = [];
 
   const params = new URLSearchParams(window.location.search);
   const shopId = (params.get("shop") || "miyajima").replace(/[^a-zA-Z0-9_-]/g, "");
@@ -881,20 +903,111 @@
     window.print();
   }
 
-  function printDeliveryLabels() {
-    const labelOrders = orders.filter(item => {
-      const data = item.data || {};
-      const status = String(data.status || "WAIT").toUpperCase();
-
-      // 一覧ラベル印刷では「終了（CLOSED）」を除外します。
-      // 個別ラベル印刷は renderOrderCard 側のボタンから従来どおり出力できます。
-      if (status === "CLOSED") return false;
-
-      return data.customerName || data.customerPhone || data.customerAddress || isEcommerceOrder(data);
-    });
-
-    printLabelsForOrders(labelOrders);
+  function isLabelEligible(item) {
+    const data = item?.data || {};
+    const status = String(data.status || "WAIT").toUpperCase();
+    if (status === "CLOSED") return false;
+    if (data.labelPrinted === true) return false;
+    return Boolean(data.customerName || data.customerPhone || data.customerAddress || isEcommerceOrder(data));
   }
+
+  function getOldestUnprintedLabelOrders() {
+    return orders
+      .filter(isLabelEligible)
+      .slice()
+      .sort((a, b) => {
+        const at = a.data?.createdAt?.toMillis ? a.data.createdAt.toMillis() : 0;
+        const bt = b.data?.createdAt?.toMillis ? b.data.createdAt.toMillis() : 0;
+        return at - bt;
+      });
+  }
+
+  function savePendingLabelBatch(items) {
+    pendingLabelOrderIds = items.map(item => item.data?.queueId || item.id).filter(Boolean);
+    sessionStorage.setItem(`pendingLabelOrderIds_${shopId}`, JSON.stringify(pendingLabelOrderIds));
+  }
+
+  function clearPendingLabelBatch() {
+    pendingLabelOrderIds = [];
+    sessionStorage.removeItem(`pendingLabelOrderIds_${shopId}`);
+    renderLabelConfirmPanel();
+  }
+
+  function restorePendingLabelBatch() {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(`pendingLabelOrderIds_${shopId}`) || "[]");
+      pendingLabelOrderIds = Array.isArray(saved) ? saved.filter(Boolean) : [];
+    } catch (_) {
+      pendingLabelOrderIds = [];
+    }
+    renderLabelConfirmPanel();
+  }
+
+  function renderLabelConfirmPanel() {
+    const panel = document.getElementById("labelConfirmPanel");
+    const codes = document.getElementById("labelConfirmCodes");
+    const confirmBtn = document.getElementById("labelConfirmBtn");
+    if (!panel || !codes || !confirmBtn) return;
+
+    const pendingItems = pendingLabelOrderIds
+      .map(id => orders.find(item => (item.data?.queueId || item.id) === id))
+      .filter(Boolean);
+
+    if (pendingItems.length === 0) {
+      panel.classList.remove("active");
+      codes.innerHTML = "";
+      confirmBtn.textContent = "この件を印刷済にする";
+      return;
+    }
+
+    panel.classList.add("active");
+    codes.innerHTML = pendingItems.map((item, index) =>
+      `${index + 1}. ${escapeHtml(getDisplayCode(item.data || {}))}　${escapeHtml(item.data?.customerName || "氏名未入力")}`
+    ).join("<br>");
+    confirmBtn.textContent = `この${pendingItems.length}件を印刷済にする`;
+  }
+
+  async function confirmPendingLabelsPrinted() {
+    if (pendingLabelOrderIds.length === 0) return;
+    const ids = [...pendingLabelOrderIds];
+    const button = document.getElementById("labelConfirmBtn");
+    if (button) button.disabled = true;
+
+    try {
+      await Promise.all(ids.map(queueId => updateDoc(doc(db, "orders", queueId), {
+        labelPrinted: true,
+        labelPrintedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })));
+      clearPendingLabelBatch();
+      alert(`${ids.length}件をラベル印刷済にしました。`);
+    } catch (error) {
+      console.error(error);
+      alert("ラベル印刷済の保存に失敗しました。通信状態を確認してください。");
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+
+  function printDeliveryLabels() {
+    if (pendingLabelOrderIds.length > 0) {
+      renderLabelConfirmPanel();
+      alert("前回印刷したラベルの確認が残っています。先に「印刷済にする」か「印刷済にせず閉じる」を選んでください。");
+      return;
+    }
+
+    const labelOrders = getOldestUnprintedLabelOrders();
+    if (labelOrders.length === 0) {
+      alert("未印刷のラベルはありません。");
+      return;
+    }
+
+    savePendingLabelBatch(labelOrders);
+    printLabelsForOrders(labelOrders);
+    renderLabelConfirmPanel();
+  }
+
 
   function statusText(status) {
     const s = String(status || "WAIT").toUpperCase();
@@ -996,6 +1109,7 @@
           <div class="display-code-large">${escapeHtml(displayCode)}</div>
           <div class="internal-id">内部ID：${escapeHtml(queueId)}</div>
           ${status === "READY" ? '<div class="search-ready-badge">完成しています</div>' : ""}<div class="status-badge badge-${status}">${statusText(status)}</div>
+          <div><span class="label-state ${data.labelPrinted === true ? "label-state-printed" : "label-state-unprinted"}">${data.labelPrinted === true ? "✅ ラベル印刷済" : "未印刷"}</span></div>
           <div class="info">
             <div><strong>短番：</strong>${escapeHtml(displayNo)}</div>
             <div><strong>料金区分：</strong>${priceTypeText(data.priceType, data)}</div>
@@ -1017,7 +1131,7 @@
           </div>
           <div class="actions">
             <button class="btn-download" data-url="${escapeHtml(imageUrl)}" data-code="${escapeHtml(displayCode)}">印刷用PNG保存</button>
-            <button class="btn-label-single" data-id="${escapeHtml(queueId)}">ラベル印刷</button>
+            <button class="btn-label-single" data-id="${escapeHtml(queueId)}" data-printed="${data.labelPrinted === true ? "1" : "0"}">${data.labelPrinted === true ? "再印刷" : "ラベル印刷"}</button>
             <button class="btn-printing" data-id="${escapeHtml(queueId)}" data-status="PRINTING">印刷中</button>
             <button class="btn-ready" data-id="${escapeHtml(queueId)}" data-status="READY">完成</button>
             <button class="btn-picked" data-id="${escapeHtml(queueId)}" data-status="PICKED_UP">受渡済</button>
@@ -1035,7 +1149,23 @@
     document.querySelectorAll(".btn-label-single").forEach(btn => {
       btn.addEventListener("click", () => {
         const item = orders.find(order => (order.data?.queueId || order.id) === btn.dataset.id);
-        if (item) printLabelsForOrders([item]);
+        if (!item) return;
+
+        // 未印刷の注文は、印刷後に確認パネルから「印刷済」にします。
+        if (btn.dataset.printed !== "1") {
+          if (pendingLabelOrderIds.length > 0) {
+            renderLabelConfirmPanel();
+            alert("前回印刷したラベルの確認が残っています。先に印刷済の確認を完了してください。");
+            return;
+          }
+          savePendingLabelBatch([item]);
+          printLabelsForOrders([item]);
+          renderLabelConfirmPanel();
+          return;
+        }
+
+        // 印刷済の注文は、状態を変えずに何度でも再印刷できます。
+        printLabelsForOrders([item]);
       });
     });
 
@@ -1163,6 +1293,7 @@
                 <div class="info">
                   <div><strong>写真登録番号：</strong><span class="display-code-large" style="font-size:24px;padding:5px 12px;margin:0 0 6px;">${escapeHtml(displayCode)}</span></div>
                   <div><span class="status-badge badge-${status}">${statusText(status)}</span></div>
+                  <div><span class="label-state ${data.labelPrinted === true ? "label-state-printed" : "label-state-unprinted"}">${data.labelPrinted === true ? "✅ ラベル印刷済" : "未印刷"}</span></div>
                   <div><strong>本数：</strong>${escapeHtml(data.copies || 1)}本 ／ <strong>商品代：</strong>${yen(getTotalPrice(data))}</div>
                   <div><strong>テンプレート：</strong>${escapeHtml(data.templateName || templateText(data.template))}</div>
                   ${renderCartItems(data)}
@@ -1170,7 +1301,7 @@
                   <div><strong>内部ID：</strong>${escapeHtml(queueId)}</div>
                   <div class="actions">
                     <button class="btn-download" data-url="${escapeHtml(imageUrl)}" data-code="${escapeHtml(displayCode)}">PNG保存</button>
-                    <button class="btn-label-single" data-id="${escapeHtml(queueId)}">個別ラベル</button>
+                    <button class="btn-label-single" data-id="${escapeHtml(queueId)}" data-printed="${data.labelPrinted === true ? "1" : "0"}">${data.labelPrinted === true ? "再印刷" : "ラベル印刷"}</button>
                     <button class="btn-printing" data-id="${escapeHtml(queueId)}" data-status="PRINTING">印刷中</button>
                     <button class="btn-ready" data-id="${escapeHtml(queueId)}" data-status="READY">完成</button>
                     <button class="btn-picked" data-id="${escapeHtml(queueId)}" data-status="PICKED_UP">受渡済</button>
@@ -1252,6 +1383,7 @@
       });
       shippingGroupStats = buildShippingGroupStats(orders);
       renderOrders();
+      renderLabelConfirmPanel();
     }, error => {
       console.error(error);
       document.getElementById("orders").innerHTML = `<div class="empty">注文一覧の読み込みに失敗しました。</div>`;
@@ -1296,8 +1428,15 @@
   document.getElementById("searchBtn").addEventListener("click", runSearch);
   document.getElementById("csvExportBtn").addEventListener("click", exportOrdersCsv);
   document.getElementById("labelPrintBtn").addEventListener("click", printDeliveryLabels);
+  document.getElementById("labelConfirmBtn").addEventListener("click", confirmPendingLabelsPrinted);
+  document.getElementById("labelCancelBtn").addEventListener("click", () => {
+    if (confirm("この印刷分を印刷済にせず閉じますか？必要ならもう一度ラベル印刷してください。")) {
+      clearPendingLabelBatch();
+    }
+  });
 
   await loadSettings();
+  restorePendingLabelBatch();
   currentView = isEcommerceSetting() ? "GROUP" : "ORDER";
   updateViewModeButtons();
   setupPinGate();
