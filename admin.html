@@ -42,11 +42,6 @@
     .btn-close { background:#777; }
     .btn-download { background:#00a86b; }
     .btn-label-single { background:#795548; }
-    .btn-label-printed {
-      background:#e8f5e9;
-      color:#1b5e20;
-      border:2px solid #66bb6a;
-    }
     .btn-label-reprint {
       background:#fff;
       color:#6d4c41;
@@ -1059,8 +1054,7 @@
           <div class="actions">
             <button class="btn-download" data-url="${escapeHtml(imageUrl)}" data-code="${escapeHtml(displayCode)}">印刷用PNG保存</button>
             ${labelPrinted
-              ? `<button class="btn-label-printed" data-id="${escapeHtml(queueId)}" title="押すと未印刷に戻します">✓ ラベル印刷済</button>
-                 <button class="btn-label-single btn-label-reprint" data-id="${escapeHtml(queueId)}">ラベル再印刷</button>`
+              ? `<button class="btn-label-single btn-label-reprint" data-id="${escapeHtml(queueId)}">ラベル再印刷</button>`
               : `<button class="btn-label-single" data-id="${escapeHtml(queueId)}">ラベル印刷</button>`}
             <button class="btn-printing" data-id="${escapeHtml(queueId)}" data-status="PRINTING">印刷中</button>
             <button class="btn-ready" data-id="${escapeHtml(queueId)}" data-status="READY">完成</button>
@@ -1084,13 +1078,6 @@
       });
     });
 
-    document.querySelectorAll(".btn-label-printed").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const ok = window.confirm("この注文を「ラベル未印刷」に戻しますか？");
-        if (!ok) return;
-        await setLabelPrinted([btn.dataset.id], false);
-      });
-    });
 
     document.querySelectorAll(".btn-download").forEach(btn => {
       btn.addEventListener("click", async () => {
@@ -1225,8 +1212,7 @@
                   <div class="actions">
                     <button class="btn-download" data-url="${escapeHtml(imageUrl)}" data-code="${escapeHtml(displayCode)}">PNG保存</button>
                     ${labelPrinted
-                      ? `<button class="btn-label-printed" data-id="${escapeHtml(queueId)}" title="押すと未印刷に戻します">✓ ラベル印刷済</button>
-                         <button class="btn-label-single btn-label-reprint" data-id="${escapeHtml(queueId)}">ラベル再印刷</button>`
+                      ? `<button class="btn-label-single btn-label-reprint" data-id="${escapeHtml(queueId)}">ラベル再印刷</button>`
                       : `<button class="btn-label-single" data-id="${escapeHtml(queueId)}">ラベル印刷</button>`}
                     <button class="btn-printing" data-id="${escapeHtml(queueId)}" data-status="PRINTING">印刷中</button>
                     <button class="btn-ready" data-id="${escapeHtml(queueId)}" data-status="READY">完成</button>
