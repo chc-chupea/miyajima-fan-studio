@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <title>Myうちわ - アップロード版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#eefbff" />
   <style>
     body {
       font-family: 'M PLUS Rounded 1c', sans-serif;
@@ -656,7 +657,764 @@
   font-weight:900;
 }
 
-  </style>
+  
+
+/* =========================================================
+   COOL UI THEME — Myうちわ LAB
+   機能・IDは変更せず、見た目だけを再設計
+   ========================================================= */
+:root {
+  --cool-ink:#0d1726;
+  --cool-navy:#0b1422;
+  --cool-navy-2:#12233a;
+  --cool-blue:#2d6bff;
+  --cool-blue-dark:#184fc7;
+  --cool-bg:#eef2f6;
+  --cool-card:#ffffff;
+  --cool-line:#dbe2ea;
+  --cool-muted:#667387;
+  --cool-soft:#f5f7fa;
+}
+
+html { background:var(--cool-bg); }
+body {
+  font-family:'M PLUS Rounded 1c', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  background:linear-gradient(180deg, #07101d 0, #0d1b2d 278px, var(--cool-bg) 278px, var(--cool-bg) 100%) !important;
+  color:var(--cool-ink) !important;
+  padding:16px 14px 46px !important;
+  min-height:100vh;
+}
+
+/* top controls */
+#langButtons {
+  max-width:760px;
+  margin:0 auto 10px !important;
+  display:flex !important;
+  justify-content:flex-end;
+  gap:6px !important;
+}
+#langButtons button {
+  flex:0 0 auto !important;
+  width:auto !important;
+  min-width:48px;
+  margin:0 !important;
+  padding:7px 10px !important;
+  border-radius:999px !important;
+  border:1px solid rgba(255,255,255,.16) !important;
+  background:rgba(255,255,255,.07) !important;
+  color:#dbe6f2 !important;
+  box-shadow:none !important;
+  font-size:12px !important;
+  font-weight:700;
+  backdrop-filter:blur(10px);
+}
+#langButtons button:hover {
+  background:rgba(255,255,255,.14) !important;
+  transform:none !important;
+}
+
+#howToBtn {
+  width:auto !important;
+  min-width:120px;
+  margin:8px auto 6px !important;
+  padding:9px 16px !important;
+  border-radius:999px !important;
+  border:1px solid rgba(255,255,255,.22) !important;
+  background:transparent !important;
+  color:#dce8f7 !important;
+  box-shadow:none !important;
+  font-size:13px !important;
+}
+#howToBtn:hover { background:rgba(255,255,255,.08) !important; transform:none !important; }
+
+#title {
+  max-width:760px;
+  margin:15px auto 31px !important;
+  padding:0 8px;
+  color:#fff !important;
+  font-size:30px !important;
+  line-height:1.2;
+  letter-spacing:.02em;
+  font-weight:700;
+  text-align:center;
+}
+#title::before {
+  content:'CUSTOM FAN STUDIO';
+  display:block;
+  margin-bottom:7px;
+  color:#75a5ff;
+  font-size:10px;
+  line-height:1;
+  letter-spacing:.22em;
+  font-weight:700;
+}
+#title::after {
+  content:'PHOTO  ·  DESIGN  ·  PRINT';
+  display:block;
+  margin-top:9px;
+  color:#91a1b7;
+  font-size:10px;
+  letter-spacing:.16em;
+  font-weight:400;
+}
+
+#popupClosedNotice,
+.area,
+#footer-text {
+  max-width:760px;
+  box-sizing:border-box;
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
+
+/* cards */
+.area {
+  position:relative;
+  background:rgba(255,255,255,.985) !important;
+  border:1px solid rgba(13,23,38,.07);
+  border-radius:22px !important;
+  padding:22px !important;
+  margin-bottom:16px !important;
+  box-shadow:0 14px 35px rgba(19,35,55,.08) !important;
+}
+.area h2 {
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin:0 0 18px !important;
+  padding:0 0 13px;
+  border-bottom:1px solid #edf0f4;
+  color:#101b2a !important;
+  font-size:17px !important;
+  line-height:1.3;
+  letter-spacing:.01em;
+}
+.area h2::before {
+  content:'';
+  flex:0 0 auto;
+  width:7px;
+  height:7px;
+  border-radius:2px;
+  background:var(--cool-blue);
+  box-shadow:0 0 0 4px rgba(45,107,255,.10);
+}
+
+/* fields */
+select,
+.customer-info-box input,
+.customer-info-box textarea,
+.survey-answer-options select,
+.survey-answer-options textarea {
+  border:1px solid var(--cool-line) !important;
+  background:#f8fafc !important;
+  color:#142033 !important;
+  border-radius:12px !important;
+  box-shadow:none !important;
+  outline:none;
+}
+select:focus,
+.customer-info-box input:focus,
+.customer-info-box textarea:focus,
+.survey-answer-options select:focus,
+.survey-answer-options textarea:focus {
+  border-color:#7ca5ff !important;
+  box-shadow:0 0 0 3px rgba(45,107,255,.11) !important;
+}
+#templateLabel {
+  color:#4a586c !important;
+  font-size:13px !important;
+  font-weight:700;
+  padding:0 !important;
+  margin-bottom:6px !important;
+}
+#reuploadNotice,
+#editNotice,
+#autoCorrectNotice,
+#copiesHint,
+#previewNotice {
+  color:var(--cool-muted) !important;
+}
+
+/* main buttons */
+button {
+  border-radius:12px !important;
+  box-shadow:none !important;
+  font-weight:700;
+  letter-spacing:.01em;
+  transition:background .18s ease, border-color .18s ease, transform .18s ease !important;
+}
+button:hover { transform:none !important; }
+
+#guidedCameraBtn.cameraSelectBtn,
+#guidedCameraBtn {
+  background:var(--cool-navy) !important;
+  color:#fff !important;
+  border:1px solid var(--cool-navy) !important;
+  border-radius:12px !important;
+  box-shadow:none !important;
+}
+#guidedCameraBtn:hover { background:#16263c !important; }
+
+#photoSelectBtn,
+#customFileLabel {
+  background:#fff !important;
+  color:#1c2b40 !important;
+  border:1px solid #cfd8e3 !important;
+  border-radius:12px !important;
+  box-shadow:none !important;
+  font-weight:700 !important;
+}
+#photoSelectBtn:hover,
+#customFileLabel:hover {
+  background:#f5f7fa !important;
+  border-color:#aebdce !important;
+  transform:none !important;
+}
+
+#retakePhotoBtn {
+  background:#edf1f5 !important;
+  color:#24334a !important;
+  border:1px solid #d8e0e8 !important;
+}
+#reselectPhotoBtn {
+  background:#fff !important;
+  color:#24334a !important;
+  border:1px solid #d8e0e8 !important;
+}
+
+#saveBtn {
+  min-height:54px;
+  margin-top:16px !important;
+  background:linear-gradient(135deg, #0c1727, #1c3556) !important;
+  color:#fff !important;
+  border:1px solid rgba(255,255,255,.06) !important;
+  border-radius:14px !important;
+  font-size:16px !important;
+  box-shadow:0 8px 20px rgba(12,23,39,.14) !important;
+}
+#saveBtn:hover { background:linear-gradient(135deg,#111f33,#24456f) !important; }
+
+/* canvas: make the photo feel like the hero */
+#canvasWrapper {
+  padding:8px;
+  border-radius:18px;
+  background:#0b1422;
+  border:1px solid #1e2d42;
+  box-shadow:0 10px 24px rgba(11,20,34,.14);
+}
+#mainCanvas {
+  display:block;
+  border:0 !important;
+  border-radius:12px !important;
+  background:#f2f4f7 !important;
+}
+#previewWrapper img {
+  border:0 !important;
+  border-radius:14px !important;
+  box-shadow:0 10px 28px rgba(15,23,42,.14) !important;
+}
+
+/* photo correction panel */
+.photo-adjust-row {
+  gap:8px !important;
+  margin:13px 0 7px !important;
+  padding:8px;
+  border:1px solid #dfe5ec;
+  border-radius:16px;
+  background:#f4f6f9;
+}
+#autoCorrectBtn {
+  background:var(--cool-blue) !important;
+  border:1px solid var(--cool-blue) !important;
+  border-radius:11px !important;
+  color:#fff !important;
+}
+#autoCorrectBtn:hover:not(:disabled) { background:var(--cool-blue-dark) !important; }
+#autoCorrectBtn:disabled {
+  background:#d7dde5 !important;
+  border-color:#d7dde5 !important;
+  color:#8792a2 !important;
+}
+.photo-slider-control {
+  background:#fff !important;
+  border-color:#dce3eb !important;
+  border-radius:11px !important;
+}
+.photo-slider-control.adjusting {
+  border-color:#7da5ff !important;
+  background:#f5f8ff !important;
+  box-shadow:0 0 0 2px rgba(45,107,255,.09);
+}
+.photo-slider-label { color:#35445a !important; }
+.photo-slider-value {
+  background:#eaf0ff !important;
+  color:#2454c9 !important;
+}
+.photo-slider { accent-color:var(--cool-blue) !important; }
+.photo-adjust-feedback {
+  background:rgba(7,16,29,.92) !important;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 7px 20px rgba(0,0,0,.22) !important;
+}
+
+/* order / checkout */
+#orderArea {
+  margin-top:20px !important;
+  padding-top:18px;
+  border-top:1px solid #e8edf2;
+}
+#priceTypeArea {
+  padding:14px;
+  border:1px solid #e0e6ed;
+  border-radius:14px;
+  background:#f8fafc;
+}
+#priceTypeArea input[type='radio'],
+.survey-answer-options input {
+  accent-color:var(--cool-blue);
+}
+#totalPriceBox {
+  background:#0f1b2b !important;
+  color:#fff !important;
+  border:1px solid #1c304b;
+  border-radius:14px !important;
+  text-align:center;
+  letter-spacing:.02em;
+}
+#orderBtn,
+#checkoutBtn {
+  min-height:52px;
+  background:var(--cool-blue) !important;
+  color:#fff !important;
+  border:0 !important;
+  border-radius:13px !important;
+  box-shadow:0 7px 18px rgba(45,107,255,.18) !important;
+}
+#orderBtn:hover,
+#checkoutBtn:hover { background:var(--cool-blue-dark) !important; }
+#clearCartBtn {
+  background:#e9edf2 !important;
+  color:#334155 !important;
+  border:1px solid #d6dde6 !important;
+}
+
+.customer-info-box {
+  background:#f7f9fc !important;
+  border:1px solid #dfe6ee !important;
+  border-radius:16px !important;
+}
+.customer-info-box h3,
+.customer-info-box > label {
+  color:#23344b !important;
+}
+.survey-question {
+  border-color:#dde5ed !important;
+  background:#fff !important;
+}
+.survey-question h4 { color:#24354c !important; }
+.survey-answer-options label {
+  border-color:#e1e7ed !important;
+  background:#f8fafc !important;
+  border-radius:10px !important;
+}
+.delivery-note-box {
+  background:#eef4ff !important;
+  color:#254c91 !important;
+  border:1px solid #d8e5ff;
+}
+.shippingNotice {
+  background:#f7f9fc !important;
+  border:1px solid #dfe6ee !important;
+  color:#34445a !important;
+  box-shadow:none !important;
+}
+.shippingNotice h3,
+.shippingNotice strong,
+.shippingBreakdown { color:#233c66 !important; }
+.shippingBreakdown { background:#fff !important; }
+.cartBox {
+  background:#f7f9fc !important;
+  border:1px solid #dce4ed !important;
+  color:#293b54 !important;
+}
+.cartBox h3 { color:#183e7a !important; }
+.cartItem { border-color:#e1e7ed !important; }
+.cartTotalBox {
+  background:#0f1b2b !important;
+  color:#fff !important;
+}
+.receipt-code-box {
+  background:#0f1b2b !important;
+  color:#fff !important;
+  border:1px solid #203651;
+  box-shadow:0 10px 24px rgba(15,27,43,.14) !important;
+}
+.receipt-code-number { color:#79a7ff !important; }
+.receipt-code-note { color:#c3d3e6 !important; }
+.closed-notice {
+  background:#fff !important;
+  color:#ad4b17 !important;
+  border:1px solid #f0d2c0;
+  box-shadow:0 8px 24px rgba(36,48,64,.08);
+}
+
+/* modal */
+#howToModal { background:rgba(4,10,18,.78) !important; backdrop-filter:blur(5px); }
+#howToModal > div {
+  border-radius:22px !important;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 28px 65px rgba(0,0,0,.28);
+}
+#howToTitle { color:#142033 !important; }
+
+#footer-text {
+  padding:18px 8px 0;
+  color:#7c8898 !important;
+  font-size:8px !important;
+  line-height:1.65;
+  text-align:center;
+}
+
+@media (max-width:520px) {
+  body { padding:10px 10px 36px !important; background:linear-gradient(180deg,#07101d 0,#0d1b2d 260px,var(--cool-bg) 260px,var(--cool-bg) 100%) !important; }
+  #title { font-size:27px !important; margin-top:12px !important; margin-bottom:26px !important; }
+  .area { padding:17px !important; border-radius:18px !important; }
+  .area h2 { font-size:16px !important; }
+  #langButtons { justify-content:center; }
+  #langButtons button { min-width:45px; padding:6px 8px !important; }
+  .photo-adjust-row { padding:6px; gap:5px !important; }
+  #canvasWrapper { padding:5px; border-radius:15px; }
+}
+
+
+
+/* =========================================================
+   SUMMER CLEAN UI — 夏・涼・風・水
+   造形ではなく、色・光・余白で「涼しさ」を表現
+   ========================================================= */
+:root {
+  --cool-ink:#153246;
+  --cool-navy:#1787b8;
+  --cool-navy-2:#35a9d2;
+  --cool-blue:#32aee4;
+  --cool-blue-dark:#168fc7;
+  --cool-bg:#f4fbfe;
+  --cool-card:#ffffff;
+  --cool-line:#d8edf5;
+  --cool-muted:#6d8797;
+  --cool-soft:#f7fcfe;
+  --summer-aqua:#57cdbf;
+  --summer-sky:#64c8ef;
+  --summer-ice:#eaf9fd;
+}
+
+html { background:#f4fbfe !important; }
+body {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(117,218,245,.25), transparent 28%),
+    radial-gradient(circle at 88% 8%, rgba(111,225,205,.16), transparent 24%),
+    linear-gradient(180deg,#f7fdff 0,#eefaff 240px,#f6fbfd 560px,#f4fbfe 100%) !important;
+  color:#153246 !important;
+}
+
+/* 上部：暗色をやめ、空気感のある白〜水色へ */
+#langButtons button {
+  border:1px solid rgba(64,161,199,.18) !important;
+  background:rgba(255,255,255,.76) !important;
+  color:#477389 !important;
+  backdrop-filter:blur(12px);
+}
+#langButtons button:hover { background:#fff !important; }
+
+#howToBtn {
+  border:1px solid #cbe9f3 !important;
+  background:rgba(255,255,255,.76) !important;
+  color:#257fa5 !important;
+}
+#howToBtn:hover { background:#fff !important; }
+
+#title {
+  color:#163a50 !important;
+  text-shadow:none !important;
+  margin-top:18px !important;
+  margin-bottom:32px !important;
+  letter-spacing:.015em;
+}
+#title::before,
+#title::after { display:none !important; content:none !important; }
+
+/* カード：白・薄い氷色・大きな余白 */
+.area {
+  background:rgba(255,255,255,.94) !important;
+  border:1px solid rgba(93,181,214,.18) !important;
+  box-shadow:0 16px 38px rgba(72,139,163,.08) !important;
+}
+.area h2 {
+  color:#1a506a !important;
+  border-bottom:1px solid #e6f3f7 !important;
+}
+.area h2::before {
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background:#55c7db !important;
+  box-shadow:0 0 0 5px rgba(85,199,219,.10) !important;
+}
+
+/* 入力 */
+select,
+.customer-info-box input,
+.customer-info-box textarea,
+.survey-answer-options select,
+.survey-answer-options textarea {
+  border-color:#d7ebf2 !important;
+  background:#fbfeff !important;
+  color:#183b4f !important;
+}
+select:focus,
+.customer-info-box input:focus,
+.customer-info-box textarea:focus,
+.survey-answer-options select:focus,
+.survey-answer-options textarea:focus {
+  border-color:#69c7e7 !important;
+  box-shadow:0 0 0 3px rgba(88,190,226,.12) !important;
+}
+#templateLabel { color:#527385 !important; }
+#reuploadNotice,
+#editNotice,
+#autoCorrectNotice,
+#copiesHint,
+#previewNotice { color:#6d8797 !important; }
+
+/* メイン操作：空・水の青 */
+#guidedCameraBtn.cameraSelectBtn,
+#guidedCameraBtn {
+  background:linear-gradient(135deg,#36b7e7,#48c6d7) !important;
+  border-color:transparent !important;
+  color:#fff !important;
+}
+#guidedCameraBtn:hover { background:linear-gradient(135deg,#24a7d9,#36b8cb) !important; }
+
+#photoSelectBtn,
+#customFileLabel,
+#reselectPhotoBtn {
+  background:#f8fdff !important;
+  color:#277b9f !important;
+  border-color:#cdeaf3 !important;
+}
+#photoSelectBtn:hover,
+#customFileLabel:hover,
+#reselectPhotoBtn:hover { background:#edf9fd !important; border-color:#a9dbe9 !important; }
+
+#retakePhotoBtn {
+  background:#edf9f7 !important;
+  color:#2b8079 !important;
+  border-color:#ccebe5 !important;
+}
+
+#saveBtn {
+  background:linear-gradient(135deg,#2faee3,#55cfc7) !important;
+  border:0 !important;
+  box-shadow:0 10px 24px rgba(56,171,202,.16) !important;
+}
+#saveBtn:hover { background:linear-gradient(135deg,#209fd5,#42bdb6) !important; }
+
+/* 写真エリア：黒枠をやめて、氷のような薄い枠へ */
+#canvasWrapper {
+  background:linear-gradient(145deg,#eaf8fc,#f8fdff) !important;
+  border:1px solid #d2edf5 !important;
+  box-shadow:0 12px 30px rgba(66,151,181,.09) !important;
+}
+#mainCanvas { background:#f8fcfd !important; }
+#previewWrapper img {
+  box-shadow:0 12px 30px rgba(66,151,181,.10) !important;
+}
+
+/* 自動補正・調整バー */
+.photo-adjust-row {
+  border-color:#d9edf3 !important;
+  background:#f5fbfd !important;
+}
+#autoCorrectBtn {
+  background:linear-gradient(135deg,#2aaae0,#4cc9cc) !important;
+  border:0 !important;
+}
+#autoCorrectBtn:hover:not(:disabled) {
+  background:linear-gradient(135deg,#1f9bd0,#3cb9bc) !important;
+}
+.photo-slider-control {
+  border-color:#d8edf3 !important;
+  background:#fff !important;
+}
+.photo-slider-control.adjusting {
+  border-color:#69c9e3 !important;
+  background:#f3fcff !important;
+  box-shadow:0 0 0 2px rgba(75,185,216,.10) !important;
+}
+.photo-slider-label { color:#3e6c80 !important; }
+.photo-slider-value {
+  background:#eaf8fc !important;
+  color:#2386a9 !important;
+}
+.photo-slider { accent-color:#36b7d9 !important; }
+.photo-adjust-feedback {
+  background:rgba(20,91,116,.90) !important;
+  border:1px solid rgba(255,255,255,.28) !important;
+}
+
+/* 注文エリアも同じ温度感に統一 */
+#orderArea { border-top-color:#e4f2f6 !important; }
+#priceTypeArea,
+.customer-info-box,
+.shippingNotice,
+.cartBox {
+  background:#f8fcfd !important;
+  border-color:#dceef3 !important;
+  color:#335f70 !important;
+}
+#priceTypeArea input[type='radio'],
+.survey-answer-options input { accent-color:#32add4 !important; }
+
+#totalPriceBox,
+.cartTotalBox {
+  background:linear-gradient(135deg,#eaf9fd,#eafaf6) !important;
+  color:#176c88 !important;
+  border:1px solid #cfeaf2 !important;
+}
+#orderBtn,
+#checkoutBtn {
+  background:linear-gradient(135deg,#2faee3,#54cfc4) !important;
+  box-shadow:0 8px 20px rgba(53,170,196,.14) !important;
+}
+#orderBtn:hover,
+#checkoutBtn:hover { background:linear-gradient(135deg,#209fd5,#42bdb4) !important; }
+#clearCartBtn { background:#f1f7f9 !important; color:#4f6f7c !important; border-color:#d9e8ee !important; }
+
+.customer-info-box h3,
+.customer-info-box > label,
+.survey-question h4,
+.cartBox h3 { color:#245b72 !important; }
+.survey-question { border-color:#dceef3 !important; background:#fff !important; }
+.survey-answer-options label { border-color:#e2eff3 !important; background:#fbfeff !important; }
+.delivery-note-box {
+  background:#edf9fc !important;
+  color:#28738d !important;
+  border-color:#d4edf4 !important;
+}
+.shippingNotice h3,
+.shippingNotice strong,
+.shippingBreakdown { color:#27738c !important; }
+
+.receipt-code-box {
+  background:linear-gradient(135deg,#e9f9fd,#eafaf6) !important;
+  color:#1c637d !important;
+  border:1px solid #cceaf1 !important;
+  box-shadow:0 10px 24px rgba(66,151,181,.10) !important;
+}
+.receipt-code-number { color:#188bb2 !important; }
+.receipt-code-note { color:#4e7e8e !important; }
+
+.closed-notice {
+  background:#fffaf3 !important;
+  color:#a7632f !important;
+  border-color:#f1dfc8 !important;
+}
+
+/* モーダルも暗くしすぎない */
+#howToModal {
+  background:rgba(25,73,91,.38) !important;
+  backdrop-filter:blur(8px);
+}
+#howToTitle { color:#245b72 !important; }
+
+#footer-text { color:#77909c !important; }
+
+@media (max-width:520px) {
+  body {
+    background:
+      radial-gradient(circle at 12% 0%, rgba(117,218,245,.24), transparent 25%),
+      radial-gradient(circle at 90% 4%, rgba(111,225,205,.14), transparent 20%),
+      linear-gradient(180deg,#f8fdff 0,#eefaff 230px,#f5fbfd 100%) !important;
+  }
+}
+
+
+/* ===== UI COOL LABEL + LINE ICONS ===== */
+#area-select h2, #area-canvas h2, #area-result h2 {
+  font-size:12px !important;
+  font-weight:800 !important;
+  letter-spacing:.18em !important;
+  color:#58a9c3 !important;
+}
+#templateLabel {
+  font-size:11px !important;
+  font-weight:800 !important;
+  letter-spacing:.16em !important;
+  color:#7b9ba8 !important;
+  padding-bottom:2px !important;
+}
+#guidedCameraBtn, #photoSelectBtn, #retakePhotoBtn, #reselectPhotoBtn {
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:10px !important;
+  font-weight:700 !important;
+  letter-spacing:.035em !important;
+}
+#guidedCameraBtn::before, #retakePhotoBtn::before,
+#photoSelectBtn::before, #reselectPhotoBtn::before {
+  content:"";
+  width:19px;
+  height:19px;
+  flex:0 0 19px;
+  background:currentColor;
+  -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat;
+  -webkit-mask-position:center;
+  mask-position:center;
+  -webkit-mask-size:contain;
+  mask-size:contain;
+}
+#guidedCameraBtn::before, #retakePhotoBtn::before {
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5.5 10.3 3.8h3.4L15 5.5h3.5A2.5 2.5 0 0 1 21 8v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17V8a2.5 2.5 0 0 1 2.5-2.5H9Z'/%3E%3Ccircle cx='12' cy='12.5' r='3.6'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5.5 10.3 3.8h3.4L15 5.5h3.5A2.5 2.5 0 0 1 21 8v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17V8a2.5 2.5 0 0 1 2.5-2.5H9Z'/%3E%3Ccircle cx='12' cy='12.5' r='3.6'/%3E%3C/svg%3E");
+}
+/* 01 PHOTO の「撮る」にも撮り直すと同じカメラ線画を確実に表示 */
+#guidedCameraBtn::before {
+  content:"" !important;
+  display:inline-block !important;
+  width:19px !important;
+  height:19px !important;
+  flex:0 0 19px !important;
+  background-color:currentColor !important;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5.5 10.3 3.8h3.4L15 5.5h3.5A2.5 2.5 0 0 1 21 8v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17V8a2.5 2.5 0 0 1 2.5-2.5H9Z'/%3E%3Ccircle cx='12' cy='12.5' r='3.6'/%3E%3C/svg%3E") center/contain no-repeat !important;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5.5 10.3 3.8h3.4L15 5.5h3.5A2.5 2.5 0 0 1 21 8v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17V8a2.5 2.5 0 0 1 2.5-2.5H9Z'/%3E%3Ccircle cx='12' cy='12.5' r='3.6'/%3E%3C/svg%3E") center/contain no-repeat !important;
+}
+#photoSelectBtn::before, #reselectPhotoBtn::before {
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2.5'/%3E%3Ccircle cx='8.2' cy='9' r='1.5'/%3E%3Cpath d='m5.5 17 4.2-4.4 3.2 3 2.4-2.4L19 17'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2.5'/%3E%3Ccircle cx='8.2' cy='9' r='1.5'/%3E%3Cpath d='m5.5 17 4.2-4.4 3.2 3 2.4-2.4L19 17'/%3E%3C/svg%3E");
+}
+.photo-slider-label > span:first-child {
+  font-size:10px !important;
+  font-weight:900 !important;
+  letter-spacing:.14em !important;
+  color:#5c8797 !important;
+}
+#autoCorrectBtn {
+  font-size:11px !important;
+  font-weight:900 !important;
+  letter-spacing:.14em !important;
+}
+#saveBtn {
+  font-weight:800 !important;
+  letter-spacing:.04em !important;
+}
+#reuploadNotice, #editNotice, #autoCorrectNotice {
+  font-size:11px !important;
+  letter-spacing:.01em !important;
+}
+
+</style>
 </head>
 <body>
   <div id="langButtons">
@@ -717,15 +1475,15 @@
   <div id="popupClosedNotice" class="closed-notice"></div>
 
   <div class="area" id="area-select">
-    <h2 data-ja="1)デザイン＆写真を選ぶ"
+    <h2 data-ja="01  PHOTO"
         data-en="1) Selection"
         data-zh="① 选择设计和照片"
         data-ko="① 디자인과 사진 선택"
         data-vi="① Chọn thiết kế & ảnh">
-        1)デザイン＆写真を選ぶ
+        01  PHOTO
     </h2>
 
-  <label id="templateLabel" data-ja="うちわのデザインを選んでね👇" data-en="Choose a fan design👇" data-zh="请选择一个团扇设计👇" data-ko="부채 디자인을 선택하세요👇" data-vi="Chọn thiết kế quạt👇">うちわのデザインを選んでね👇</label>
+  <label id="templateLabel" data-ja="DESIGN" data-en="Choose a fan design👇" data-zh="请选择一个团扇设计👇" data-ko="부채 디자인을 선택하세요👇" data-vi="Chọn thiết kế quạt👇">DESIGN</label>
   <select id="templateSelector">
     <option value="fan1-highres.png">無地</option>
   </select>
@@ -734,23 +1492,23 @@
   <!-- 変更前 -->
   <!-- <input type="file" id="imageLoader" accept="image/*" /> -->
   <button id="guidedCameraBtn"
-    data-ja="📷 カメラで撮影する"
-    data-en="📷 Take Photo"
-    data-zh="📷 拍照"
-    data-ko="📷 사진 촬영"
-    data-vi="📷 Chụp ảnh"
+    data-ja="撮る"
+    data-en="Capture"
+    data-zh="拍摄"
+    data-ko="촬영"
+    data-vi="Chụp"
     class="cameraSelectBtn">
-    📷 カメラで撮影する
+    撮る
   </button>
 
   <label for="imageLoader"
     id="photoSelectBtn"
-    data-ja="🖼 写真を選ぶ"
-    data-en="🖼 Choose Photo"
-    data-zh="🖼 选择照片"
-    data-ko="🖼 사진 선택"
-    data-vi="🖼 Chọn ảnh">
-    🖼 写真を選ぶ
+    data-ja="選ぶ"
+    data-en="Choose"
+    data-zh="选择"
+    data-ko="선택"
+    data-vi="Chọn">
+    選ぶ
   </label>
 
   <input
@@ -761,8 +1519,8 @@
 
   <br />
   <p id="reuploadNotice"
-     data-ja="※ 画像は何度でも選び直せます。"
-     data-en="※ You can re-select the image as many times as you like."
+     data-ja="写真はいつでも変更できます。"
+     data-en="You can change the photo anytime."
      data-zh="※ 您可以多次重新选择图片。"
      data-ko="※ 이미지는 언제든지 다시 선택할 수 있습니다."
      data-vi="※ Bạn có thể chọn lại ảnh bao nhiêu lần cũng được."
@@ -770,12 +1528,12 @@
     </div>
   
   <div class="area" id="area-canvas">
-    <h2 data-ja="2) デザイン編集スペース"
+    <h2 data-ja="02  EDIT"
         data-en="2) Canvas"
         data-zh="② 设计编辑区"
         data-ko="② 디자인 편집 공간"
         data-vi="② Khu vực chỉnh sửa thiết kế">
-      2)デザイン編集スペース
+      02  EDIT
     </h2>
 
   <div id="canvasWrapper">
@@ -785,46 +1543,46 @@
 
   <!-- 👇 ここに新しい説明文を追加 -->
   <p id="editNotice"
-     data-ja="※ 画像は1本の指で位置を動かせます。2本の指で大きさや向きを変えることができます。"
-     data-en="※ Move the image with one finger. Pinch to zoom, use two fingers to rotate."
+     data-ja="ドラッグで移動 ／ ピンチで拡大・回転"
+     data-en="Drag to move / Pinch to zoom & rotate"
      data-zh="※ 用一根手指移动图片。捏合缩放，用两根手指旋转。"
      data-ko="※ 손가락 한 개로 이미지를 이동합니다. 두 손가락으로 확대/축소 및 회전할 수 있습니다."
      data-vi="※ Dùng một ngón tay để di chuyển ảnh. Chụm để phóng to/thu nhỏ, hai ngón tay để xoay."
      style="font-size: 12px; color: #666; margin-bottom: 10px;"></p>
    
   <button id="retakePhotoBtn"
-    data-ja="📷 撮り直す"
-    data-en="📷 Retake Photo"
-    data-zh="📷 重新拍摄"
-    data-ko="📷 다시 촬영"
-    data-vi="📷 Chụp lại"
+    data-ja="撮り直す"
+    data-en="Retake"
+    data-zh="重拍"
+    data-ko="다시 촬영"
+    data-vi="Chụp lại"
     style="background:#4caf50; color:white; box-shadow:none;">
-    📷 撮り直す
+    撮り直す
   </button>
 
   <button id="reselectPhotoBtn"
-    data-ja="🖼 写真を選び直す"
-    data-en="🖼 Choose Another Photo"
-    data-zh="🖼 重新选择照片"
-    data-ko="🖼 사진 다시 선택"
-    data-vi="🖼 Chọn lại ảnh"
+    data-ja="選び直す"
+    data-en="Choose Again"
+    data-zh="重新选择"
+    data-ko="다시 선택"
+    data-vi="Chọn lại"
     style="background:#90caf9; color:#0d47a1; box-shadow:none;">
-    🖼 写真を選び直す
+    選び直す
   </button>
 
   <div class="photo-adjust-row" id="photoAdjustRow">
     <button id="autoCorrectBtn" disabled
-      data-ja="✨ 自動補正"
-      data-en="✨ Auto"
-      data-zh="✨ 自动"
-      data-ko="✨ 자동 보정"
-      data-vi="✨ Tự động">
-      ✨ 自動補正
+      data-ja="AUTO"
+      data-en="AUTO"
+      data-zh="AUTO"
+      data-ko="AUTO"
+      data-vi="AUTO">
+      AUTO
     </button>
 
     <div class="photo-slider-control">
       <div class="photo-slider-label">
-        <span data-ja="☀ 明るさ" data-en="☀ Brightness" data-zh="☀ 亮度" data-ko="☀ 밝기" data-vi="☀ Độ sáng">☀ 明るさ</span>
+        <span data-ja="LIGHT" data-en="LIGHT" data-zh="LIGHT" data-ko="LIGHT" data-vi="LIGHT">LIGHT</span>
         <span id="brightnessValue" class="photo-slider-value">0</span>
       </div>
       <input type="range" class="photo-slider" id="brightnessSlider" min="80" max="125" value="100" step="1" disabled aria-label="明るさ">
@@ -833,7 +1591,7 @@
 
     <div class="photo-slider-control">
       <div class="photo-slider-label">
-        <span data-ja="🎨 鮮やかさ" data-en="🎨 Color" data-zh="🎨 鲜艳度" data-ko="🎨 선명도" data-vi="🎨 Màu sắc">🎨 鮮やかさ</span>
+        <span data-ja="COLOR" data-en="COLOR" data-zh="COLOR" data-ko="COLOR" data-vi="COLOR">COLOR</span>
         <span id="saturationValue" class="photo-slider-value">0</span>
       </div>
       <input type="range" class="photo-slider" id="saturationSlider" min="76" max="130" value="100" step="1" disabled aria-label="鮮やかさ">
@@ -841,31 +1599,31 @@
     </div>
   </div>
   <p id="autoCorrectNotice"
-     data-ja="写真だけを補正します。"
+     data-ja="写真だけを整えます。"
      data-en="Only the photo is adjusted."
      data-zh="仅调整照片。"
      data-ko="사진만 보정합니다."
      data-vi="Chỉ chỉnh ảnh.">写真だけを補正します。</p>
 
   <button id="saveBtn"
-    data-ja="完成イメージを確認する"
-    data-en="Check Final Image"
-    data-zh="确认完成图像"
-    data-ko="완성 이미지 확인"
-    data-vi="Kiểm tra hình hoàn chỉnh">
-    完成イメージを確認する
+    data-ja="仕上がりを見る"
+    data-en="Preview"
+    data-zh="预览"
+    data-ko="미리보기"
+    data-vi="Xem trước">
+    仕上がりを見る
   </button>
   <p id="notice" style="font-size:14px; color:red;"></p>
 
   </div>
 
   <div class="area" id="area-result">
-    <h2 data-ja="3) 完成イメージ"
+    <h2 data-ja="03  PREVIEW"
         data-en="3) Final Image"
         data-zh="③ 最终效果图"
         data-ko="③ 최종 이미지"
         data-vi="③ Hình hoàn chỉnh">
-      3)完成イメージ
+      03  PREVIEW
     </h2>
 
   <div id="previewWrapper" style="display:none; text-align:center; margin-top:16px;">
@@ -1997,7 +2755,10 @@ Miyajima Fan Studio<br><br>
         ctx.scale(scale, scale);
 
         // 写真だけを補正画像へ差し替える。テンプレートはこの後に別描画するため無補正。
-        const photoToDraw = correctedImg || uploadedImg;
+        // スライダー操作中は軽量ライブプレビューを優先する。
+        const photoToDraw = (liveAdjustmentActive && liveAdjustmentReady)
+          ? liveAdjustCanvas
+          : (correctedImg || uploadedImg);
         ctx.drawImage(
           photoToDraw,
           -uploadedImg.width / 2,
@@ -2024,14 +2785,29 @@ Miyajima Fan Studio<br><br>
     let manualAdjustmentTimer = null;
     let photoAdjustFeedbackTimer = null;
 
+    // スライダー操作中の軽量ライブプレビュー用。
+    // 高解像度の本画像は最後に静かに確定し、操作中は低解像度の写真だけを即時更新する。
+    const liveAdjustCanvas = document.createElement('canvas');
+    const liveAdjustCtx = liveAdjustCanvas.getContext('2d', { willReadFrequently:true });
+    let liveAdjustSourcePixels = null;
+    let liveAdjustWidth = 0;
+    let liveAdjustHeight = 0;
+    let liveAdjustmentActive = false;
+    let liveAdjustmentReady = false;
+    let liveAdjustmentFrame = null;
+    let liveAdjustmentLastPaint = 0;
+    let sliderCommitVersion = 0;
+    let autoCorrectionUndoSnapshot = null;
+    let lastAutoNoticeKey = 'ready';
+
     const autoCorrectLabels = {
       on: {
-        ja:'↩ 自動OFF', en:'↩ Auto off', zh:'↩ 关闭自动',
-        ko:'↩ 자동 끄기', vi:'↩ Tắt tự động'
+        ja:'UNDO ', en:'UNDO ', zh:'恢复 ',
+        ko:'되돌리기 ', vi:'Hoàn tác '
       },
       off: {
-        ja:'✨ 自動補正', en:'✨ Auto', zh:'✨ 自动',
-        ko:'✨ 자동 보정', vi:'✨ Tự động'
+        ja:'AUTO', en:'AUTO', zh:'AUTO',
+        ko:'AUTO', vi:'AUTO'
       },
       busy: {
         ja:'補正中…', en:'Enhancing…', zh:'优化中…',
@@ -2089,8 +2865,8 @@ Miyajima Fan Studio<br><br>
 
     function getAdjustmentLabel(type) {
       const labels = type === 'brightness'
-        ? { ja:'☀ 明るさ', en:'☀ Brightness', zh:'☀ 亮度', ko:'☀ 밝기', vi:'☀ Độ sáng' }
-        : { ja:'🎨 鮮やかさ', en:'🎨 Color', zh:'🎨 鲜艳度', ko:'🎨 선명도', vi:'🎨 Màu sắc' };
+        ? { ja:'LIGHT', en:'LIGHT', zh:'LIGHT', ko:'LIGHT', vi:'LIGHT' }
+        : { ja:'COLOR', en:'COLOR', zh:'COLOR', ko:'COLOR', vi:'COLOR' };
       return labels[currentLang] || labels.ja;
     }
 
@@ -2104,9 +2880,9 @@ Miyajima Fan Studio<br><br>
       const value = formatAdjustmentValue(slider?.value || 100);
       const label = getAdjustmentLabel(type);
       const phaseText = {
-        moving:{ ja:'指を離すと反映', en:'Release to apply', zh:'松开后应用', ko:'손을 떼면 적용', vi:'Thả tay để áp dụng' },
-        applying:{ ja:'反映中…', en:'Applying…', zh:'应用中…', ko:'적용 중…', vi:'Đang áp dụng…' },
-        done:{ ja:'✓ 反映しました', en:'✓ Applied', zh:'✓ 已应用', ko:'✓ 적용됨', vi:'✓ Đã áp dụng' }
+        live:{ ja:'LIVE', en:'LIVE', zh:'LIVE', ko:'LIVE', vi:'LIVE' },
+        applying:{ ja:'高画質化中…', en:'Finalizing…', zh:'高画质处理中…', ko:'고화질 처리 중…', vi:'Đang hoàn thiện…' },
+        done:{ ja:'✓', en:'✓', zh:'✓', ko:'✓', vi:'✓' }
       };
       const text = phaseText[phase]?.[currentLang] || phaseText[phase]?.ja || '';
       photoAdjustFeedback.textContent = `${label} ${value}　${text}`;
@@ -2118,6 +2894,119 @@ Miyajima Fan Studio<br><br>
       }
     }
 
+    function clearLiveAdjustmentPreview() {
+      liveAdjustmentActive = false;
+      liveAdjustmentReady = false;
+      liveAdjustSourcePixels = null;
+      liveAdjustWidth = 0;
+      liveAdjustHeight = 0;
+      if (liveAdjustmentFrame) {
+        cancelAnimationFrame(liveAdjustmentFrame);
+        liveAdjustmentFrame = null;
+      }
+    }
+
+    function prepareLiveAdjustmentSource() {
+      if (!uploadedImg) return false;
+      const maxSide = 620;
+      const ratio = uploadedImg.width / uploadedImg.height;
+      const w = ratio >= 1 ? maxSide : Math.max(1, Math.round(maxSide * ratio));
+      const h = ratio >= 1 ? Math.max(1, Math.round(maxSide / ratio)) : maxSide;
+
+      if (liveAdjustSourcePixels && liveAdjustWidth === w && liveAdjustHeight === h) return true;
+
+      liveAdjustWidth = w;
+      liveAdjustHeight = h;
+      liveAdjustCanvas.width = w;
+      liveAdjustCanvas.height = h;
+      liveAdjustCtx.clearRect(0, 0, w, h);
+      liveAdjustCtx.drawImage(uploadedImg, 0, 0, w, h);
+      const source = liveAdjustCtx.getImageData(0, 0, w, h);
+      liveAdjustSourcePixels = new Uint8ClampedArray(source.data);
+      return true;
+    }
+
+    function paintLiveAdjustmentPreview() {
+      if (!prepareLiveAdjustmentSource()) return;
+      const values = getCombinedCorrectionValues();
+      const out = liveAdjustCtx.createImageData(liveAdjustWidth, liveAdjustHeight);
+      const src = liveAdjustSourcePixels;
+      const d = out.data;
+      const brightness = values.brightness;
+      const contrast = values.contrast;
+      const saturation = values.saturation;
+
+      for (let i = 0; i < src.length; i += 4) {
+        let r = src[i] * brightness;
+        let g = src[i + 1] * brightness;
+        let b = src[i + 2] * brightness;
+
+        r = (r - 128) * contrast + 128;
+        g = (g - 128) * contrast + 128;
+        b = (b - 128) * contrast + 128;
+
+        const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        r = lum + (r - lum) * saturation;
+        g = lum + (g - lum) * saturation;
+        b = lum + (b - lum) * saturation;
+
+        d[i] = clamp(Math.round(r), 0, 255);
+        d[i + 1] = clamp(Math.round(g), 0, 255);
+        d[i + 2] = clamp(Math.round(b), 0, 255);
+        d[i + 3] = src[i + 3];
+      }
+
+      liveAdjustCtx.putImageData(out, 0, 0);
+      liveAdjustmentActive = true;
+      liveAdjustmentReady = true;
+      clearFinalPreviewState();
+      draw();
+    }
+
+    function scheduleLiveAdjustmentPreview(type) {
+      // iPhoneでも重くなりすぎないよう、最大約30fpsで更新。
+      const now = performance.now();
+      const wait = Math.max(0, 34 - (now - liveAdjustmentLastPaint));
+      if (liveAdjustmentFrame) return;
+      liveAdjustmentFrame = requestAnimationFrame(() => {
+        liveAdjustmentFrame = null;
+        if (wait > 0) {
+          setTimeout(() => {
+            liveAdjustmentLastPaint = performance.now();
+            paintLiveAdjustmentPreview();
+            showPhotoAdjustFeedback(type, 'live');
+          }, wait);
+        } else {
+          liveAdjustmentLastPaint = performance.now();
+          paintLiveAdjustmentPreview();
+          showPhotoAdjustFeedback(type, 'live');
+        }
+      });
+    }
+
+    async function commitLiveAdjustment() {
+      if (!uploadedImg || isReuseMode) return;
+      const version = ++sliderCommitVersion;
+      const values = getCombinedCorrectionValues();
+
+      try {
+        const result = await createCorrectedPhoto(uploadedImg, values);
+        if (version !== sliderCommitVersion) {
+          try { URL.revokeObjectURL(result.url); } catch (e) {}
+          return;
+        }
+        cleanupCorrectedImage();
+        correctedImg = result.enhanced;
+        correctedImgUrl = result.url;
+        liveAdjustmentActive = false;
+        liveAdjustmentReady = false;
+        clearFinalPreviewState();
+        draw();
+      } catch (err) {
+        console.error('Live slider finalize failed:', err);
+      }
+    }
+
     function cleanupCorrectedImage() {
       correctedImg = null;
       if (correctedImgUrl) {
@@ -2126,19 +3015,45 @@ Miyajima Fan Studio<br><br>
       }
     }
 
+    function snapshotAutoCorrectionState() {
+      autoCorrectionUndoSnapshot = {
+        photoCorrectionEnabled,
+        lastAutoCorrection: lastAutoCorrection ? { ...lastAutoCorrection } : null,
+        manualBrightness,
+        manualSaturation,
+        brightnessSliderValue: brightnessSlider ? String(brightnessSlider.value) : '100',
+        saturationSliderValue: saturationSlider ? String(saturationSlider.value) : '100'
+      };
+    }
+
+    function restoreAutoCorrectionSnapshot() {
+      const snapshot = autoCorrectionUndoSnapshot;
+      if (!snapshot) return false;
+      photoCorrectionEnabled = Boolean(snapshot.photoCorrectionEnabled);
+      lastAutoCorrection = snapshot.lastAutoCorrection ? { ...snapshot.lastAutoCorrection } : null;
+      manualBrightness = Number(snapshot.manualBrightness || 1);
+      manualSaturation = Number(snapshot.manualSaturation || 1);
+      if (brightnessSlider) brightnessSlider.value = snapshot.brightnessSliderValue || '100';
+      if (saturationSlider) saturationSlider.value = snapshot.saturationSliderValue || '100';
+      updateSliderValueBadges();
+      autoCorrectionUndoSnapshot = null;
+      return true;
+    }
+
     function updateAutoCorrectUI(noticeKey = null) {
       if (!autoCorrectBtn) return;
 
+      if (noticeKey) lastAutoNoticeKey = noticeKey;
+
       if (autoCorrectionBusy) {
         autoCorrectBtn.textContent = autoCorrectLabels.busy[currentLang] || autoCorrectLabels.busy.ja;
-        return;
+      } else {
+        const state = photoCorrectionEnabled ? 'on' : 'off';
+        autoCorrectBtn.textContent = autoCorrectLabels[state][currentLang] || autoCorrectLabels[state].ja;
       }
 
-      const state = photoCorrectionEnabled ? 'on' : 'off';
-      autoCorrectBtn.textContent = autoCorrectLabels[state][currentLang] || autoCorrectLabels[state].ja;
-
       if (autoCorrectNotice) {
-        const key = noticeKey || (photoCorrectionEnabled ? 'applied' : 'ready');
+        const key = noticeKey || lastAutoNoticeKey || (photoCorrectionEnabled ? 'applied' : 'ready');
         autoCorrectNotice.textContent = autoCorrectNotices[key][currentLang] || autoCorrectNotices[key].ja;
       }
     }
@@ -2151,6 +3066,8 @@ Miyajima Fan Studio<br><br>
     function resetPhotoCorrection() {
       photoCorrectionEnabled = false;
       lastAutoCorrection = null;
+      autoCorrectionUndoSnapshot = null;
+      lastAutoNoticeKey = 'ready';
       autoCorrectionBusy = false;
       manualBrightness = 1.0;
       manualSaturation = 1.0;
@@ -2162,6 +3079,8 @@ Miyajima Fan Studio<br><br>
         clearTimeout(manualAdjustmentTimer);
         manualAdjustmentTimer = null;
       }
+      sliderCommitVersion++;
+      clearLiveAdjustmentPreview();
       cleanupCorrectedImage();
       setPhotoAdjustControlsDisabled(!uploadedImg || isReuseMode);
       updateAutoCorrectUI('ready');
@@ -2346,17 +3265,23 @@ Miyajima Fan Studio<br><br>
     autoCorrectBtn?.addEventListener('click', async () => {
       if (!uploadedImg || autoCorrectionBusy || isReuseMode) return;
 
+      sliderCommitVersion++;
+      clearLiveAdjustmentPreview();
       autoCorrectionBusy = true;
       setPhotoAdjustControlsDisabled(true);
       updateAutoCorrectUI();
 
       try {
         if (photoCorrectionEnabled) {
-          photoCorrectionEnabled = false;
-          lastAutoCorrection = null;
+          const restored = restoreAutoCorrectionSnapshot();
+          if (!restored) {
+            photoCorrectionEnabled = false;
+            lastAutoCorrection = null;
+          }
           await rebuildDisplayedPhoto();
           updateAutoCorrectUI('undone');
         } else {
+          snapshotAutoCorrectionState();
           lastAutoCorrection = analyzePhotoForAutoCorrection(uploadedImg);
           photoCorrectionEnabled = true;
           await rebuildDisplayedPhoto();
@@ -2364,59 +3289,57 @@ Miyajima Fan Studio<br><br>
         }
       } catch (err) {
         console.error('Auto correction failed:', err);
-        photoCorrectionEnabled = false;
-        lastAutoCorrection = null;
+        restoreAutoCorrectionSnapshot();
+        if (!autoCorrectionUndoSnapshot) {
+          photoCorrectionEnabled = false;
+          lastAutoCorrection = null;
+        }
         cleanupCorrectedImage();
-        draw();
+        await rebuildDisplayedPhoto();
         updateAutoCorrectUI('failed');
       } finally {
         autoCorrectionBusy = false;
         setPhotoAdjustControlsDisabled(!uploadedImg || isReuseMode);
-        updateAutoCorrectUI();
+        updateAutoCorrectUI(lastAutoNoticeKey);
       }
     });
 
     function previewSliderMovement(type) {
       if (!uploadedImg || autoCorrectionBusy || isReuseMode) return;
+      // 以前の高画質確定処理が残っていても、今の指操作を優先する。
+      sliderCommitVersion++;
       manualBrightness = brightnessSlider ? Number(brightnessSlider.value) / 100 : 1.0;
       manualSaturation = saturationSlider ? Number(saturationSlider.value) / 100 : 1.0;
       updateSliderValueBadges();
       setAdjustingControl(type, true);
-      showPhotoAdjustFeedback(type, 'moving');
+
+      // 指を動かしている最中から写真へ即時反映。
+      scheduleLiveAdjustmentPreview(type);
+
+      // 操作が少し止まったら、その値を高解像度画像にも静かに確定する。
+      if (manualAdjustmentTimer) clearTimeout(manualAdjustmentTimer);
+      manualAdjustmentTimer = setTimeout(() => {
+        manualAdjustmentTimer = null;
+        commitLiveAdjustment();
+        setAdjustingControl(type, false);
+      }, 220);
     }
 
-    async function applySliderPhotoAdjustment(type) {
-      if (!uploadedImg || autoCorrectionBusy || isReuseMode) return;
-      manualBrightness = brightnessSlider ? Number(brightnessSlider.value) / 100 : 1.0;
-      manualSaturation = saturationSlider ? Number(saturationSlider.value) / 100 : 1.0;
-      updateSliderValueBadges();
-      setAdjustingControl(type, true);
-      showPhotoAdjustFeedback(type, 'applying');
-
-      autoCorrectionBusy = true;
-      try {
-        await rebuildDisplayedPhoto();
-        if (autoCorrectNotice) {
-          const text = type === 'brightness'
-            ? {ja:'☀ 明るさを反映しました。', en:'☀ Brightness applied.', zh:'☀ 已应用亮度。', ko:'☀ 밝기를 적용했습니다.', vi:'☀ Đã áp dụng độ sáng.'}
-            : {ja:'🎨 鮮やかさを反映しました。', en:'🎨 Color applied.', zh:'🎨 已应用鲜艳度。', ko:'🎨 색감을 적용했습니다.', vi:'🎨 Đã áp dụng màu sắc.'};
-          autoCorrectNotice.textContent = text[currentLang] || text.ja;
-        }
-        showPhotoAdjustFeedback(type, 'done');
-      } catch (err) {
-        console.error('Slider photo adjustment failed:', err);
-        if (autoCorrectNotice) autoCorrectNotice.textContent = autoCorrectNotices.failed[currentLang] || autoCorrectNotices.failed.ja;
-        if (photoAdjustFeedback) photoAdjustFeedback.classList.remove('active');
-      } finally {
-        autoCorrectionBusy = false;
-        setAdjustingControl(type, false);
+    function finishSliderMovement(type) {
+      if (!uploadedImg || isReuseMode) return;
+      if (manualAdjustmentTimer) {
+        clearTimeout(manualAdjustmentTimer);
+        manualAdjustmentTimer = null;
       }
+      commitLiveAdjustment();
+      setAdjustingControl(type, false);
+      showPhotoAdjustFeedback(type, 'done');
     }
 
     brightnessSlider?.addEventListener('input', () => previewSliderMovement('brightness'));
     saturationSlider?.addEventListener('input', () => previewSliderMovement('saturation'));
-    brightnessSlider?.addEventListener('change', () => applySliderPhotoAdjustment('brightness'));
-    saturationSlider?.addEventListener('change', () => applySliderPhotoAdjustment('saturation'));
+    brightnessSlider?.addEventListener('change', () => finishSliderMovement('brightness'));
+    saturationSlider?.addEventListener('change', () => finishSliderMovement('saturation'));
 
     function clearFinalPreviewState() {
       const previewWrapper = document.getElementById('previewWrapper');
@@ -4247,14 +5170,14 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       const template = templateSelector.value;
 
       if (template.includes('fan2')) {
-    return 'うちわの中に顔や体を入れてね';
+    return 'フレームに合わせてください';
       }
 
       if (template.includes('fan3')) {
-    return 'うちわの中に顔や体を入れてね';
+    return 'フレームに合わせてください';
   }
 
-    return 'うちわの中に顔や体を入れてね';
+    return 'フレームに合わせてください';
   }
 
 
@@ -4263,11 +5186,11 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     if (!btn) return;
 
     const texts = {
-      ja: currentFacingMode === 'environment' ? '🤳 インカメラ' : '📷 アウトカメラ',
-      en: currentFacingMode === 'environment' ? '🤳 Front' : '📷 Rear',
-      zh: currentFacingMode === 'environment' ? '🤳 前置摄像头' : '📷 后置摄像头',
-      ko: currentFacingMode === 'environment' ? '🤳 전면 카메라' : '📷 후면 카메라',
-      vi: currentFacingMode === 'environment' ? '🤳 Camera trước' : '📷 Camera sau'
+      ja: currentFacingMode === 'environment' ? 'FRONT' : 'REAR',
+      en: currentFacingMode === 'environment' ? 'FRONT' : 'REAR',
+      zh: currentFacingMode === 'environment' ? 'FRONT' : 'REAR',
+      ko: currentFacingMode === 'environment' ? 'FRONT' : 'REAR',
+      vi: currentFacingMode === 'environment' ? 'FRONT' : 'REAR'
     };
 
     btn.textContent = texts[currentLang] || texts.ja;
