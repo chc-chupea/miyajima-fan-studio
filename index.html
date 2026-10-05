@@ -376,12 +376,55 @@
   gap:7px;
 }
 .photo-slider-label {
-  text-align:center;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:4px;
+  text-align:left;
   font-size:12px;
   line-height:1.15;
   font-weight:700;
   color:#334155;
   white-space:nowrap;
+}
+.photo-slider-value {
+  min-width:30px;
+  padding:2px 5px;
+  border-radius:999px;
+  background:#e3f2fd;
+  color:#0d47a1;
+  text-align:center;
+  font-size:11px;
+  font-weight:900;
+}
+.photo-slider-control.adjusting {
+  border-color:#2196f3;
+  background:#eef7ff;
+}
+#canvasWrapper {
+  position:relative;
+}
+.photo-adjust-feedback {
+  display:none;
+  position:absolute;
+  left:50%;
+  bottom:14px;
+  transform:translateX(-50%);
+  max-width:86%;
+  padding:8px 12px;
+  border-radius:999px;
+  background:rgba(15,23,42,.88);
+  color:#fff;
+  font-size:13px;
+  font-weight:800;
+  line-height:1.25;
+  text-align:center;
+  pointer-events:none;
+  z-index:6;
+  box-shadow:0 2px 8px rgba(0,0,0,.22);
+}
+.photo-adjust-feedback.active {
+  display:block;
 }
 .photo-slider {
   width:100%;
@@ -737,6 +780,7 @@
 
   <div id="canvasWrapper">
     <canvas id="mainCanvas" width="3508" height="2480"></canvas>
+    <div id="photoAdjustFeedback" class="photo-adjust-feedback" aria-live="polite"></div>
   </div>
 
   <!-- 👇 ここに新しい説明文を追加 -->
@@ -779,23 +823,19 @@
     </button>
 
     <div class="photo-slider-control">
-      <div class="photo-slider-label"
-        data-ja="☀ 明るさ"
-        data-en="☀ Brightness"
-        data-zh="☀ 亮度"
-        data-ko="☀ 밝기"
-        data-vi="☀ Độ sáng">☀ 明るさ</div>
+      <div class="photo-slider-label">
+        <span data-ja="☀ 明るさ" data-en="☀ Brightness" data-zh="☀ 亮度" data-ko="☀ 밝기" data-vi="☀ Độ sáng">☀ 明るさ</span>
+        <span id="brightnessValue" class="photo-slider-value">0</span>
+      </div>
       <input type="range" class="photo-slider" id="brightnessSlider" min="80" max="125" value="100" step="1" disabled aria-label="明るさ">
       <div class="photo-slider-scale"><span>−</span><span>●</span><span>＋</span></div>
     </div>
 
     <div class="photo-slider-control">
-      <div class="photo-slider-label"
-        data-ja="🎨 鮮やかさ"
-        data-en="🎨 Color"
-        data-zh="🎨 鲜艳度"
-        data-ko="🎨 선명도"
-        data-vi="🎨 Màu sắc">🎨 鮮やかさ</div>
+      <div class="photo-slider-label">
+        <span data-ja="🎨 鮮やかさ" data-en="🎨 Color" data-zh="🎨 鲜艳度" data-ko="🎨 선명도" data-vi="🎨 Màu sắc">🎨 鮮やかさ</span>
+        <span id="saturationValue" class="photo-slider-value">0</span>
+      </div>
       <input type="range" class="photo-slider" id="saturationSlider" min="76" max="130" value="100" step="1" disabled aria-label="鮮やかさ">
       <div class="photo-slider-scale"><span>−</span><span>●</span><span>＋</span></div>
     </div>
@@ -1977,8 +2017,12 @@ Miyajima Fan Studio<br><br>
     const autoCorrectNotice = document.getElementById('autoCorrectNotice');
     const brightnessSlider = document.getElementById('brightnessSlider');
     const saturationSlider = document.getElementById('saturationSlider');
+    const brightnessValue = document.getElementById('brightnessValue');
+    const saturationValue = document.getElementById('saturationValue');
+    const photoAdjustFeedback = document.getElementById('photoAdjustFeedback');
     const manualAdjustControls = [brightnessSlider, saturationSlider].filter(Boolean);
     let manualAdjustmentTimer = null;
+    let photoAdjustFeedbackTimer = null;
 
     const autoCorrectLabels = {
       on: {
@@ -2027,6 +2071,53 @@ Miyajima Fan Studio<br><br>
       return Math.min(max, Math.max(min, value));
     }
 
+    function formatAdjustmentValue(value) {
+      const delta = Number(value || 100) - 100;
+      if (delta === 0) return '0';
+      return delta > 0 ? `+${delta}` : String(delta);
+    }
+
+    function updateSliderValueBadges() {
+      if (brightnessValue && brightnessSlider) brightnessValue.textContent = formatAdjustmentValue(brightnessSlider.value);
+      if (saturationValue && saturationSlider) saturationValue.textContent = formatAdjustmentValue(saturationSlider.value);
+    }
+
+    function setAdjustingControl(type, active) {
+      const slider = type === 'brightness' ? brightnessSlider : saturationSlider;
+      slider?.closest('.photo-slider-control')?.classList.toggle('adjusting', Boolean(active));
+    }
+
+    function getAdjustmentLabel(type) {
+      const labels = type === 'brightness'
+        ? { ja:'☀ 明るさ', en:'☀ Brightness', zh:'☀ 亮度', ko:'☀ 밝기', vi:'☀ Độ sáng' }
+        : { ja:'🎨 鮮やかさ', en:'🎨 Color', zh:'🎨 鲜艳度', ko:'🎨 선명도', vi:'🎨 Màu sắc' };
+      return labels[currentLang] || labels.ja;
+    }
+
+    function showPhotoAdjustFeedback(type, phase) {
+      if (!photoAdjustFeedback) return;
+      if (photoAdjustFeedbackTimer) {
+        clearTimeout(photoAdjustFeedbackTimer);
+        photoAdjustFeedbackTimer = null;
+      }
+      const slider = type === 'brightness' ? brightnessSlider : saturationSlider;
+      const value = formatAdjustmentValue(slider?.value || 100);
+      const label = getAdjustmentLabel(type);
+      const phaseText = {
+        moving:{ ja:'指を離すと反映', en:'Release to apply', zh:'松开后应用', ko:'손을 떼면 적용', vi:'Thả tay để áp dụng' },
+        applying:{ ja:'反映中…', en:'Applying…', zh:'应用中…', ko:'적용 중…', vi:'Đang áp dụng…' },
+        done:{ ja:'✓ 反映しました', en:'✓ Applied', zh:'✓ 已应用', ko:'✓ 적용됨', vi:'✓ Đã áp dụng' }
+      };
+      const text = phaseText[phase]?.[currentLang] || phaseText[phase]?.ja || '';
+      photoAdjustFeedback.textContent = `${label} ${value}　${text}`;
+      photoAdjustFeedback.classList.add('active');
+      if (phase === 'done') {
+        photoAdjustFeedbackTimer = setTimeout(() => {
+          photoAdjustFeedback.classList.remove('active');
+        }, 900);
+      }
+    }
+
     function cleanupCorrectedImage() {
       correctedImg = null;
       if (correctedImgUrl) {
@@ -2065,6 +2156,8 @@ Miyajima Fan Studio<br><br>
       manualSaturation = 1.0;
       if (brightnessSlider) brightnessSlider.value = '100';
       if (saturationSlider) saturationSlider.value = '100';
+      updateSliderValueBadges();
+      if (photoAdjustFeedback) photoAdjustFeedback.classList.remove('active');
       if (manualAdjustmentTimer) {
         clearTimeout(manualAdjustmentTimer);
         manualAdjustmentTimer = null;
@@ -2283,37 +2376,47 @@ Miyajima Fan Studio<br><br>
       }
     });
 
-    function scheduleSliderPhotoAdjustment(type) {
+    function previewSliderMovement(type) {
       if (!uploadedImg || autoCorrectionBusy || isReuseMode) return;
-
       manualBrightness = brightnessSlider ? Number(brightnessSlider.value) / 100 : 1.0;
       manualSaturation = saturationSlider ? Number(saturationSlider.value) / 100 : 1.0;
-
-      if (manualAdjustmentTimer) clearTimeout(manualAdjustmentTimer);
-      manualAdjustmentTimer = setTimeout(async () => {
-        manualAdjustmentTimer = null;
-        if (!uploadedImg || autoCorrectionBusy || isReuseMode) return;
-
-        autoCorrectionBusy = true;
-        try {
-          await rebuildDisplayedPhoto();
-          if (autoCorrectNotice) {
-            const text = type === 'brightness'
-              ? {ja:'☀ 明るさを調整しました。', en:'☀ Brightness adjusted.', zh:'☀ 已调整亮度。', ko:'☀ 밝기를 조정했습니다.', vi:'☀ Đã chỉnh độ sáng.'}
-              : {ja:'🎨 鮮やかさを調整しました。', en:'🎨 Color adjusted.', zh:'🎨 已调整鲜艳度。', ko:'🎨 색감을 조정했습니다.', vi:'🎨 Đã chỉnh màu sắc.'};
-            autoCorrectNotice.textContent = text[currentLang] || text.ja;
-          }
-        } catch (err) {
-          console.error('Slider photo adjustment failed:', err);
-          if (autoCorrectNotice) autoCorrectNotice.textContent = autoCorrectNotices.failed[currentLang] || autoCorrectNotices.failed.ja;
-        } finally {
-          autoCorrectionBusy = false;
-        }
-      }, 140);
+      updateSliderValueBadges();
+      setAdjustingControl(type, true);
+      showPhotoAdjustFeedback(type, 'moving');
     }
 
-    brightnessSlider?.addEventListener('input', () => scheduleSliderPhotoAdjustment('brightness'));
-    saturationSlider?.addEventListener('input', () => scheduleSliderPhotoAdjustment('saturation'));
+    async function applySliderPhotoAdjustment(type) {
+      if (!uploadedImg || autoCorrectionBusy || isReuseMode) return;
+      manualBrightness = brightnessSlider ? Number(brightnessSlider.value) / 100 : 1.0;
+      manualSaturation = saturationSlider ? Number(saturationSlider.value) / 100 : 1.0;
+      updateSliderValueBadges();
+      setAdjustingControl(type, true);
+      showPhotoAdjustFeedback(type, 'applying');
+
+      autoCorrectionBusy = true;
+      try {
+        await rebuildDisplayedPhoto();
+        if (autoCorrectNotice) {
+          const text = type === 'brightness'
+            ? {ja:'☀ 明るさを反映しました。', en:'☀ Brightness applied.', zh:'☀ 已应用亮度。', ko:'☀ 밝기를 적용했습니다.', vi:'☀ Đã áp dụng độ sáng.'}
+            : {ja:'🎨 鮮やかさを反映しました。', en:'🎨 Color applied.', zh:'🎨 已应用鲜艳度。', ko:'🎨 색감을 적용했습니다.', vi:'🎨 Đã áp dụng màu sắc.'};
+          autoCorrectNotice.textContent = text[currentLang] || text.ja;
+        }
+        showPhotoAdjustFeedback(type, 'done');
+      } catch (err) {
+        console.error('Slider photo adjustment failed:', err);
+        if (autoCorrectNotice) autoCorrectNotice.textContent = autoCorrectNotices.failed[currentLang] || autoCorrectNotices.failed.ja;
+        if (photoAdjustFeedback) photoAdjustFeedback.classList.remove('active');
+      } finally {
+        autoCorrectionBusy = false;
+        setAdjustingControl(type, false);
+      }
+    }
+
+    brightnessSlider?.addEventListener('input', () => previewSliderMovement('brightness'));
+    saturationSlider?.addEventListener('input', () => previewSliderMovement('saturation'));
+    brightnessSlider?.addEventListener('change', () => applySliderPhotoAdjustment('brightness'));
+    saturationSlider?.addEventListener('change', () => applySliderPhotoAdjustment('saturation'));
 
     function clearFinalPreviewState() {
       const previewWrapper = document.getElementById('previewWrapper');
