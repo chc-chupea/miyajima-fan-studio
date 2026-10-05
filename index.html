@@ -329,11 +329,28 @@
   transform:none !important;
 }
 
-/* 写真自動補正ボタン：写真だけを補正し、テンプレート色は変更しない */
+/* 写真補正：自動／明るさ／鮮やかさを横並びにする */
+.photo-adjust-row {
+  display:grid;
+  grid-template-columns:1.15fr 1fr 1fr;
+  gap:7px;
+  align-items:stretch;
+  margin:10px 0 8px;
+}
+.photo-adjust-row button {
+  margin:0 !important;
+  min-width:0;
+}
 #autoCorrectBtn {
+  height:100%;
+  min-height:66px;
+  padding:8px 6px !important;
+  border-radius:14px !important;
   background:linear-gradient(135deg,#7e57c2,#5e35b1) !important;
   color:#fff !important;
   box-shadow:none !important;
+  font-size:13px !important;
+  line-height:1.25;
 }
 #autoCorrectBtn:hover:not(:disabled) {
   background:linear-gradient(135deg,#6f4bb4,#512da8) !important;
@@ -346,11 +363,64 @@
   transform:none !important;
   opacity:.75;
 }
+.photo-slider-control {
+  min-width:0;
+  min-height:66px;
+  padding:6px 7px;
+  border:1px solid #dbe4ef;
+  border-radius:14px;
+  background:#f8fbff;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:7px;
+}
+.photo-slider-label {
+  text-align:center;
+  font-size:12px;
+  line-height:1.15;
+  font-weight:700;
+  color:#334155;
+  white-space:nowrap;
+}
+.photo-slider {
+  width:100%;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  accent-color:#2196f3;
+  cursor:pointer;
+}
+.photo-slider:disabled {
+  opacity:.45;
+  cursor:not-allowed;
+}
+.photo-slider-scale {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:-4px;
+  font-size:9px;
+  line-height:1;
+  color:#94a3b8;
+  user-select:none;
+}
 #autoCorrectNotice {
   font-size:12px;
   color:#555;
-  margin:-2px 0 10px;
+  margin:0 0 10px;
   min-height:1.4em;
+  text-align:center;
+}
+@media (max-width:380px) {
+  .photo-adjust-row { gap:4px; }
+  #autoCorrectBtn { font-size:12px !important; padding:7px 3px !important; }
+  .photo-slider-control { padding:5px 4px; }
+  .photo-slider-label { font-size:11px; }
+  .photo-slider-scale { font-size:8px; }
 }
 
 #imageLoader {
@@ -698,20 +768,44 @@
     🖼 写真を選び直す
   </button>
 
-  <button id="autoCorrectBtn" disabled
-    data-ja="✨ 写真を自動補正"
-    data-en="✨ Auto-enhance photo"
-    data-zh="✨ 自动优化照片"
-    data-ko="✨ 사진 자동 보정"
-    data-vi="✨ Tự động chỉnh ảnh">
-    ✨ 写真を自動補正
-  </button>
+  <div class="photo-adjust-row" id="photoAdjustRow">
+    <button id="autoCorrectBtn" disabled
+      data-ja="✨ 自動補正"
+      data-en="✨ Auto"
+      data-zh="✨ 自动"
+      data-ko="✨ 자동 보정"
+      data-vi="✨ Tự động">
+      ✨ 自動補正
+    </button>
+
+    <div class="photo-slider-control">
+      <div class="photo-slider-label"
+        data-ja="☀ 明るさ"
+        data-en="☀ Brightness"
+        data-zh="☀ 亮度"
+        data-ko="☀ 밝기"
+        data-vi="☀ Độ sáng">☀ 明るさ</div>
+      <input type="range" class="photo-slider" id="brightnessSlider" min="80" max="125" value="100" step="1" disabled aria-label="明るさ">
+      <div class="photo-slider-scale"><span>−</span><span>●</span><span>＋</span></div>
+    </div>
+
+    <div class="photo-slider-control">
+      <div class="photo-slider-label"
+        data-ja="🎨 鮮やかさ"
+        data-en="🎨 Color"
+        data-zh="🎨 鲜艳度"
+        data-ko="🎨 선명도"
+        data-vi="🎨 Màu sắc">🎨 鮮やかさ</div>
+      <input type="range" class="photo-slider" id="saturationSlider" min="76" max="130" value="100" step="1" disabled aria-label="鮮やかさ">
+      <div class="photo-slider-scale"><span>−</span><span>●</span><span>＋</span></div>
+    </div>
+  </div>
   <p id="autoCorrectNotice"
-     data-ja="写真だけを補正します。うちわのデザイン色は変わりません。"
-     data-en="Only the photo is enhanced. The fan design colors stay unchanged."
-     data-zh="仅优化照片，团扇设计颜色不会改变。"
-     data-ko="사진만 보정합니다. 부채 디자인 색상은 바뀌지 않습니다."
-     data-vi="Chỉ chỉnh ảnh. Màu thiết kế quạt không thay đổi.">写真だけを補正します。うちわのデザイン色は変わりません。</p>
+     data-ja="写真だけを補正します。"
+     data-en="Only the photo is adjusted."
+     data-zh="仅调整照片。"
+     data-ko="사진만 보정합니다."
+     data-vi="Chỉ chỉnh ảnh.">写真だけを補正します。</p>
 
   <button id="saveBtn"
     data-ja="完成イメージを確認する"
@@ -1750,6 +1844,8 @@ Miyajima Fan Studio<br><br>
     let photoCorrectionEnabled = false;
     let lastAutoCorrection = null;
     let autoCorrectionBusy = false;
+    let manualBrightness = 1.0;
+    let manualSaturation = 1.0;
     let cameraStream = null;
     let cameraTrack = null;
     let cameraZoom = 1;
@@ -1861,7 +1957,7 @@ Miyajima Fan Studio<br><br>
         ctx.scale(scale, scale);
 
         // 写真だけを補正画像へ差し替える。テンプレートはこの後に別描画するため無補正。
-        const photoToDraw = (photoCorrectionEnabled && correctedImg) ? correctedImg : uploadedImg;
+        const photoToDraw = correctedImg || uploadedImg;
         ctx.drawImage(
           photoToDraw,
           -uploadedImg.width / 2,
@@ -1879,15 +1975,19 @@ Miyajima Fan Studio<br><br>
 
     const autoCorrectBtn = document.getElementById('autoCorrectBtn');
     const autoCorrectNotice = document.getElementById('autoCorrectNotice');
+    const brightnessSlider = document.getElementById('brightnessSlider');
+    const saturationSlider = document.getElementById('saturationSlider');
+    const manualAdjustControls = [brightnessSlider, saturationSlider].filter(Boolean);
+    let manualAdjustmentTimer = null;
 
     const autoCorrectLabels = {
       on: {
-        ja:'↩ 補正を戻す', en:'↩ Undo enhancement', zh:'↩ 撤销优化',
-        ko:'↩ 보정 취소', vi:'↩ Hoàn tác chỉnh ảnh'
+        ja:'↩ 自動OFF', en:'↩ Auto off', zh:'↩ 关闭自动',
+        ko:'↩ 자동 끄기', vi:'↩ Tắt tự động'
       },
       off: {
-        ja:'✨ 写真を自動補正', en:'✨ Auto-enhance photo', zh:'✨ 自动优化照片',
-        ko:'✨ 사진 자동 보정', vi:'✨ Tự động chỉnh ảnh'
+        ja:'✨ 自動補正', en:'✨ Auto', zh:'✨ 自动',
+        ko:'✨ 자동 보정', vi:'✨ Tự động'
       },
       busy: {
         ja:'補正中…', en:'Enhancing…', zh:'优化中…',
@@ -1897,11 +1997,11 @@ Miyajima Fan Studio<br><br>
 
     const autoCorrectNotices = {
       ready: {
-        ja:'写真だけを補正します。うちわのデザイン色は変わりません。',
-        en:'Only the photo is enhanced. The fan design colors stay unchanged.',
-        zh:'仅优化照片，团扇设计颜色不会改变。',
-        ko:'사진만 보정합니다. 부채 디자인 색상은 바뀌지 않습니다.',
-        vi:'Chỉ chỉnh ảnh. Màu thiết kế quạt không thay đổi.'
+        ja:'写真だけを補正します。',
+        en:'Only the photo is adjusted.',
+        zh:'仅调整照片。',
+        ko:'사진만 보정합니다.',
+        vi:'Chỉ chỉnh ảnh.'
       },
       applied: {
         ja:'✓ 明るさ・メリハリ・色味を写真に合わせて自動調整しました。',
@@ -1952,13 +2052,61 @@ Miyajima Fan Studio<br><br>
       }
     }
 
+    function setPhotoAdjustControlsDisabled(disabled) {
+      if (autoCorrectBtn) autoCorrectBtn.disabled = disabled;
+      manualAdjustControls.forEach(control => control.disabled = disabled);
+    }
+
     function resetPhotoCorrection() {
       photoCorrectionEnabled = false;
       lastAutoCorrection = null;
       autoCorrectionBusy = false;
+      manualBrightness = 1.0;
+      manualSaturation = 1.0;
+      if (brightnessSlider) brightnessSlider.value = '100';
+      if (saturationSlider) saturationSlider.value = '100';
+      if (manualAdjustmentTimer) {
+        clearTimeout(manualAdjustmentTimer);
+        manualAdjustmentTimer = null;
+      }
       cleanupCorrectedImage();
-      if (autoCorrectBtn) autoCorrectBtn.disabled = !uploadedImg;
+      setPhotoAdjustControlsDisabled(!uploadedImg || isReuseMode);
       updateAutoCorrectUI('ready');
+    }
+
+    function hasManualPhotoAdjustment() {
+      return Math.abs(manualBrightness - 1) > 0.001 || Math.abs(manualSaturation - 1) > 0.001;
+    }
+
+    function getCombinedCorrectionValues() {
+      const base = photoCorrectionEnabled
+        ? (lastAutoCorrection || analyzePhotoForAutoCorrection(uploadedImg))
+        : { brightness:1, contrast:1, saturation:1 };
+
+      return {
+        brightness: clamp(base.brightness * manualBrightness, 0.72, 1.42),
+        contrast: base.contrast,
+        saturation: clamp(base.saturation * manualSaturation, 0.68, 1.48)
+      };
+    }
+
+    async function rebuildDisplayedPhoto() {
+      if (!uploadedImg || isReuseMode) return;
+
+      if (!photoCorrectionEnabled && !hasManualPhotoAdjustment()) {
+        cleanupCorrectedImage();
+        clearFinalPreviewState();
+        draw();
+        return;
+      }
+
+      const values = getCombinedCorrectionValues();
+      const result = await createCorrectedPhoto(uploadedImg, values);
+      cleanupCorrectedImage();
+      correctedImg = result.enhanced;
+      correctedImgUrl = result.url;
+      clearFinalPreviewState();
+      draw();
     }
 
     function analyzePhotoForAutoCorrection(img) {
@@ -2105,44 +2253,67 @@ Miyajima Fan Studio<br><br>
     autoCorrectBtn?.addEventListener('click', async () => {
       if (!uploadedImg || autoCorrectionBusy || isReuseMode) return;
 
-      if (photoCorrectionEnabled) {
-        photoCorrectionEnabled = false;
-        clearFinalPreviewState();
-        draw();
-        updateAutoCorrectUI('undone');
-        return;
-      }
-
       autoCorrectionBusy = true;
-      autoCorrectBtn.disabled = true;
+      setPhotoAdjustControlsDisabled(true);
       updateAutoCorrectUI();
 
       try {
-        if (!correctedImg) {
+        if (photoCorrectionEnabled) {
+          photoCorrectionEnabled = false;
+          lastAutoCorrection = null;
+          await rebuildDisplayedPhoto();
+          updateAutoCorrectUI('undone');
+        } else {
           lastAutoCorrection = analyzePhotoForAutoCorrection(uploadedImg);
-          const result = await createCorrectedPhoto(uploadedImg, lastAutoCorrection);
-          cleanupCorrectedImage();
-          correctedImg = result.enhanced;
-          correctedImgUrl = result.url;
+          photoCorrectionEnabled = true;
+          await rebuildDisplayedPhoto();
+          updateAutoCorrectUI('applied');
         }
-
-        photoCorrectionEnabled = true;
-        clearFinalPreviewState();
-        draw();
-        autoCorrectionBusy = false;
-        autoCorrectBtn.disabled = false;
-        updateAutoCorrectUI('applied');
       } catch (err) {
         console.error('Auto correction failed:', err);
         photoCorrectionEnabled = false;
         lastAutoCorrection = null;
-        autoCorrectionBusy = false;
         cleanupCorrectedImage();
-        autoCorrectBtn.disabled = false;
         draw();
         updateAutoCorrectUI('failed');
+      } finally {
+        autoCorrectionBusy = false;
+        setPhotoAdjustControlsDisabled(!uploadedImg || isReuseMode);
+        updateAutoCorrectUI();
       }
     });
+
+    function scheduleSliderPhotoAdjustment(type) {
+      if (!uploadedImg || autoCorrectionBusy || isReuseMode) return;
+
+      manualBrightness = brightnessSlider ? Number(brightnessSlider.value) / 100 : 1.0;
+      manualSaturation = saturationSlider ? Number(saturationSlider.value) / 100 : 1.0;
+
+      if (manualAdjustmentTimer) clearTimeout(manualAdjustmentTimer);
+      manualAdjustmentTimer = setTimeout(async () => {
+        manualAdjustmentTimer = null;
+        if (!uploadedImg || autoCorrectionBusy || isReuseMode) return;
+
+        autoCorrectionBusy = true;
+        try {
+          await rebuildDisplayedPhoto();
+          if (autoCorrectNotice) {
+            const text = type === 'brightness'
+              ? {ja:'☀ 明るさを調整しました。', en:'☀ Brightness adjusted.', zh:'☀ 已调整亮度。', ko:'☀ 밝기를 조정했습니다.', vi:'☀ Đã chỉnh độ sáng.'}
+              : {ja:'🎨 鮮やかさを調整しました。', en:'🎨 Color adjusted.', zh:'🎨 已调整鲜艳度。', ko:'🎨 색감을 조정했습니다.', vi:'🎨 Đã chỉnh màu sắc.'};
+            autoCorrectNotice.textContent = text[currentLang] || text.ja;
+          }
+        } catch (err) {
+          console.error('Slider photo adjustment failed:', err);
+          if (autoCorrectNotice) autoCorrectNotice.textContent = autoCorrectNotices.failed[currentLang] || autoCorrectNotices.failed.ja;
+        } finally {
+          autoCorrectionBusy = false;
+        }
+      }, 140);
+    }
+
+    brightnessSlider?.addEventListener('input', () => scheduleSliderPhotoAdjustment('brightness'));
+    saturationSlider?.addEventListener('input', () => scheduleSliderPhotoAdjustment('saturation'));
 
     function clearFinalPreviewState() {
       const previewWrapper = document.getElementById('previewWrapper');
@@ -2187,7 +2358,7 @@ Miyajima Fan Studio<br><br>
         uploadedImg = new Image();
         uploadedImg.onload = () => {
           resetPhotoCorrection();
-          if (autoCorrectBtn) autoCorrectBtn.disabled = false;
+          setPhotoAdjustControlsDisabled(false);
           fitImageToCanvas(uploadedImg);
           clearFinalPreviewState();
 
@@ -2558,7 +2729,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       document.getElementById('area-canvas').style.display = 'none';
       document.getElementById('area-select').style.display = 'none';
-      if (autoCorrectBtn) autoCorrectBtn.disabled = true;
+      setPhotoAdjustControlsDisabled(true);
 
       if (reuseSourceOrder.priceType) {
         const priceRadio = document.querySelector(
@@ -4341,7 +4512,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
     uploadedImg.onload = () => {
       resetPhotoCorrection();
-      if (autoCorrectBtn) autoCorrectBtn.disabled = false;
+      setPhotoAdjustControlsDisabled(false);
       rotation = 0;
 
       if (currentFacingMode === 'user') {
