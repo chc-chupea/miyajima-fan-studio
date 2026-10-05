@@ -329,6 +329,30 @@
   transform:none !important;
 }
 
+/* 写真自動補正ボタン：写真だけを補正し、テンプレート色は変更しない */
+#autoCorrectBtn {
+  background:linear-gradient(135deg,#7e57c2,#5e35b1) !important;
+  color:#fff !important;
+  box-shadow:none !important;
+}
+#autoCorrectBtn:hover:not(:disabled) {
+  background:linear-gradient(135deg,#6f4bb4,#512da8) !important;
+  transform:none !important;
+}
+#autoCorrectBtn:disabled {
+  background:#d8d8d8 !important;
+  color:#777 !important;
+  cursor:not-allowed !important;
+  transform:none !important;
+  opacity:.75;
+}
+#autoCorrectNotice {
+  font-size:12px;
+  color:#555;
+  margin:-2px 0 10px;
+  min-height:1.4em;
+}
+
 #imageLoader {
   display:none !important;
 }
@@ -673,6 +697,21 @@
     style="background:#90caf9; color:#0d47a1; box-shadow:none;">
     🖼 写真を選び直す
   </button>
+
+  <button id="autoCorrectBtn" disabled
+    data-ja="✨ 写真を自動補正"
+    data-en="✨ Auto-enhance photo"
+    data-zh="✨ 自动优化照片"
+    data-ko="✨ 사진 자동 보정"
+    data-vi="✨ Tự động chỉnh ảnh">
+    ✨ 写真を自動補正
+  </button>
+  <p id="autoCorrectNotice"
+     data-ja="写真だけを補正します。うちわのデザイン色は変わりません。"
+     data-en="Only the photo is enhanced. The fan design colors stay unchanged."
+     data-zh="仅优化照片，团扇设计颜色不会改变。"
+     data-ko="사진만 보정합니다. 부채 디자인 색상은 바뀌지 않습니다."
+     data-vi="Chỉ chỉnh ảnh. Màu thiết kế quạt không thay đổi.">写真だけを補正します。うちわのデザイン色は変わりません。</p>
 
   <button id="saveBtn"
     data-ja="完成イメージを確認する"
@@ -1706,6 +1745,11 @@ Miyajima Fan Studio<br><br>
     const canvas = document.getElementById('mainCanvas');
     const ctx = canvas.getContext('2d');
     let uploadedImg = null;
+    let correctedImg = null;
+    let correctedImgUrl = null;
+    let photoCorrectionEnabled = false;
+    let lastAutoCorrection = null;
+    let autoCorrectionBusy = false;
     let cameraStream = null;
     let cameraTrack = null;
     let cameraZoom = 1;
@@ -1815,7 +1859,16 @@ Miyajima Fan Studio<br><br>
         ctx.translate(imgX, imgY);
         ctx.rotate(rotation);
         ctx.scale(scale, scale);
-        ctx.drawImage(uploadedImg, -uploadedImg.width / 2, -uploadedImg.height / 2);
+
+        // 写真だけを補正画像へ差し替える。テンプレートはこの後に別描画するため無補正。
+        const photoToDraw = (photoCorrectionEnabled && correctedImg) ? correctedImg : uploadedImg;
+        ctx.drawImage(
+          photoToDraw,
+          -uploadedImg.width / 2,
+          -uploadedImg.height / 2,
+          uploadedImg.width,
+          uploadedImg.height
+        );
         ctx.restore();
       }
      
@@ -1823,7 +1876,273 @@ Miyajima Fan Studio<br><br>
          ctx.drawImage(templateImg, 0, 0, canvas.width, canvas.height);
        }
      }
-     
+
+    const autoCorrectBtn = document.getElementById('autoCorrectBtn');
+    const autoCorrectNotice = document.getElementById('autoCorrectNotice');
+
+    const autoCorrectLabels = {
+      on: {
+        ja:'↩ 補正を戻す', en:'↩ Undo enhancement', zh:'↩ 撤销优化',
+        ko:'↩ 보정 취소', vi:'↩ Hoàn tác chỉnh ảnh'
+      },
+      off: {
+        ja:'✨ 写真を自動補正', en:'✨ Auto-enhance photo', zh:'✨ 自动优化照片',
+        ko:'✨ 사진 자동 보정', vi:'✨ Tự động chỉnh ảnh'
+      },
+      busy: {
+        ja:'補正中…', en:'Enhancing…', zh:'优化中…',
+        ko:'보정 중…', vi:'Đang chỉnh…'
+      }
+    };
+
+    const autoCorrectNotices = {
+      ready: {
+        ja:'写真だけを補正します。うちわのデザイン色は変わりません。',
+        en:'Only the photo is enhanced. The fan design colors stay unchanged.',
+        zh:'仅优化照片，团扇设计颜色不会改变。',
+        ko:'사진만 보정합니다. 부채 디자인 색상은 바뀌지 않습니다.',
+        vi:'Chỉ chỉnh ảnh. Màu thiết kế quạt không thay đổi.'
+      },
+      applied: {
+        ja:'✓ 明るさ・メリハリ・色味を写真に合わせて自動調整しました。',
+        en:'✓ Brightness, contrast, and color were adjusted automatically.',
+        zh:'✓ 已自动调整亮度、对比度和色彩。',
+        ko:'✓ 밝기·대비·색감을 자동으로 조정했습니다.',
+        vi:'✓ Đã tự động chỉnh độ sáng, tương phản và màu sắc.'
+      },
+      undone: {
+        ja:'元の写真に戻しました。', en:'Restored the original photo.',
+        zh:'已恢复原始照片。', ko:'원본 사진으로 되돌렸습니다.', vi:'Đã khôi phục ảnh gốc.'
+      },
+      failed: {
+        ja:'この写真は自動補正できませんでした。元の写真のまま使えます。',
+        en:'This photo could not be enhanced. You can still use the original.',
+        zh:'无法自动优化此照片，仍可使用原始照片。',
+        ko:'이 사진은 자동 보정할 수 없습니다. 원본 사진을 그대로 사용할 수 있습니다.',
+        vi:'Không thể tự động chỉnh ảnh này. Bạn vẫn có thể dùng ảnh gốc.'
+      }
+    };
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function cleanupCorrectedImage() {
+      correctedImg = null;
+      if (correctedImgUrl) {
+        try { URL.revokeObjectURL(correctedImgUrl); } catch (e) {}
+        correctedImgUrl = null;
+      }
+    }
+
+    function updateAutoCorrectUI(noticeKey = null) {
+      if (!autoCorrectBtn) return;
+
+      if (autoCorrectionBusy) {
+        autoCorrectBtn.textContent = autoCorrectLabels.busy[currentLang] || autoCorrectLabels.busy.ja;
+        return;
+      }
+
+      const state = photoCorrectionEnabled ? 'on' : 'off';
+      autoCorrectBtn.textContent = autoCorrectLabels[state][currentLang] || autoCorrectLabels[state].ja;
+
+      if (autoCorrectNotice) {
+        const key = noticeKey || (photoCorrectionEnabled ? 'applied' : 'ready');
+        autoCorrectNotice.textContent = autoCorrectNotices[key][currentLang] || autoCorrectNotices[key].ja;
+      }
+    }
+
+    function resetPhotoCorrection() {
+      photoCorrectionEnabled = false;
+      lastAutoCorrection = null;
+      autoCorrectionBusy = false;
+      cleanupCorrectedImage();
+      if (autoCorrectBtn) autoCorrectBtn.disabled = !uploadedImg;
+      updateAutoCorrectUI('ready');
+    }
+
+    function analyzePhotoForAutoCorrection(img) {
+      // 小さい解析用画像で平均輝度・コントラスト・色の薄さを判定する。
+      const maxSide = 180;
+      const ratio = img.width / img.height;
+      const w = ratio >= 1 ? maxSide : Math.max(1, Math.round(maxSide * ratio));
+      const h = ratio >= 1 ? Math.max(1, Math.round(maxSide / ratio)) : maxSide;
+
+      const sample = document.createElement('canvas');
+      sample.width = w;
+      sample.height = h;
+      const sctx = sample.getContext('2d', { willReadFrequently:true });
+      sctx.drawImage(img, 0, 0, w, h);
+
+      const pixels = sctx.getImageData(0, 0, w, h).data;
+      let n = 0, sumLum = 0, sumLumSq = 0, sumChroma = 0;
+
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i + 3] < 128) continue;
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
+        const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        const maxRGB = Math.max(r, g, b);
+        const minRGB = Math.min(r, g, b);
+        sumLum += lum;
+        sumLumSq += lum * lum;
+        sumChroma += maxRGB - minRGB;
+        n++;
+      }
+
+      if (!n) return { brightness:1, contrast:1, saturation:1 };
+
+      const mean = sumLum / n;
+      const variance = Math.max(0, (sumLumSq / n) - (mean * mean));
+      const std = Math.sqrt(variance);
+      const chroma = sumChroma / n;
+
+      // 商品写真として不自然にならない控えめな範囲に制限。
+      const brightness = clamp(132 / Math.max(mean, 1), 0.94, 1.22);
+
+      let contrast = 1.02;
+      if (std < 38) contrast = 1.14;
+      else if (std < 50) contrast = 1.09;
+      else if (std < 65) contrast = 1.05;
+      else if (std > 90) contrast = 0.99;
+
+      let saturation = 1.02;
+      if (chroma < 28) saturation = 1.12;
+      else if (chroma < 42) saturation = 1.08;
+      else if (chroma < 58) saturation = 1.05;
+
+      return {
+        brightness:Number(brightness.toFixed(3)),
+        contrast:Number(contrast.toFixed(3)),
+        saturation:Number(saturation.toFixed(3))
+      };
+    }
+
+    function getCorrectionRasterSize(img) {
+      // 最終キャンバスを超える巨大画像は、A4出力に必要な範囲まで縮小して処理する。
+      const maxSide = Math.max(canvas.width, canvas.height);
+      const maxPixels = canvas.width * canvas.height;
+      let w = img.width;
+      let h = img.height;
+      let down = Math.min(1, maxSide / Math.max(w, h));
+      w = Math.max(1, Math.round(w * down));
+      h = Math.max(1, Math.round(h * down));
+
+      const pixels = w * h;
+      if (pixels > maxPixels) {
+        const p = Math.sqrt(maxPixels / pixels);
+        w = Math.max(1, Math.round(w * p));
+        h = Math.max(1, Math.round(h * p));
+      }
+      return { w, h };
+    }
+
+    function canvasToPhotoBlob(sourceCanvas) {
+      return new Promise((resolve, reject) => {
+        sourceCanvas.toBlob(blob => {
+          if (blob) resolve(blob);
+          else reject(new Error('canvas.toBlob returned null'));
+        }, 'image/jpeg', 0.96);
+      });
+    }
+
+    function loadCorrectedImageFromObjectUrl(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
+      });
+    }
+
+    async function createCorrectedPhoto(img, values) {
+      const { w, h } = getCorrectionRasterSize(img);
+      const work = document.createElement('canvas');
+      work.width = w;
+      work.height = h;
+      const wctx = work.getContext('2d', { willReadFrequently:true });
+      wctx.drawImage(img, 0, 0, w, h);
+
+      const imageData = wctx.getImageData(0, 0, w, h);
+      const d = imageData.data;
+      const brightness = values.brightness;
+      const contrast = values.contrast;
+      const saturation = values.saturation;
+
+      for (let i = 0; i < d.length; i += 4) {
+        let r = d[i] * brightness;
+        let g = d[i + 1] * brightness;
+        let b = d[i + 2] * brightness;
+
+        r = (r - 128) * contrast + 128;
+        g = (g - 128) * contrast + 128;
+        b = (b - 128) * contrast + 128;
+
+        const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        r = lum + (r - lum) * saturation;
+        g = lum + (g - lum) * saturation;
+        b = lum + (b - lum) * saturation;
+
+        d[i] = clamp(Math.round(r), 0, 255);
+        d[i + 1] = clamp(Math.round(g), 0, 255);
+        d[i + 2] = clamp(Math.round(b), 0, 255);
+      }
+
+      wctx.putImageData(imageData, 0, 0);
+      const blob = await canvasToPhotoBlob(work);
+      const url = URL.createObjectURL(blob);
+
+      try {
+        const enhanced = await loadCorrectedImageFromObjectUrl(url);
+        return { enhanced, url };
+      } catch (err) {
+        URL.revokeObjectURL(url);
+        throw err;
+      }
+    }
+
+    autoCorrectBtn?.addEventListener('click', async () => {
+      if (!uploadedImg || autoCorrectionBusy || isReuseMode) return;
+
+      if (photoCorrectionEnabled) {
+        photoCorrectionEnabled = false;
+        clearFinalPreviewState();
+        draw();
+        updateAutoCorrectUI('undone');
+        return;
+      }
+
+      autoCorrectionBusy = true;
+      autoCorrectBtn.disabled = true;
+      updateAutoCorrectUI();
+
+      try {
+        if (!correctedImg) {
+          lastAutoCorrection = analyzePhotoForAutoCorrection(uploadedImg);
+          const result = await createCorrectedPhoto(uploadedImg, lastAutoCorrection);
+          cleanupCorrectedImage();
+          correctedImg = result.enhanced;
+          correctedImgUrl = result.url;
+        }
+
+        photoCorrectionEnabled = true;
+        clearFinalPreviewState();
+        draw();
+        autoCorrectionBusy = false;
+        autoCorrectBtn.disabled = false;
+        updateAutoCorrectUI('applied');
+      } catch (err) {
+        console.error('Auto correction failed:', err);
+        photoCorrectionEnabled = false;
+        lastAutoCorrection = null;
+        autoCorrectionBusy = false;
+        cleanupCorrectedImage();
+        autoCorrectBtn.disabled = false;
+        draw();
+        updateAutoCorrectUI('failed');
+      }
+    });
 
     function clearFinalPreviewState() {
       const previewWrapper = document.getElementById('previewWrapper');
@@ -1867,6 +2186,8 @@ Miyajima Fan Studio<br><br>
       reader.onload = function(event) {
         uploadedImg = new Image();
         uploadedImg.onload = () => {
+          resetPhotoCorrection();
+          if (autoCorrectBtn) autoCorrectBtn.disabled = false;
           fitImageToCanvas(uploadedImg);
           clearFinalPreviewState();
 
@@ -2237,6 +2558,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       document.getElementById('area-canvas').style.display = 'none';
       document.getElementById('area-select').style.display = 'none';
+      if (autoCorrectBtn) autoCorrectBtn.disabled = true;
 
       if (reuseSourceOrder.priceType) {
         const priceRadio = document.querySelector(
@@ -4018,6 +4340,8 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     uploadedImg = new Image();
 
     uploadedImg.onload = () => {
+      resetPhotoCorrection();
+      if (autoCorrectBtn) autoCorrectBtn.disabled = false;
       rotation = 0;
 
       if (currentFacingMode === 'user') {
@@ -4117,6 +4441,10 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
       if (typeof updateSwitchCameraButton === 'function') {
         updateSwitchCameraButton();
+      }
+
+      if (typeof updateAutoCorrectUI === 'function') {
+        updateAutoCorrectUI(photoCorrectionEnabled ? 'applied' : 'ready');
       }
     } // ← setLanguage終了
 
